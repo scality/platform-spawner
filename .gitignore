@@ -1,0 +1,21 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
+
+# Pulumi stacks
+Pulumi.*.yaml
+
+# Pulumi sdks
+sdks/*
+
+# Python venv
+venv/*

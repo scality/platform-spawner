@@ -1,0 +1,95 @@
+name: platform-spawner
+description: Pulumi project to spawn platforms
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+
+config:
+  # Global values
+  product:
+    type: string
+    description: "Product name for the resources"
+    default: "unknown"
+
+  # Network configs
+  offline:
+    type: boolean
+    description: "If true, the platform will not be connected to the internet"
+    default: false
+  authorized_tcp_ports:
+    type: array
+    items:
+      type: integer
+    description: "List of authorized TCP ports for ingress to the instances"
+    default:
+      - 22
+  authorized_udp_ports:
+    type: array
+    items:
+      type: integer
+    description: "List of authorized UDP ports for ingress to the instances"
+    default: []
+  authorized_icmp:
+    type: boolean
+    description: "Whether ICMP traffic is authorized for ingress to the instances"
+    default: true
+  authorized_cidrs:
+    type: array
+    items:
+      type: string
+    description: "List of authorized CIDRs for the instances"
+    default:
+      - 141.94.181.72/32 # VPN
+      - 84.14.13.200/29  # office Paris colt
+      - 193.248.60.56/32 # office Paris orange
+      - 38.142.74.18/32  # office SF
+      - __my_ip__ # placeholder replaced automatically with current IP
+
+  # Node hosts configs
+  instance_image:
+    type: string
+    description: "Image for the instances (e.g.: AMI name for AWS)"
+  instance_count:
+    type: integer
+    description: "Number of instances to create"
+    default: 3
+  instance_flavor:
+    type: string
+    description: "Flavor of the instance"
+    default: "medium"
+  instance_root_disk_size:
+    type: integer
+    description: "Root disk size for the instance (in GiB)"
+    default: 50
+
+  # Bastion host configuration
+  bastion_image:
+    type: string
+    description: "Image for the bastion host"
+    default: "rocky-9"
+  bastion_flavor:
+    type: string
+    description: "Flavor of the bastion host"
+    default: "small"
+  bastion_root_disk_size:
+    type: integer
+    description: "Root disk size for the bastion host (in GiB)"
+    default: 30
+
+  # SSH information
+  ssh_key_name:
+    type: string
+    description: "Name of the SSH key to use"
+  ssh_private_key_create:
+    type: boolean
+    description: "If true, a new SSH key will be created"
+    default: false
+
+packages:
+  local:
+    source: terraform-provider
+    version: 0.13.0
+    parameters:
+      - hashicorp/local
