@@ -2,6 +2,7 @@
 """
 Update README file based on comment <!-- BEGIN_PULUMI_DOCS -->
 """
+
 import pathlib
 import yaml
 import re
@@ -19,15 +20,17 @@ END_MARKER = "<!-- END_PULUMI_DOCS -->"
 def _compute_tab_content(pulumi_config):
     tab_content = [
         "| Name | Description | Type | Default | Required |",
-        "|------|-------------|------|---------|----------|"
+        "|------|-------------|------|---------|----------|",
     ]
     for key, values in (pulumi_config.get("config") or {}).items():
         name = key
         description = values.get("description", "")
         type_ = values.get("type", "")
-        default = "N/A" if values.get("default") is None else f"`{values.get("default")}`"
+        default = (
+            "N/A" if values.get("default") is None else f"`{values.get('default')}`"
+        )
         required = "yes" if values.get("default") is None else "no"
-        
+
         tab_content.append(
             f"| {name} | {description} | {type_} | {default} | {required} |"
         )
@@ -44,11 +47,12 @@ def __main__():
         f"{BEGIN_MARKER}.*{END_MARKER}",
         f"{BEGIN_MARKER}\n{_compute_tab_content(pulumi_config)}\n{END_MARKER}",
         readme_content,
-        flags=re.DOTALL
+        flags=re.DOTALL,
     )
 
     with open(README_FILE, "w") as f:
         f.write(readme_content)
 
+
 if __name__ == "__main__":
-  __main__()
+    __main__()

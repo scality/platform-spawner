@@ -1,6 +1,7 @@
 """
 AWS Spawner for managing EC2 instances.
 """
+
 from typing import Optional, List
 
 import pulumi
@@ -19,9 +20,7 @@ _known_images = {
     "eu-north-1": {
         "rocky-9": "ami-0853aa90ccfad6064",
     },
-    "us-west-2": {
-        "rocky-9": "ami-03b6c12852a6ec38a"
-    }
+    "us-west-2": {"rocky-9": "ami-03b6c12852a6ec38a"},
 }
 
 DEFAULT_DISK_TYPE = "gp3"
@@ -29,6 +28,7 @@ DEFAULT_DISK_TYPE = "gp3"
 
 class AWSSProvider(base.BaseProvider):
     """AWS implementation of BaseProvider using EC2 instances."""
+
     provider_name = "aws"
 
     _availability_zone = ""
@@ -62,10 +62,12 @@ class AWSSProvider(base.BaseProvider):
                 volume_size=root_disk_size,
                 volume_type=DEFAULT_DISK_TYPE,
             ),
-            network_interfaces=[pulumi_aws.ec2.InstanceNetworkInterfaceArgs(
-                network_interface_id=iface.id,
-                device_index=index
-            ) for index, iface in enumerate(interfaces)],
+            network_interfaces=[
+                pulumi_aws.ec2.InstanceNetworkInterfaceArgs(
+                    network_interface_id=iface.id, device_index=index
+                )
+                for index, iface in enumerate(interfaces)
+            ],
             tags={
                 "node": name,
             },
@@ -112,7 +114,7 @@ class AWSSProvider(base.BaseProvider):
             vpc_id=network.id,
             cidr_block=cidr,
             availability_zone=self._get_availability_zone(),
-            tags=tags
+            tags=tags,
         )
 
         route_table = pulumi_aws.ec2.RouteTable(
@@ -164,7 +166,6 @@ class AWSSProvider(base.BaseProvider):
 
         return subnet
 
-
     def create_security_group(
         self,
         name: str,
@@ -188,7 +189,10 @@ class AWSSProvider(base.BaseProvider):
             },
         )
 
-        for protocol, ports in {"tcp": ingress_tcp_ports, "udp": ingress_udp_ports}.items():
+        for protocol, ports in {
+            "tcp": ingress_tcp_ports,
+            "udp": ingress_udp_ports,
+        }.items():
             for port in ports or []:
                 for cidr in ingress_cidrs:
                     cidr_name = cidr if isinstance(cidr, str) else "my_ip"
@@ -254,12 +258,10 @@ class AWSSProvider(base.BaseProvider):
             name,
             subnet_id=subnet.id,
             private_ips=[ip],
-            security_groups=[
-                sg.id for sg in security_groups or []
-            ],
+            security_groups=[sg.id for sg in security_groups or []],
             # Only enable source/destination checking for public interfaces
             source_dest_check=public,
-            tags=tags
+            tags=tags,
         )
 
         if public:
@@ -283,15 +285,14 @@ class AWSSProvider(base.BaseProvider):
             most_recent=True,
             # TODO: We may want to support other owners
             owners=["self"],
-            filters=[{
-                "name": "name",
-                "values": [image_name]
-            }],
+            filters=[{"name": "name", "values": [image_name]}],
         )
 
     def _get_availability_zone(self):
         if not self._availability_zone:
-            self._availability_zone = pulumi_aws.get_availability_zones(state="available").names[0]
+            self._availability_zone = pulumi_aws.get_availability_zones(
+                state="available"
+            ).names[0]
         return self._availability_zone
 
     def _transform_add_common_tags(

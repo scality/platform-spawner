@@ -1,6 +1,7 @@
 """
 Base class for all providers.
 """
+
 from abc import ABC, abstractmethod
 from enum import StrEnum
 from typing import List, Optional
@@ -10,6 +11,7 @@ import pulumi
 
 class InstanceFlavor(StrEnum):
     """Flavor of an Instance"""
+
     SMALL = "small"
     MEDIUM = "medium"
     LARGE = "large"
@@ -18,6 +20,7 @@ class InstanceFlavor(StrEnum):
 
 class BaseProvider(ABC):
     """Abstract base class for providers that create instances."""
+
     provider_name = "none"
 
     def __init__(self):
@@ -28,7 +31,6 @@ class BaseProvider(ABC):
         self.project = pulumi.get_project()
         self.stack = pulumi.get_stack()
         self.product = config.require("product")
-
 
     @abstractmethod
     def create_instance(
@@ -41,7 +43,7 @@ class BaseProvider(ABC):
         interfaces: List[pulumi.Resource],
     ) -> pulumi.Resource:
         """Create and return a new instance.
-    
+
         This method must be implemented by subclasses.
         """
 
@@ -74,7 +76,7 @@ class BaseProvider(ABC):
         network: pulumi.Resource,
         cidr: str,
         gateway_to_internet: bool = False,
-        gateway_to_net: Optional[pulumi.Resource] = None
+        gateway_to_net: Optional[pulumi.Resource] = None,
     ) -> pulumi.Resource:
         """Create and return a new subnet.
 

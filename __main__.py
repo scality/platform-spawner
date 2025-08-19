@@ -1,4 +1,5 @@
 """An AWS Python Pulumi program"""
+
 import pathlib
 import requests
 from typing import List
@@ -99,15 +100,18 @@ def __main__():
         root_disk_size=config.require_int("bastion_root_disk_size"),
         interfaces=[bastion_public_iface, bastion_wp_iface, bastion_cp_iface],
     )
-    pulumi.export("bastion", {
-        "id": bastion.id,
-        "public_ip": bastion.public_ip,
-        "private_ips": {
-            "public": bastion_public_iface.private_ips[0],
-            "control-plane": bastion_cp_iface.private_ips[0],
-            "workload-plane": bastion_wp_iface.private_ips[0],
+    pulumi.export(
+        "bastion",
+        {
+            "id": bastion.id,
+            "public_ip": bastion.public_ip,
+            "private_ips": {
+                "public": bastion_public_iface.private_ips[0],
+                "control-plane": bastion_cp_iface.private_ips[0],
+                "workload-plane": bastion_wp_iface.private_ips[0],
+            },
         },
-    })
+    )
 
     for node_index in range(1, config.require_int("instance_count") + 1):
         cp_iface = provider.create_interface(
@@ -115,14 +119,14 @@ def __main__():
             subnet_name="control-plane",
             node_name=f"node-{node_index}",
             security_groups=[internal_sg],
-            ip=f"172.30.100.{100 + node_index}"
+            ip=f"172.30.100.{100 + node_index}",
         )
         wp_iface = provider.create_interface(
             subnet=workload_plane_subnet,
             subnet_name="workload-plane",
             node_name=f"node-{node_index}",
             security_groups=[internal_sg, egress_sg],
-            ip=f"172.30.200.{100 + node_index}"
+            ip=f"172.30.200.{100 + node_index}",
         )
         node = provider.create_instance(
             name=f"node-{node_index}",
@@ -132,13 +136,16 @@ def __main__():
             root_disk_size=config.require_int("instance_root_disk_size"),
             interfaces=[wp_iface, cp_iface],
         )
-        pulumi.export(f"node-{node_index}-id", {
-            "id": node.id,
-            "private_ips": {
-                "control-plane": cp_iface.private_ips[0],
-                "workload-plane": wp_iface.private_ips[0],
+        pulumi.export(
+            f"node-{node_index}-id",
+            {
+                "id": node.id,
+                "private_ips": {
+                    "control-plane": cp_iface.private_ips[0],
+                    "workload-plane": wp_iface.private_ips[0],
+                },
             },
-        })
+        )
 
 
 def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
@@ -146,14 +153,13 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
         path = pathlib.Path(f"~/.ssh/{provider.compute_resource_name()}").expanduser()
 
         private_key = pulumi_tls.PrivateKey(
-            provider.compute_resource_name(),
-            algorithm="ED25519"
+            provider.compute_resource_name(), algorithm="ED25519"
         )
         pulumi_local.File(
             "ssh-private-key-file",
             content=private_key.private_key_pem,
             filename=str(path),
-            file_permission="0600"
+            file_permission="0600",
         )
         pulumi_local.File(
             "ssh-public-key-file",
@@ -166,8 +172,10 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
     else:
         return config.require("ssh_key_name")
 
+
 def _parse_cidrs(cidrs: List[str]):
     """Mainly used to replace the `__my_ip__` placeholder."""
+
     def _get_my_ip():
         response = requests.get("https://api.ipify.org", timeout=5)
         response.raise_for_status()
@@ -175,9 +183,11 @@ def _parse_cidrs(cidrs: List[str]):
 
     return [
         pulumi.Output.from_input(None).apply(lambda _: _get_my_ip())
-        if cidr == "__my_ip__" else cidr
+        if cidr == "__my_ip__"
+        else cidr
         for cidr in cidrs
     ]
+
 
 if __name__ == "__main__":
     __main__()
