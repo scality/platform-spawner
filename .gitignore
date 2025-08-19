@@ -17,5 +17,6 @@ Pulumi.*.yaml
 # Pulumi sdks
 sdks/*
 
-# Python venv
-.venv/*
+# uv and pulumi "caches"
+.venv
+.ruff_cache

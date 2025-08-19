@@ -5,7 +5,7 @@ import requests
 from typing import List
 
 import pulumi
-import pulumi_local
+import pulumi_command
 import pulumi_tls
 
 from providers import aws
@@ -155,13 +155,13 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
         private_key = pulumi_tls.PrivateKey(
             provider.compute_resource_name(), algorithm="ED25519"
         )
-        pulumi_local.File(
+        pulumi_command.local.File(
             "ssh-private-key-file",
             content=private_key.private_key_pem,
             filename=str(path),
             file_permission="0600",
         )
-        pulumi_local.File(
+        pulumi_command.local.File(
             "ssh-public-key-file",
             content=private_key.public_key_pem,
             filename=str(path.with_suffix(".pub")),
