@@ -3,8 +3,7 @@ description: Pulumi project to spawn platforms
 runtime:
   name: python
   options:
-    toolchain: pip
-    virtualenv: venv
+    toolchain: uv
 
 config:
   # Global values
@@ -42,9 +41,9 @@ config:
     description: "List of authorized CIDRs for the instances"
     default:
       - 141.94.181.72/32 # VPN
-      - 84.14.13.200/29  # office Paris colt
+      - 84.14.13.200/29 # office Paris colt
       - 193.248.60.56/32 # office Paris orange
-      - 38.142.74.18/32  # office SF
+      - 38.142.74.18/32 # office SF
       - __my_ip__ # placeholder replaced automatically with current IP
 
   # Node hosts configs

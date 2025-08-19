@@ -1,0 +1,15 @@
+[project]
+name = "platform-spawner"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+  "pulumi>=3.0.0,<4.0.0",
+  "pulumi-aws>=7.0.0<8.0.0",
+  "pulumi-local",
+  "pulumi-tls>=5.0.0,<6.0.0",
+  "requests~=2.32.0",
+  "ruff>=0.12.9",
+]
+
+[tool.uv.sources]
+pulumi-local = { path = "sdks/local" }

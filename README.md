@@ -5,10 +5,18 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
 ## Prerequisites
 
 - AWS credentials configured in your environment (for example via AWS CLI or environment variables).
-- Python 3.11 or later installed.
+- Python 3.13 or later installed.
 - [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/) installed.
 
 ## Getting Started
+
+### Login to pulumi
+
+Login locally:
+
+```bash
+pulumi login --local
+```
 
 ### Create a new stack
 

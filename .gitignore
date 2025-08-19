@@ -18,4 +18,4 @@ Pulumi.*.yaml
 sdks/*
 
 # Python venv
-venv/*
+.venv/*
