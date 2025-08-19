@@ -4,9 +4,9 @@ Update README file based on comment <!-- BEGIN_PULUMI_DOCS -->
 """
 
 import pathlib
-import yaml
 import re
 
+import yaml
 
 ROOT_DIR = pathlib.Path(__file__).parent.parent
 
@@ -50,8 +50,7 @@ def __main__():
         flags=re.DOTALL,
     )
 
-    with open(README_FILE, "w") as f:
-        f.write(readme_content)
+    README_FILE.write_text(readme_content, encoding="utf-8")
 
 
 if __name__ == "__main__":

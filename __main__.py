@@ -1,19 +1,18 @@
 """An AWS Python Pulumi program"""
 
 import pathlib
-import requests
 from typing import List
 
 import pulumi
 import pulumi_command
 import pulumi_tls
+import requests
 
-from providers import aws
-from providers import base
+from providers import aws, base
 
 
 def __main__():
-    provider = aws.AWSSProvider()
+    provider = aws.AWSProvider()
 
     config = pulumi.Config()
 

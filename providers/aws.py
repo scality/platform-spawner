@@ -2,7 +2,7 @@
 AWS Spawner for managing EC2 instances.
 """
 
-from typing import Optional, List
+from typing import List, Optional
 
 import pulumi
 import pulumi_aws
@@ -26,7 +26,7 @@ _known_images = {
 DEFAULT_DISK_TYPE = "gp3"
 
 
-class AWSSProvider(base.BaseProvider):
+class AWSProvider(base.BaseProvider):
     """AWS implementation of BaseProvider using EC2 instances."""
 
     provider_name = "aws"
