@@ -18,6 +18,7 @@ This document provides guidelines for contributing to the MetalK8s Core project.
 - Python 3.13+
 - [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/)
 - [uv](https://docs.astral.sh/uv/)
+- [pre-commit](https://pre-commit.com/)
 
 ## Update README
 
@@ -25,4 +26,26 @@ To update the README file with the latest Pulumi configuration, run:
 
 ```bash
 tools/generate_docs.py
+```
+
+## Run python linting and formatting
+
+### Using pre-commit
+
+```bash
+pre-commit run --all-files
+```
+
+> **Note**
+> To install pre-commit hooks, run:
+>
+> ```bash
+> pre-commit install --install-hooks
+> ```
+
+### Using `ruff` with `uv`
+
+```bash
+uv run ruff check
+uv run ruff format
 ```
