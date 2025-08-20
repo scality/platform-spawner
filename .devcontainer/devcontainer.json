@@ -1,0 +1,55 @@
+{
+  "name": "Platform Spawner",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "options": [
+      "--platform=linux/amd64"
+    ]
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "dockerDashComposeVersion": "none"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        //Create TODO and FIXME tree
+        "Gruntfuggly.todo-tree",
+        //Remote container support
+        "ms-vscode-remote.remote-containers",
+        //YAML support
+        "redhat.vscode-yaml",
+        //Multi language formatter
+        "esbenp.prettier-vscode",
+        //Github Action helper
+        "github.vscode-github-actions",
+        //Docker helper
+        "ms-azuretools.vscode-docker",
+        //Mardown support
+        "yzhang.markdown-all-in-one",
+        //Shell linter
+        "timonwong.shellcheck",
+        //Compare text selections
+        "ryu1kn.partial-diff",
+        //Ruff
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "telemetry.telemetryLevel": "off",
+        "redhat.telemetry.enabled": false,
+        "editor.renderWhitespace": "all",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": ".devcontainer/setup.sh"
+}

@@ -20,6 +20,9 @@ This document provides guidelines for contributing to the MetalK8s Core project.
 - [uv](https://docs.astral.sh/uv/)
 - [pre-commit](https://pre-commit.com/)
 
+We recommend using the [devcontainer](https://code.visualstudio.com/docs/devcontainers/containers)
+provided here that come with all necessary tools pre-installed.
+
 ## Update README
 
 To update the README file with the latest Pulumi configuration, run:
