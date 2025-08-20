@@ -28,6 +28,9 @@ To update the README file with the latest Pulumi configuration, run:
 tools/generate_docs.py
 ```
 
+> **Note**
+> This is automatically run by pre-commit on file changes.
+
 ## Run python linting and formatting
 
 ### Using pre-commit
