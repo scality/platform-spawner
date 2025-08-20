@@ -11,6 +11,11 @@
 *.swo
 *~
 
+# python stuff
+__pycache__/
+*.py[codz]
+*$py.class
+
 # Pulumi stacks
 Pulumi.*.yaml
 
