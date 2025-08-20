@@ -1,7 +1,6 @@
-"""An AWS Python Pulumi program"""
+"""An AWS Python Pulumi program."""
 
 import pathlib
-from typing import List
 
 import pulumi
 import pulumi_command
@@ -11,7 +10,7 @@ import requests
 from providers import aws, base
 
 
-def __main__():
+def __main__() -> None:
     provider = aws.AWSProvider()
 
     config = pulumi.Config()
@@ -152,7 +151,8 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
         path = pathlib.Path(f"~/.ssh/{provider.compute_resource_name()}").expanduser()
 
         private_key = pulumi_tls.PrivateKey(
-            provider.compute_resource_name(), algorithm="ED25519"
+            provider.compute_resource_name(),
+            algorithm="ED25519",
         )
         pulumi_command.local.File(
             "ssh-private-key-file",
@@ -168,14 +168,13 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
 
         pulumi.export("ssh_private_key_path", str(path))
         return provider.create_key_pair("key", private_key.public_key_openssh).id
-    else:
-        return config.require("ssh_key_name")
+    return config.require("ssh_key_name")
 
 
-def _parse_cidrs(cidrs: List[str]):
+def _parse_cidrs(cidrs: list[str]) -> list[pulumi.Output[str]]:
     """Mainly used to replace the `__my_ip__` placeholder."""
 
-    def _get_my_ip():
+    def _get_my_ip() -> str:
         response = requests.get("https://api.ipify.org", timeout=5)
         response.raise_for_status()
         return f"{response.text}/32"

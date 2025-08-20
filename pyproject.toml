@@ -10,3 +10,21 @@ dependencies = [
   "requests~=2.32.0",
   "ruff~=0.12.9",
 ]
+
+[tool.ruff]
+fix = true
+show-fixes = true
+output-format = "full"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "N807",
+  "FBT",
+  "D203",
+  "D212",
+  "COM812",
+]
+
+[tool.ruff.lint.pylint]
+max-args = 10

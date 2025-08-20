@@ -1,7 +1,5 @@
 #! /usr/bin/env python3
-"""
-Update README file based on comment <!-- BEGIN_PULUMI_DOCS -->
-"""
+"""Update README file based on comment <!-- BEGIN_PULUMI_DOCS -->."""
 
 import pathlib
 import re
@@ -17,7 +15,7 @@ BEGIN_MARKER = "<!-- BEGIN_PULUMI_DOCS -->"
 END_MARKER = "<!-- END_PULUMI_DOCS -->"
 
 
-def _compute_tab_content(pulumi_config):
+def _compute_tab_content(pulumi_config: dict) -> str:
     tab_content = [
         "| Name | Description | Type | Default | Required |",
         "|------|-------------|------|---------|----------|",
@@ -32,12 +30,12 @@ def _compute_tab_content(pulumi_config):
         required = "yes" if values.get("default") is None else "no"
 
         tab_content.append(
-            f"| {name} | {description} | {type_} | {default} | {required} |"
+            f"| {name} | {description} | {type_} | {default} | {required} |",
         )
     return "\n".join(tab_content)
 
 
-def __main__():
+def __main__() -> None:
     pulumi_config = yaml.safe_load(PULUMI_CONFIG_FILE.read_text(encoding="utf-8"))
 
     readme_content = README_FILE.read_text(encoding="utf-8")

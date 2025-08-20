@@ -1,16 +1,13 @@
-"""
-Base class for all providers.
-"""
+"""Base class for all providers."""
 
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import List, Optional
 
 import pulumi
 
 
 class InstanceFlavor(StrEnum):
-    """Flavor of an Instance"""
+    """Flavor of an Instance."""
 
     SMALL = "small"
     MEDIUM = "medium"
@@ -23,10 +20,8 @@ class BaseProvider(ABC):
 
     provider_name = "none"
 
-    def __init__(self):
-        """
-        Initialize the provider with the product name and configuration.
-        """
+    def __init__(self) -> None:
+        """Initialize the provider with the product name and configuration."""
         config = pulumi.Config()
         self.project = pulumi.get_project()
         self.stack = pulumi.get_stack()
@@ -40,9 +35,10 @@ class BaseProvider(ABC):
         flavor: InstanceFlavor,
         key_name: str,
         root_disk_size: int,
-        interfaces: List[pulumi.Resource],
+        interfaces: list[pulumi.Resource],
     ) -> pulumi.Resource:
-        """Create and return a new instance.
+        """
+        Create and return a new instance.
 
         This method must be implemented by subclasses.
         """
@@ -53,7 +49,8 @@ class BaseProvider(ABC):
         name: str,
         public_key: str,
     ) -> pulumi.Resource:
-        """Create and return a new key pair.
+        """
+        Create and return a new key pair.
 
         This method must be implemented by subclasses.
         """
@@ -64,7 +61,8 @@ class BaseProvider(ABC):
         name: str,
         cidr: str,
     ) -> pulumi.Resource:
-        """Create and return a new network.
+        """
+        Create and return a new network.
 
         This method must be implemented by subclasses.
         """
@@ -76,9 +74,10 @@ class BaseProvider(ABC):
         network: pulumi.Resource,
         cidr: str,
         gateway_to_internet: bool = False,
-        gateway_to_net: Optional[pulumi.Resource] = None,
+        gateway_to_net: pulumi.Resource | None = None,
     ) -> pulumi.Resource:
-        """Create and return a new subnet.
+        """
+        Create and return a new subnet.
 
         This method must be implemented by subclasses.
         """
@@ -88,14 +87,15 @@ class BaseProvider(ABC):
         self,
         name: str,
         network: pulumi.Resource,
-        ingress_tcp_ports: Optional[List[int]] = None,
-        ingress_udp_ports: Optional[List[int]] = None,
+        ingress_tcp_ports: list[int] | None = None,
+        ingress_udp_ports: list[int] | None = None,
         ingress_icmp: bool = False,
-        ingress_cidrs: Optional[List[str]] = None,
+        ingress_cidrs: list[str] | None = None,
         open_egress: bool = False,
         internal_traffic: bool = False,
     ) -> pulumi.Resource:
-        """Create and return a new security group.
+        """
+        Create and return a new security group.
 
         This method must be implemented by subclasses.
         """
@@ -107,10 +107,11 @@ class BaseProvider(ABC):
         subnet_name: str,
         node_name: str,
         ip: str,
-        security_groups: Optional[List[pulumi.Resource]] = None,
+        security_groups: list[pulumi.Resource] | None = None,
         public: bool = False,
     ) -> pulumi.Resource:
-        """Create and return a new network interface.
+        """
+        Create and return a new network interface.
 
         This method must be implemented by subclasses.
         """

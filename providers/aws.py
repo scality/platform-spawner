@@ -1,8 +1,4 @@
-"""
-AWS Spawner for managing EC2 instances.
-"""
-
-from typing import List, Optional
+"""AWS Spawner for managing EC2 instances."""
 
 import pulumi
 import pulumi_aws
@@ -33,7 +29,8 @@ class AWSProvider(base.BaseProvider):
 
     _availability_zone = ""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the AWS provider."""
         super().__init__()
 
         self.aws_config = pulumi.Config("aws")
@@ -48,7 +45,7 @@ class AWSProvider(base.BaseProvider):
         flavor: base.InstanceFlavor,
         key_name: str,
         root_disk_size: int,
-        interfaces: List[pulumi_aws.ec2.NetworkInterface],
+        interfaces: list[pulumi_aws.ec2.NetworkInterface],
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
@@ -64,7 +61,8 @@ class AWSProvider(base.BaseProvider):
             ),
             network_interfaces=[
                 pulumi_aws.ec2.InstanceNetworkInterfaceArgs(
-                    network_interface_id=iface.id, device_index=index
+                    network_interface_id=iface.id,
+                    device_index=index,
                 )
                 for index, iface in enumerate(interfaces)
             ],
@@ -102,7 +100,7 @@ class AWSProvider(base.BaseProvider):
         network: pulumi_aws.ec2.Vpc,
         cidr: str,
         gateway_to_internet: bool = False,
-        gateway_to_net: Optional[pulumi_aws.ec2.Subnet] = None,
+        gateway_to_net: pulumi_aws.ec2.Subnet | None = None,
     ) -> pulumi_aws.ec2.Subnet:
         """Create and return a new subnet."""
         tags = {
@@ -170,16 +168,16 @@ class AWSProvider(base.BaseProvider):
         self,
         name: str,
         network: pulumi_aws.ec2.Vpc,
-        ingress_tcp_ports: Optional[List[int]] = None,
-        ingress_udp_ports: Optional[List[int]] = None,
+        ingress_tcp_ports: list[int] | None = None,
+        ingress_udp_ports: list[int] | None = None,
         ingress_icmp: bool = False,
-        ingress_cidrs: Optional[List[str]] = None,
+        ingress_cidrs: list[str] | None = None,
         open_egress: bool = False,
         internal_traffic: bool = False,
     ) -> pulumi_aws.ec2.SecurityGroup:
         """Create a new security group."""
         if ingress_cidrs is None:
-            ingress_cidrs = ["0.0.0.0"]
+            ingress_cidrs = ["0.0.0/0"]
 
         sg = pulumi_aws.ec2.SecurityGroup(
             name,
@@ -244,7 +242,7 @@ class AWSProvider(base.BaseProvider):
         subnet_name: str,
         node_name: str,
         ip: str,
-        security_groups: Optional[List[pulumi_aws.ec2.SecurityGroup]] = None,
+        security_groups: list[pulumi_aws.ec2.SecurityGroup] | None = None,
         public: bool = False,
     ) -> pulumi_aws.ec2.NetworkInterface:
         """Create a new network interface."""
@@ -283,15 +281,15 @@ class AWSProvider(base.BaseProvider):
 
         return pulumi_aws.ec2.get_ami(
             most_recent=True,
-            # TODO: We may want to support other owners
+            # NOTE: We may want to support other owners in the future
             owners=["self"],
             filters=[{"name": "name", "values": [image_name]}],
         )
 
-    def _get_availability_zone(self):
+    def _get_availability_zone(self) -> str:
         if not self._availability_zone:
             self._availability_zone = pulumi_aws.get_availability_zones(
-                state="available"
+                state="available",
             ).names[0]
         return self._availability_zone
 
@@ -299,7 +297,7 @@ class AWSProvider(base.BaseProvider):
         self,
         args: pulumi.ResourceTransformArgs,
     ) -> pulumi.ResourceTransformResult:
-        """Transform function to add common tags to resources"""
+        """Transform function to add common tags to resources."""
         common_tags = {
             "Name": self.compute_resource_name(args.name),
             "stack": self.stack,
