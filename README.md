@@ -130,3 +130,11 @@ directly:
 ```bash
 sshuttle -r rocky@<bastion_elastic_ip> 172.30.100.0/24 172.30.200.0/24
 ```
+
+## Contributing
+
+See [contributing](CONTRIBUTING.md) for details.
+
+## Design
+
+See [design](DESIGN.md) for details.
