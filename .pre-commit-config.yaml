@@ -13,6 +13,7 @@ repos:
   rev: v1.37.1
   hooks:
   - id: yamllint
+    exclude: "^.github/"
     args: [--format, parsable, --strict]
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
