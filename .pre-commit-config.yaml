@@ -1,4 +1,20 @@
 repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-yaml
+  - id: check-added-large-files
+  - id: check-merge-conflict
+  - id: check-toml
+  - id: debug-statements
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.37.1
+  hooks:
+  - id: yamllint
+    args: [--format, parsable, --strict]
+
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.12.9
   hooks:
@@ -18,4 +34,4 @@ repos:
     entry: ./tools/generate_docs.py
     files: ^(README\.md|Pulumi\.yaml)$
     additional_dependencies:
-      - pyyaml~=6.0.2
+    - pyyaml~=6.0.2
