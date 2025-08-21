@@ -85,10 +85,3 @@ config:
     type: boolean
     description: "If true, a new SSH key will be created"
     default: false
-
-packages:
-  local:
-    source: terraform-provider
-    version: 0.13.0
-    parameters:
-      - hashicorp/local
