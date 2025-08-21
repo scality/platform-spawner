@@ -8,6 +8,7 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
   (for example via AWS CLI or environment variables).
 - Python 3.13 or later installed.
 - [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/) installed.
+- [uv](https://docs.astral.sh/uv/) installed.
 
 ## Getting Started
 
