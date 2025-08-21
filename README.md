@@ -30,6 +30,7 @@ pulumi config set <key> <value>
 <!-- BEGIN_PULUMI_DOCS -->
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
+| aws:region | AWS region to deploy resources |  | `eu-north-1` | yes |
 | product | Product name for the resources | string | `unknown` | no |
 | offline | If true, the platform will not be connected to the internet | boolean | `False` | no |
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |

@@ -38,6 +38,6 @@ repos:
     name: README update
     language: python
     entry: ./tools/generate_docs.py
-    files: ^(README\.md|Pulumi\.yaml)$
+    files: ^(README\.md|Pulumi\.yaml|tools/generate_docs\.py)$
     additional_dependencies:
     - pyyaml~=6.0.2

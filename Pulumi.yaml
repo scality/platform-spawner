@@ -9,6 +9,11 @@ backend:
   url: file://./
 
 config:
+  # AWS region
+  aws:region:
+    description: "AWS region to deploy resources"
+    value: "eu-north-1"
+
   # Global values
   product:
     type: string

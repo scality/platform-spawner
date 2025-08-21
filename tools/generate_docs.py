@@ -24,9 +24,10 @@ def _compute_tab_content(pulumi_config: dict) -> str:
         name = key
         description = values.get("description", "")
         type_ = values.get("type", "")
-        default = (
-            "N/A" if values.get("default") is None else f"`{values.get('default')}`"
-        )
+        default_value = values.get("default")
+        if default_value is None:
+            default_value = values.get("value")
+        default = "N/A" if default_value is None else f"`{default_value}`"
         required = "yes" if values.get("default") is None else "no"
 
         tab_content.append(
