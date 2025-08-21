@@ -46,9 +46,23 @@ class AWSProvider(base.BaseProvider):
         key_name: str,
         root_disk_size: int,
         interfaces: list[pulumi_aws.ec2.NetworkInterface],
+        extra_volumes: list[dict] | None = None,
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
+
+        volumes = []
+        device_id = 1
+        for vol in extra_volumes or []:
+            for _ in range(vol.get("count", 1)):
+                volumes.append(
+                    pulumi_aws.ec2.InstanceEbsBlockDeviceArgs(
+                        device_name=f"/dev/sd{chr(ord('b') + device_id)}",
+                        volume_size=vol["size"],
+                        volume_type=DEFAULT_DISK_TYPE,
+                    )
+                )
+                device_id += 1
 
         return pulumi_aws.ec2.Instance(
             name,
@@ -66,6 +80,7 @@ class AWSProvider(base.BaseProvider):
                 )
                 for index, iface in enumerate(interfaces)
             ],
+            ebs_block_devices=volumes,
             tags={
                 "node": name,
             },

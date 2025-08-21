@@ -133,6 +133,7 @@ def __main__() -> None:
             key_name=ssh_key_name,
             root_disk_size=config.require_int("instance_root_disk_size"),
             interfaces=[wp_iface, cp_iface],
+            extra_volumes=config.require_object("extra_volumes"),
         )
         pulumi.export(
             f"node-{node_index}-id",
@@ -185,6 +186,17 @@ def _parse_cidrs(cidrs: list[str]) -> list[pulumi.Output[str]]:
         else cidr
         for cidr in cidrs
     ]
+
+
+def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
+    """Parse the extra volumes configuration."""
+    volumes = {}
+    for index, vol in enumerate(extra_volumes):
+        volumes[vol.get("name", f"extra-volume-{index + 1}")] = {
+            "size": vol["size"],
+            "count": vol.get("count", 1),
+        }
+    return volumes
 
 
 if __name__ == "__main__":

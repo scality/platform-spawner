@@ -46,6 +46,7 @@ pulumi config set <key> <value>
 | bastion_root_disk_size | Root disk size for the bastion host (in GiB) | integer | `30` | no |
 | ssh_key_name | Name of the SSH key to use | string | N/A | yes |
 | ssh_private_key_create | If true, a new SSH key will be created | boolean | `False` | no |
+| extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
 
 ### Spawn the cluster

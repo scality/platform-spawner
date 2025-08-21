@@ -36,6 +36,7 @@ class BaseProvider(ABC):
         key_name: str,
         root_disk_size: int,
         interfaces: list[pulumi.Resource],
+        extra_volumes: list[dict] | None = None,
     ) -> pulumi.Resource:
         """
         Create and return a new instance.

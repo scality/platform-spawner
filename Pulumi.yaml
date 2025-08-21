@@ -93,3 +93,20 @@ config:
     type: boolean
     description: "If true, a new SSH key will be created"
     default: false
+
+  # Extra stuff
+  extra_volumes:
+    type: array
+    description: "Additional volumes to attach to the instances"
+    default: []
+    items:
+      # NOTE: Those types are not handled by pulumi typing yet so
+      # it's only here for explanation but pulumi does not validate it
+      type: object
+      properties:
+      - size:
+          type: integer
+          description: "Size of the volume (in GiB)"
+      - count:
+          type: integer
+          description: "Number of volumes to create"
