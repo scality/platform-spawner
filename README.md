@@ -10,14 +10,6 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
 
 ## Getting Started
 
-### Login to pulumi
-
-Login locally:
-
-```bash
-pulumi login --local
-```
-
 ### Create a new stack
 
 Create a new stack:
