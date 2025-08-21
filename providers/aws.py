@@ -34,7 +34,7 @@ class AWSProvider(base.BaseProvider):
         super().__init__()
 
         self.aws_config = pulumi.Config("aws")
-        self.region = self.aws_config.require("region")
+        self.region = pulumi_aws.get_region().region
 
         pulumi.runtime.register_resource_transform(self._transform_add_common_tags)
 

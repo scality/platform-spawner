@@ -4,7 +4,8 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
 
 ## Prerequisites
 
-- AWS credentials configured in your environment (for example via AWS CLI or environment variables).
+- AWS credentials and region configured in your environment
+  (for example via AWS CLI or environment variables).
 - Python 3.13 or later installed.
 - [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/) installed.
 
@@ -30,7 +31,6 @@ pulumi config set <key> <value>
 <!-- BEGIN_PULUMI_DOCS -->
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
-| aws:region | AWS region to deploy resources |  | `eu-north-1` | yes |
 | product | Product name for the resources | string | `unknown` | no |
 | offline | If true, the platform will not be connected to the internet | boolean | `False` | no |
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |
