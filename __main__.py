@@ -9,6 +9,8 @@ import requests
 
 from providers import aws, base
 
+SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
+
 
 def __main__() -> None:
     provider = aws.AWSProvider()
@@ -149,27 +151,32 @@ def __main__() -> None:
 
 def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
     if config.require_bool("ssh_private_key_create"):
-        path = pathlib.Path(f"~/.ssh/{provider.compute_resource_name()}").expanduser()
+        path = pathlib.Path(f"./ssh_{provider.compute_resource_name()}").resolve()
 
         private_key = pulumi_tls.PrivateKey(
             provider.compute_resource_name(),
             algorithm="ED25519",
         )
-        pulumi_command.local.File(
+        pulumi_command.local.Command(
             "ssh-private-key-file",
-            content=private_key.private_key_pem,
-            filename=str(path),
-            file_permission="0600",
+            create=pulumi.Output.from_input(private_key.private_key_openssh).apply(
+                lambda pk: f"echo -n '{pk}' > {path!s} && chmod 600 {path!s}"
+            ),
         )
-        pulumi_command.local.File(
+        pulumi_command.local.Command(
             "ssh-public-key-file",
-            content=private_key.public_key_pem,
-            filename=str(path.with_suffix(".pub")),
+            create=pulumi.Output.from_input(private_key.public_key_openssh).apply(
+                lambda pk: f"echo -n '{pk}' > {path.with_suffix('.pub')!s}"
+            ),
         )
 
         pulumi.export("ssh_private_key_path", str(path))
         return provider.create_key_pair("key", private_key.public_key_openssh).id
-    return config.require("ssh_key_name")
+
+    ssh_key_name = config.require("ssh_key_name")
+    if not ssh_key_name:
+        raise ValueError(SSH_ARG_MUTUALLY_EXCLUSIFE)
+    return ssh_key_name
 
 
 def _parse_cidrs(cidrs: list[str]) -> list[pulumi.Output[str]]:

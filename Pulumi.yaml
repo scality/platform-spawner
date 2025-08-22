@@ -83,10 +83,11 @@ config:
   # SSH information
   ssh_key_name:
     type: string
-    description: "Name of the SSH key to use"
+    description: "Name of the SSH key to use (either this or ssh_private_key_create must be set)"
+    default: ""
   ssh_private_key_create:
     type: boolean
-    description: "If true, a new SSH key will be created"
+    description: "If true, a new SSH key will be created (either this or ssh_key_name must be set)"
     default: false
 
   # Extra stuff

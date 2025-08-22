@@ -324,6 +324,7 @@ class AWSProvider(base.BaseProvider):
         non_tagged_types = {
             "aws:ec2/routeTableAssociation:RouteTableAssociation",
             "aws:ec2/route:Route",
+            "command:local:Command",
         }
 
         if args.type_ not in non_tagged_types:
