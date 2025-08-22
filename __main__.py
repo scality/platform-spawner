@@ -138,7 +138,7 @@ def __main__() -> None:
             extra_volumes=config.require_object("extra_volumes"),
         )
         pulumi.export(
-            f"node-{node_index}-id",
+            f"node-{node_index}",
             {
                 "id": node.id,
                 "private_ips": {
