@@ -12,6 +12,16 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
 
 ## Getting Started
 
+### Login to pulumi
+
+```bash
+pulumi login file://./
+```
+
+> **Note**
+> To upload your stack state to S3, you can also login to S3 following the
+> Pulumi documentation.
+
 ### Create a new stack
 
 Create a new stack:

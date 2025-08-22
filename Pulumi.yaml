@@ -4,9 +4,6 @@ runtime:
   name: python
   options:
     toolchain: uv
-backend:
-  # Force local config
-  url: file://./
 
 config:
   # Global values
