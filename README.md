@@ -137,6 +137,53 @@ directly:
 sshuttle -r rocky@<bastion_elastic_ip> 172.30.100.0/24 172.30.200.0/24
 ```
 
+## Github Actions
+
+### Overview
+
+This repository provides a Github Action to easily spawn and destroy
+infrastructures.
+
+### Usage
+
+In order to work this actions needs:
+
+- An action (either `spawn` or `destroy` or 'list')
+- AWS credentials
+- Artifacts credentials
+
+#### For spawning
+
+In addition to the above credentials, you have to provide:
+
+- A unique stack name
+- A configuration to describe what need to be spawned
+  (refer to the [fill stack configuration section](#fill-stack-configuration)
+  for more information)
+
+#### For destroying
+
+In addition to the above credentials, you have to provide a unique stack name.
+
+#### For listing
+
+In addition to the above credentials, you have to provide an age (in hours).
+The action will return the list of stacks older than the given age.
+
+This is useful for garbage collection of old stacks.
+
+#### Details
+
+See [action.yaml](action.yaml) for details.
+
+#### Examples
+
+A full example of usage can be found in
+[.github/workflows/e2e-tests.yaml](.github/workflows/e2e-tests.yaml).
+
+For garbage collection of old stacks, you can refer to
+[.github/workflows/gc-cron.yaml](.github/workflows/gc-cron.yaml).
+
 ## Contributing
 
 See [contributing](CONTRIBUTING.md) for details.

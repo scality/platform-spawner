@@ -1,0 +1,50 @@
+name: "End to End Tests"
+
+on:
+  workflow_call:
+
+jobs:
+  test-spawn:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Spawn platform
+        uses: ./
+        with:
+          action: spawn
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
+          configuration: |-
+            instance_image: rocky-9
+
+      - name: Test to ssh
+        run: |-
+          ssh -F ssh_config bastion hostname
+          ssh -F ssh_config node-1 hostname
+          ssh -F ssh_config node-2 hostname
+          ssh -F ssh_config node-3 hostname
+
+  destroy:
+    needs: test-spawn
+    runs-on: ubuntu-24.04
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Destroy platform
+        uses: ./
+        with:
+          action: destroy
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: "${{ github.workflow }}-${{ github.run_number }}"

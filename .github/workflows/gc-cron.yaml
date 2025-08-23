@@ -1,0 +1,51 @@
+name: "Garbage Collection CRON"
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run it every day at midnight
+    - cron: "0 0 * * *"
+
+jobs:
+  stack-to-delete:
+    runs-on: ubuntu-24.04
+    outputs:
+      stacks: ${{ steps.list_stacks.outputs.stacks_list }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: List stacks to delete
+        id: list_stacks
+        uses: ./
+        with:
+          action: list
+          # List stacks older than 4 hours
+          age: 4
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+
+  garbage-collection:
+    needs: stack-to-delete
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJson(needs.stack-to-delete.outputs.stacks) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Destroy platform
+        uses: ./
+        with:
+          action: destroy
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: ${{ matrix.stack }}
