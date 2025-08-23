@@ -108,6 +108,7 @@ def __main__() -> None:
         key_name=ssh_key_name,
         root_disk_size=config.require_int("bastion_root_disk_size"),
         interfaces=[bastion_public_iface, bastion_wp_iface, bastion_cp_iface],
+        disable_auto_stop=config.require_bool("disable_auto_stop"),
     )
     pulumi.export(
         "bastion",
@@ -149,6 +150,7 @@ def __main__() -> None:
             root_disk_size=config.require_int("instance_root_disk_size"),
             interfaces=[wp_iface, cp_iface],
             extra_volumes=config.require_object("extra_volumes"),
+            disable_auto_stop=config.require_bool("disable_auto_stop"),
         )
         pulumi.export(
             f"node-{node_index}",

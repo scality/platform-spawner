@@ -87,6 +87,12 @@ config:
     description: "If true, a new SSH key will be created (either this or ssh_key_name must be set)"
     default: false
 
+  # Lifecycle
+  disable_auto_stop:
+    type: boolean
+    description: "If true, the instance will not be automatically stopped"
+    default: false
+
   # Extra stuff
   extra_volumes:
     type: array

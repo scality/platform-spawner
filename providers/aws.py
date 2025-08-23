@@ -47,9 +47,16 @@ class AWSProvider(base.BaseProvider):
         root_disk_size: int,
         interfaces: list[pulumi_aws.ec2.NetworkInterface],
         extra_volumes: list[dict] | None = None,
+        disable_auto_stop: bool = False,
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
+
+        tags = {
+            "node": name,
+        }
+        if disable_auto_stop:
+            tags["lifecycle_autostop"] = "no"
 
         volumes = []
         device_id = 1
@@ -81,9 +88,7 @@ class AWSProvider(base.BaseProvider):
                 for index, iface in enumerate(interfaces)
             ],
             ebs_block_devices=volumes,
-            tags={
-                "node": name,
-            },
+            tags=tags,
         )
 
     def create_key_pair(

@@ -57,6 +57,7 @@ pulumi config set <key> <value>
 | bastion_root_disk_size | Root disk size for the bastion host (in GiB) | integer | `30` | no |
 | ssh_key_name | Name of the SSH key to use (either this or ssh_private_key_create must be set) | string | `` | no |
 | ssh_private_key_create | If true, a new SSH key will be created (either this or ssh_key_name must be set) | boolean | `False` | no |
+| disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |
 | extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
 
