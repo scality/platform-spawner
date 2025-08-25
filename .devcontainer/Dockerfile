@@ -47,6 +47,6 @@ ARG PRE_COMMIT_VERSION=v4.3.0
 RUN uv tool install pre-commit@${PRE_COMMIT_VERSION} --with pre-commit-uv
 
 # Install ruff
-ARG RUFF_VERSION=0.12.9
+ARG RUFF_VERSION=0.12.10
 RUN uv tool install ruff@${RUFF_VERSION} && \
     uv tool run ruff generate-shell-completion zsh | sudo tee /usr/local/share/zsh/site-functions/_ruff > /dev/null
