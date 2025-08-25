@@ -34,7 +34,7 @@ RUN curl --fail -L -o /tmp/pulumi.tar.gz https://get.pulumi.com/releases/sdk/pul
 # Install uv
 ARG UV_VERSION=0.8.12
 RUN curl --fail -L -o /tmp/uv.tar.gz https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz && \
-    sudo tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu/uv uv-x86_64-unknown-linux-gnu/uvx && \
+    sudo tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu && \
     rm -rf /tmp/uv.tar.gz && \
     uv generate-shell-completion zsh | sudo tee /usr/local/share/zsh/site-functions/_uv > /dev/null
 

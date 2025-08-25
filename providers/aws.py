@@ -34,7 +34,7 @@ class AWSProvider(base.BaseProvider):
         super().__init__()
 
         self.aws_config = pulumi.Config("aws")
-        self.region = self.aws_config.require("region")
+        self.region = pulumi_aws.get_region().region
 
         pulumi.runtime.register_resource_transform(self._transform_add_common_tags)
 
@@ -47,9 +47,16 @@ class AWSProvider(base.BaseProvider):
         root_disk_size: int,
         interfaces: list[pulumi_aws.ec2.NetworkInterface],
         extra_volumes: list[dict] | None = None,
+        disable_auto_stop: bool = False,
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
+
+        tags = {
+            "node": name,
+        }
+        if disable_auto_stop:
+            tags["lifecycle_autostop"] = "no"
 
         volumes = []
         device_id = 1
@@ -81,9 +88,7 @@ class AWSProvider(base.BaseProvider):
                 for index, iface in enumerate(interfaces)
             ],
             ebs_block_devices=volumes,
-            tags={
-                "node": name,
-            },
+            tags=tags,
         )
 
     def create_key_pair(
@@ -324,6 +329,7 @@ class AWSProvider(base.BaseProvider):
         non_tagged_types = {
             "aws:ec2/routeTableAssociation:RouteTableAssociation",
             "aws:ec2/route:Route",
+            "command:local:Command",
         }
 
         if args.type_ not in non_tagged_types:

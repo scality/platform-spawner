@@ -9,6 +9,13 @@ import requests
 
 from providers import aws, base
 
+SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
+SSH_USERS = {
+    "rocky-8": "rocky",
+    "rocky-9": "rocky",
+}
+SSH_CONFIG_FILE = pathlib.Path("./ssh_config").resolve()
+
 
 def __main__() -> None:
     provider = aws.AWSProvider()
@@ -18,7 +25,11 @@ def __main__() -> None:
     instance_image = config.require("instance_image")
     instance_flavor = base.InstanceFlavor(config.require("instance_flavor"))
 
-    ssh_key_name = _prepare_ssh_key(config, provider)
+    ssh_info = {
+        "bastion": {},
+        "nodes": {},
+    }
+    ssh_key_name = _prepare_ssh_key(config, provider, ssh_info)
 
     # Create networks
     main_network = provider.create_network(
@@ -97,6 +108,7 @@ def __main__() -> None:
         key_name=ssh_key_name,
         root_disk_size=config.require_int("bastion_root_disk_size"),
         interfaces=[bastion_public_iface, bastion_wp_iface, bastion_cp_iface],
+        disable_auto_stop=config.require_bool("disable_auto_stop"),
     )
     pulumi.export(
         "bastion",
@@ -110,6 +122,10 @@ def __main__() -> None:
             },
         },
     )
+    ssh_info["bastion"] = {
+        "ip": bastion.public_ip,
+        "user": SSH_USERS.get(config.require("bastion_image")),
+    }
 
     for node_index in range(1, config.require_int("instance_count") + 1):
         cp_iface = provider.create_interface(
@@ -134,9 +150,10 @@ def __main__() -> None:
             root_disk_size=config.require_int("instance_root_disk_size"),
             interfaces=[wp_iface, cp_iface],
             extra_volumes=config.require_object("extra_volumes"),
+            disable_auto_stop=config.require_bool("disable_auto_stop"),
         )
         pulumi.export(
-            f"node-{node_index}-id",
+            f"node-{node_index}",
             {
                 "id": node.id,
                 "private_ips": {
@@ -145,31 +162,44 @@ def __main__() -> None:
                 },
             },
         )
+        ssh_info["nodes"][f"node-{node_index}"] = {
+            "ip": cp_iface.private_ips[0],
+            "user": SSH_USERS.get(config.require("instance_image")),
+        }
+
+    pulumi.export("ssh_info", ssh_info)
+    pulumi.export("ssh_config", str(SSH_CONFIG_FILE))
+    pulumi.Output.all(ssh_info).apply(_generate_ssh_config)
 
 
-def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider) -> str:
+def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider, ssh_info: dict) -> str:
     if config.require_bool("ssh_private_key_create"):
-        path = pathlib.Path(f"~/.ssh/{provider.compute_resource_name()}").expanduser()
+        path = pathlib.Path(f"./ssh_{provider.compute_resource_name()}").resolve()
 
         private_key = pulumi_tls.PrivateKey(
             provider.compute_resource_name(),
             algorithm="ED25519",
         )
-        pulumi_command.local.File(
+        pulumi_command.local.Command(
             "ssh-private-key-file",
-            content=private_key.private_key_pem,
-            filename=str(path),
-            file_permission="0600",
+            create=pulumi.Output.from_input(private_key.private_key_openssh).apply(
+                lambda pk: f"echo -n '{pk}' > {path!s} && chmod 600 {path!s}"
+            ),
         )
-        pulumi_command.local.File(
+        pulumi_command.local.Command(
             "ssh-public-key-file",
-            content=private_key.public_key_pem,
-            filename=str(path.with_suffix(".pub")),
+            create=pulumi.Output.from_input(private_key.public_key_openssh).apply(
+                lambda pk: f"echo -n '{pk}' > {path.with_suffix('.pub')!s}"
+            ),
         )
 
-        pulumi.export("ssh_private_key_path", str(path))
+        ssh_info["key"] = str(path)
         return provider.create_key_pair("key", private_key.public_key_openssh).id
-    return config.require("ssh_key_name")
+
+    ssh_key_name = config.require("ssh_key_name")
+    if not ssh_key_name:
+        raise ValueError(SSH_ARG_MUTUALLY_EXCLUSIFE)
+    return ssh_key_name
 
 
 def _parse_cidrs(cidrs: list[str]) -> list[pulumi.Output[str]]:
@@ -197,6 +227,38 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
             "count": vol.get("count", 1),
         }
     return volumes
+
+
+def _generate_ssh_config(ssh_info_list: list[dict]) -> None:
+    ssh_info = ssh_info_list[0]
+    config_lines = []
+    if "bastion" in ssh_info:
+        config_lines.append("Host bastion")
+        config_lines.append(f"  HostName {ssh_info['bastion']['ip']}")
+        config_lines.append("  Port 22")
+        if ssh_info["bastion"].get("user"):
+            config_lines.append(f"  User {ssh_info['bastion']['user']}")
+        if ssh_info.get("key"):
+            config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.append("  IdentitiesOnly yes")
+        config_lines.append("  StrictHostKeyChecking no")
+        config_lines.append("")
+
+    for host, info in ssh_info["nodes"].items():
+        config_lines.append(f"Host {host}")
+        if "bastion" in ssh_info:
+            config_lines.append("  ProxyJump bastion")
+        config_lines.append(f"  HostName {info['ip']}")
+        config_lines.append("  Port 22")
+        if info.get("user"):
+            config_lines.append(f"  User {info['user']}")
+        if ssh_info.get("key"):
+            config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.append("  IdentitiesOnly yes")
+        config_lines.append("  StrictHostKeyChecking no")
+        config_lines.append("")
+
+    SSH_CONFIG_FILE.write_text("\n".join(config_lines))
 
 
 if __name__ == "__main__":

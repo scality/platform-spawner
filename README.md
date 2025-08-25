@@ -4,11 +4,23 @@ A minimal Pulumi template for provisioning cloud resources using Pulumi.
 
 ## Prerequisites
 
-- AWS credentials configured in your environment (for example via AWS CLI or environment variables).
+- AWS credentials and region configured in your environment
+  (for example via AWS CLI or environment variables).
 - Python 3.13 or later installed.
 - [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/) installed.
+- [uv](https://docs.astral.sh/uv/) installed.
 
 ## Getting Started
+
+### Login to pulumi
+
+```bash
+pulumi login file://./
+```
+
+> **Note**
+> To upload your stack state to S3, you can also login to S3 following the
+> Pulumi documentation.
 
 ### Create a new stack
 
@@ -30,7 +42,6 @@ pulumi config set <key> <value>
 <!-- BEGIN_PULUMI_DOCS -->
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
-| aws:region | AWS region to deploy resources |  | `eu-north-1` | yes |
 | product | Product name for the resources | string | `unknown` | no |
 | offline | If true, the platform will not be connected to the internet | boolean | `False` | no |
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |
@@ -44,8 +55,9 @@ pulumi config set <key> <value>
 | bastion_image | Image for the bastion host | string | `rocky-9` | no |
 | bastion_flavor | Flavor of the bastion host | string | `small` | no |
 | bastion_root_disk_size | Root disk size for the bastion host (in GiB) | integer | `30` | no |
-| ssh_key_name | Name of the SSH key to use | string | N/A | yes |
-| ssh_private_key_create | If true, a new SSH key will be created | boolean | `False` | no |
+| ssh_key_name | Name of the SSH key to use (either this or ssh_private_key_create must be set) | string | `` | no |
+| ssh_private_key_create | If true, a new SSH key will be created (either this or ssh_key_name must be set) | boolean | `False` | no |
+| disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |
 | extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
 
@@ -124,6 +136,53 @@ directly:
 ```bash
 sshuttle -r rocky@<bastion_elastic_ip> 172.30.100.0/24 172.30.200.0/24
 ```
+
+## Github Actions
+
+### Overview
+
+This repository provides a Github Action to easily spawn and destroy
+infrastructures.
+
+### Usage
+
+In order to work this actions needs:
+
+- An action (either `spawn` or `destroy` or 'list')
+- AWS credentials
+- Artifacts credentials
+
+#### For spawning
+
+In addition to the above credentials, you have to provide:
+
+- A unique stack name
+- A configuration to describe what need to be spawned
+  (refer to the [fill stack configuration section](#fill-stack-configuration)
+  for more information)
+
+#### For destroying
+
+In addition to the above credentials, you have to provide a unique stack name.
+
+#### For listing
+
+In addition to the above credentials, you have to provide an age (in hours).
+The action will return the list of stacks older than the given age.
+
+This is useful for garbage collection of old stacks.
+
+#### Details
+
+See [action.yaml](action.yaml) for details.
+
+#### Examples
+
+A full example of usage can be found in
+[.github/workflows/e2e-tests.yaml](.github/workflows/e2e-tests.yaml).
+
+For garbage collection of old stacks, you can refer to
+[.github/workflows/gc-cron.yaml](.github/workflows/gc-cron.yaml).
 
 ## Contributing
 

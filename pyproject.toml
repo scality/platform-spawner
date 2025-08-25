@@ -15,6 +15,7 @@ dependencies = [
 fix = true
 show-fixes = true
 output-format = "full"
+line-length = 100
 
 [tool.ruff.lint]
 select = ["ALL"]

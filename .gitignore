@@ -26,3 +26,6 @@ sdks/*
 # uv and pulumi "caches"
 .venv
 .ruff_cache
+
+# Generated stuff
+ssh_*
