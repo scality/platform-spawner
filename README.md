@@ -1,3 +1,5 @@
+[![Garbage Collection](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml/badge.svg)](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml)
+
 # Platform Spawner
 
 A minimal Pulumi template for provisioning cloud resources using Pulumi.
