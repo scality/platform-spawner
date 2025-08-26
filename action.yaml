@@ -206,11 +206,15 @@ runs:
 
     # Add symlink to ssh_config to workspace
     - name: Copy SSH config
-      if: ${{ inputs.action == 'spawn' && github.action_repository }}
+      if: ${{ inputs.action == 'spawn' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        TARGET: "${{ github.workspace }}/ssh_config"
       run: |-
-        ln -s "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "${{ github.workspace }}/ssh_config"
+        if [ ! -e "$TARGET" ]; then
+          ln -s "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$TARGET"
+        fi
 
     # Save stack
     - name: Prepare artifacts
