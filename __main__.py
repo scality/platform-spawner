@@ -126,6 +126,7 @@ def __main__() -> None:
         "ip": bastion.public_ip,
         "user": SSH_USERS.get(config.require("bastion_image")),
     }
+    nodes_info = {}
 
     for node_index in range(1, config.require_int("instance_count") + 1):
         cp_iface = provider.create_interface(
@@ -152,21 +153,19 @@ def __main__() -> None:
             extra_volumes=config.require_object("extra_volumes"),
             disable_auto_stop=config.require_bool("disable_auto_stop"),
         )
-        pulumi.export(
-            f"node-{node_index}",
-            {
-                "id": node.id,
-                "private_ips": {
-                    "control-plane": cp_iface.private_ips[0],
-                    "workload-plane": wp_iface.private_ips[0],
-                },
+        nodes_info[f"node-{node_index}"] = {
+            "id": node.id,
+            "private_ips": {
+                "control-plane": cp_iface.private_ips[0],
+                "workload-plane": wp_iface.private_ips[0],
             },
-        )
+        }
         ssh_info["nodes"][f"node-{node_index}"] = {
             "ip": cp_iface.private_ips[0],
             "user": SSH_USERS.get(config.require("instance_image")),
         }
 
+    pulumi.export("nodes", nodes_info)
     pulumi.export("ssh_info", ssh_info)
     pulumi.export("ssh_config", str(SSH_CONFIG_FILE))
     pulumi.Output.all(ssh_info).apply(_generate_ssh_config)
