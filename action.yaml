@@ -49,6 +49,12 @@ inputs:
     default: ""
 
 outputs:
+  bastion:
+    description: "The bastion output (only for spawn action)"
+    value: ${{ steps.spawn_outputs.outputs.bastion || '' }}
+  nodes:
+    description: "The nodes output (only for spawn action)"
+    value: ${{ steps.spawn_outputs.outputs.nodes || '' }}
   stacks_list:
     description: "The list of stacks older than the given age (only for list action)"
     value: ${{ steps.list_stacks.outputs.STACKS_LIST || '' }}
@@ -273,6 +279,21 @@ runs:
         ```
         </details>
         EOF
+
+    # Add outputs
+    - name: Set outputs
+      if: ${{ inputs.action == 'spawn' }}
+      id: spawn_outputs
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |-
+        echo "bastion<<EOF" >> "$GITHUB_OUTPUT"
+        pulumi $PULUMI_DEFAULT_ARGS stack output bastion --json >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+        echo "nodes<<EOF" >> "$GITHUB_OUTPUT"
+        pulumi $PULUMI_DEFAULT_ARGS stack output nodes --json >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
     # }}}
 
     # Destroy {{{
