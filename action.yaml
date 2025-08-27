@@ -20,11 +20,13 @@ inputs:
 
   # Artifacts credentials
   artifacts_user:
-    description: "The artifacts user"
-    required: true
+    description: "The artifacts user (only for spawn action)"
+    required: false
+    default: ""
   artifacts_password:
-    description: "The artifacts password"
-    required: true
+    description: "The artifacts password (only for spawn action)"
+    required: false
+    default: ""
 
   # Pulumi stack name
   stack_name:
