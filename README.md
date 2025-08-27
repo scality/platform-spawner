@@ -152,13 +152,13 @@ In order to work this actions needs:
 
 - An action (either `spawn` or `destroy` or 'list')
 - AWS credentials
-- Artifacts credentials
 
 #### For spawning
 
 In addition to the above credentials, you have to provide:
 
 - A unique stack name
+- Artifacts credentials
 - A configuration to describe what need to be spawned
   (refer to the [fill stack configuration section](#fill-stack-configuration)
   for more information)
