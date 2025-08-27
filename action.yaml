@@ -57,7 +57,7 @@ outputs:
     value: ${{ steps.spawn_outputs.outputs.nodes || '' }}
   stacks_list:
     description: "The list of stacks older than the given age (only for list action)"
-    value: ${{ steps.list_stacks.outputs.STACKS_LIST || '' }}
+    value: ${{ steps.list_stacks.outputs.STACKS_LIST || '[]' }}
 
 runs:
   using: "composite"

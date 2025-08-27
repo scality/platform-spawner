@@ -30,6 +30,7 @@ jobs:
 
   garbage-collection:
     needs: stack-to-delete
+    if: ${{ needs.stack-to-delete.outputs.stacks != '[]' }}
     strategy:
       fail-fast: false
       matrix:
