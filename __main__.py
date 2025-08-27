@@ -241,6 +241,7 @@ def _generate_ssh_config(ssh_info_list: list[dict]) -> None:
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
         config_lines.append("  IdentitiesOnly yes")
         config_lines.append("  StrictHostKeyChecking no")
+        config_lines.append("  ServerAliveInterval 15")
         config_lines.append("")
 
     for host, info in ssh_info["nodes"].items():
@@ -255,6 +256,7 @@ def _generate_ssh_config(ssh_info_list: list[dict]) -> None:
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
         config_lines.append("  IdentitiesOnly yes")
         config_lines.append("  StrictHostKeyChecking no")
+        config_lines.append("  ServerAliveInterval 15")
         config_lines.append("")
 
     SSH_CONFIG_FILE.write_text("\n".join(config_lines))
