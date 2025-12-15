@@ -277,6 +277,37 @@ class ScalewayCompute(ComputeInterface):
         
         return output
     
+    def create_volume(
+        self,
+        name: str,
+        size_gb: int,
+        **kwargs
+    ) -> scaleway.block.Volume:
+        """
+        Create a block storage volume.
+        
+        Args:
+            name: Volume name
+            size_gb: Volume size in GB
+            **kwargs: Additional parameters:
+                - iops: IOPS limit (default: 5000)
+                -
+        Returns:
+            Block Volume resource
+        """
+        iops = kwargs.get("iops", 5000)
+        
+        volume = scaleway.block.Volume(
+            f"vol-{name}",
+            name=name,
+            size_in_gb=size_gb,
+            iops=iops,
+            zone=self.config.zone,
+            project_id=self.config.project_id,
+        )
+        
+        return volume
+    
     def attach_to_private_network(
         self,
         instance: scaleway.instance.Server,

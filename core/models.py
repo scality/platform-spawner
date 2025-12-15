@@ -10,6 +10,21 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 
 
+@dataclass
+class VolumeConfig:
+    """
+    Configuration for additional volumes to attach to nodes.
+    
+    Attributes:
+        suffix: Identifier suffix for the volume (e.g., "service", "data")
+        size: Volume size in GB
+        count: Number of volumes to create with this configuration (default: 1)
+    """
+    suffix: str
+    size: int
+    count: int = 1
+
+
 class Topology(Enum):
     """Supported cluster topologies."""
     SINGLE = "single-node"
@@ -83,6 +98,7 @@ class ClusterConfig:
         ssh_key_ids: List of SSH key IDs to attach to instances (for CI/CD)
         network: Network configuration
         nodes: List of node configurations
+        additional_volumes: List of additional volume configurations for worker nodes
     """
     topology: Topology
     provider: Provider
@@ -95,6 +111,7 @@ class ClusterConfig:
     ssh_key_ids: List[str] = field(default_factory=list)
     network: NetworkConfig = field(default_factory=NetworkConfig)
     nodes: List[NodeConfig] = field(default_factory=list)
+    additional_volumes: List[VolumeConfig] = field(default_factory=list)
 
 
 @dataclass

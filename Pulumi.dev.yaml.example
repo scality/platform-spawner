@@ -42,6 +42,12 @@ config:
   # Prod worker nodes: PRO2-S (default), PRO2-M, PRO2-L
   new-platform-spawner:instance_type: "PRO2-S"
   
+  # Optional: Additional volumes for WORKER NODES (bastion does not get these)
+  # Format: JSON array with objects containing "suffix", "size", and optional "count"
+  # Each volume configuration creates 'count' volumes (default: 1) of 'size' GB
+  # Example: 1 service volume (120GB) + 12 data volumes (10GB each)
+  # new-platform-spawner:additional_volumes: '[{"suffix": "service", "size": 120}, {"suffix": "data", "size": 10, "count": 12}]'
+  
   # Required: Scaleway API credentials (stored encrypted by Pulumi)
   # Get these from: https://console.scaleway.com/iam/api-keys
   # Set with: pulumi config set --secret scaleway:access_key YOUR_KEY

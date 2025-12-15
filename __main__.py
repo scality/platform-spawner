@@ -6,7 +6,8 @@ cluster configuration, and deploys the requested topology.
 """
 
 import pulumi
-from core.models import Topology, Provider, ClusterConfig
+import json
+from core.models import Topology, Provider, ClusterConfig, VolumeConfig
 from core.topology import get_topology_config
 from core.factory import create_cluster
 
@@ -40,6 +41,25 @@ def main():
     # Instance type for worker nodes (default: PRO2-S)
     # Note: Bastion always uses PLAY2-NANO (small machine for SSH only)
     instance_type = config.get("instance_type") or "PRO2-S"
+    
+    # Optional: Additional volumes for worker nodes
+    # Format: [{"suffix": "service", "size": 120}, {"suffix": "data", "size": 10, "count": 12}]
+    additional_volumes_str = config.get("additional_volumes")
+    additional_volumes = []
+    if additional_volumes_str:
+        try:
+            volumes_data = json.loads(additional_volumes_str)
+            for vol_data in volumes_data:
+                volume_config = VolumeConfig(
+                    suffix=vol_data["suffix"],
+                    size=vol_data["size"],
+                    count=vol_data.get("count", 1)  # Default to 1 if not specified
+                )
+                additional_volumes.append(volume_config)
+            pulumi.log.info(f"Additional volumes for worker nodes: {len(additional_volumes)} volume configurations")
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            pulumi.log.warn(f"Failed to parse additional_volumes configuration: {e}")
+            additional_volumes = []
     
     # Optional: SSH public keys for instance access (recommended for CI/CD)
     # Supports both single key (sshPublicKey) and multiple keys (sshPublicKeys - comma-separated)
@@ -116,6 +136,7 @@ users:
         ssh_key_ids=[],  # Not used with cloud-init approach
         nodes=topology_config["nodes"],
         network=topology_config["network"],
+        additional_volumes=additional_volumes,
     )
     
     # Log configuration for debugging

@@ -301,6 +301,7 @@ class ScalewayCluster(ClusterInterface):
         Deploy an internal node (private network only).
         
         Creates an instance and attaches it to the private network.
+        Also creates and attaches additional volumes if configured.
         
         Args:
             node_config: Node configuration
@@ -308,8 +309,29 @@ class ScalewayCluster(ClusterInterface):
             security_group: Security group resource
             
         Returns:
-            Dictionary with instance and NIC resources
+            Dictionary with instance, volumes, and NIC resources
         """
+        # Create additional volumes for worker nodes only (not bastion)
+        volume_ids = []
+        volumes = []
+        if node_config.role == "node" and self.config.additional_volumes:
+            for vol_config in self.config.additional_volumes:
+                # Create 'count' volumes for this configuration
+                for i in range(vol_config.count):
+                    # Generate unique volume name
+                    if vol_config.count == 1:
+                        volume_name = f"{node_config.name}-{vol_config.suffix}"
+                    else:
+                        volume_name = f"{node_config.name}-{vol_config.suffix}-{i+1:02d}"
+                    
+                    # Create the volume
+                    volume = self.compute.create_volume(
+                        name=volume_name,
+                        size_gb=vol_config.size,
+                    )
+                    volumes.append(volume)
+                    volume_ids.append(volume.id)
+        
         # Create instance without public IP (private only)
         instance_output = self.compute.create_instance(
             name=node_config.name,
@@ -319,6 +341,7 @@ class ScalewayCluster(ClusterInterface):
             tags=node_config.tags,
             user_data=node_config.user_data,
             create_public_ip=False,  # Private only, no public IP
+            additional_volume_ids=volume_ids if volume_ids else None,
         )
         
         # Attach to private network
@@ -338,6 +361,7 @@ class ScalewayCluster(ClusterInterface):
             "instance": instance_output.resource,
             "node_output": instance_output,
             "nic": nic,
+            "volumes": volumes,
         }
     
     def _deploy_bastion_node(
