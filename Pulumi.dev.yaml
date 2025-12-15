@@ -1,0 +1,9 @@
+encryptionsalt: v1:N6WBi4wRof8=:v1:0pRlD83rWOMVB3xs:Hed5MOj16gjautxVKDxXOfRv7rNQVQ==
+config:
+  new-platform-spawner:project_id: cdcfeb46-9e5f-4abb-9225-f5443c49c29c
+  new-platform-spawner:sshPublicKey: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com
+  scaleway:access_key:
+    secure: v1:Z5TqqCfea944SlCf:lBp3RCPEIC7q8lMmAqjATw6f5HYnEeNv/MWUYpwuu0vUHQVN
+  scaleway:secret_key:
+    secure: v1:Sx5qKdl1+Ydu3IgX:7QIL7Pdx5fuG67pY/oEHXAbdd7BCrNpSIgDq1g4mDAIMxJOlG4gEku0AQOv51vqMItSpAw==
+  new-platform-spawner:topology: 6-nodes

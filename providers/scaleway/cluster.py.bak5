@@ -1,0 +1,384 @@
+"""
+Scaleway cluster implementation.
+
+This module orchestrates the deployment of complete cluster topologies
+on Scaleway infrastructure, implementing all three scenarios from the
+research document.
+"""
+
+import pulumi
+from typing import Dict, Any, List
+from core.interfaces import ClusterInterface
+from core.models import ClusterConfig, NodeConfig, Topology
+from .network import ScalewayNetwork
+from .compute import ScalewayCompute
+
+
+class ScalewayCluster(ClusterInterface):
+    """
+    Scaleway-specific cluster implementation.
+    
+    Orchestrates network and compute resources to deploy:
+    - Single-node topology (Scenario I)
+    - 3-node cluster topology (Scenario II)
+    - 6-node cluster topology (Scenario III)
+    """
+    
+    def __init__(self, config: ClusterConfig):
+        """
+        Initialize Scaleway cluster deployer.
+        
+        Args:
+            config: Cluster configuration
+        """
+        super().__init__(config)
+        self.network = ScalewayNetwork(config)
+        self.compute = ScalewayCompute(config)
+    
+    def deploy_single_node(self) -> Dict[str, Any]:
+        """
+        Deploy a single-node topology (Scenario I).
+        
+        Creates:
+        - 1 Security Group with SSH access
+        - 1 Rocky Linux instance with public IP
+        
+        This is the simplest topology, suitable for development
+        or standalone applications.
+        
+        Returns:
+            Dictionary with deployment outputs:
+            - instance_id: Instance ID
+            - instance_name: Instance name
+            - public_ip: Public IP address
+        """
+        # Get node configuration
+        if not self.config.nodes or len(self.config.nodes) == 0:
+            raise ValueError("No node configuration found for single-node topology")
+        
+        node_config = self.config.nodes[0]
+        
+        # Look up Rocky Linux image
+        image_id = self.compute.get_os_image(
+            self.config.os_name,
+            self.config.os_version
+        )
+        
+        # Create security group with SSH access
+        sg = self.compute.create_single_node_security_group()
+        
+        # Create the instance
+        # Note: SSH keys configured in __main__.py via cloud-init in user_data
+        instance_output = self.compute.create_instance(
+            name=node_config.name,
+            image=image_id,
+            instance_type=node_config.instance_type,
+            security_group=sg,
+            tags=node_config.tags,
+            user_data=node_config.user_data,
+        )
+        
+        # Export outputs
+        return {
+            "instance_id": instance_output.id,
+            "instance_name": node_config.name,
+            "public_ip": instance_output.public_ip,
+            "topology": Topology.SINGLE.value,
+        }
+    
+    def deploy_three_node(self) -> Dict[str, Any]:
+        """
+        Deploy a 3-node cluster topology (Scenario II).
+        
+        Creates:
+        - VPC and Private Network
+        - Public Gateway with NAT and DHCP
+        - 2 Security Groups (bastion and internal)
+        - 1 Bootstrap node (private only)
+        - 1 Bastion node (public + private)
+        - 1 Slave node (private only)
+        
+        The bastion provides SSH access to the private nodes.
+        The gateway provides outbound internet for private nodes.
+        
+        Returns:
+            Dictionary with deployment outputs
+        """
+        # Get node configurations
+        nodes_by_role = self._organize_nodes_by_role()
+        
+        # Look up Rocky Linux image
+        image_id = self.compute.get_os_image(
+            self.config.os_name,
+            self.config.os_version
+        )
+        
+        # Create network infrastructure
+        network_output = self.network.create_full_network()
+        
+        # Create security groups
+        sg_bastion = self.compute.create_bastion_security_group()
+        sg_internal = self.compute.create_internal_security_group(
+            private_subnet=self.config.network.private_subnet
+        )
+        
+        # Deploy nodes
+        outputs = {
+            "topology": Topology.THREE_NODE.value,
+            "network": {
+                "vpc_id": network_output.vpc_id,
+                "private_network_id": network_output.private_network_id,
+                "subnet": network_output.subnet,
+            },
+            "nodes": {},
+        }
+        
+        # Deploy Bootstrap node (private only, accessed via bastion)
+        if "bootstrap" in nodes_by_role:
+            bootstrap_config = nodes_by_role["bootstrap"][0]
+            bootstrap = self._deploy_internal_node(  # Private-only deployment
+                node_config=bootstrap_config,
+                image_id=image_id,
+                security_group=sg_internal,  # Use internal SG
+            )
+            outputs["nodes"]["bootstrap"] = {
+                "id": bootstrap["node_output"].id,
+                "name": bootstrap_config.name,
+                "private_ip": bootstrap["node_output"].private_ip,
+            }
+        
+        # Deploy Bastion node (for upgrades and file downloads)
+        if "bastion" in nodes_by_role:
+            bastion_config = nodes_by_role["bastion"][0]
+            bastion = self._deploy_bastion_node(
+                node_config=bastion_config,
+                image_id=image_id,
+                security_group=sg_bastion,
+            )
+            outputs["nodes"]["bastion"] = {
+                "id": bastion["node_output"].id,
+                "name": bastion_config.name,
+                "public_ip": bastion["node_output"].public_ip,
+                "private_ip": bastion["node_output"].private_ip,
+            }
+            outputs["bastion_public_ip"] = bastion["node_output"].public_ip
+        
+        # Deploy Slave node (private only, accessed from bootstrap)
+        if "slave" in nodes_by_role:
+            slave_config = nodes_by_role["slave"][0]
+            slave = self._deploy_internal_node(
+                node_config=slave_config,
+                image_id=image_id,
+                security_group=sg_internal,  # Internal SG - only private network access
+            )
+            outputs["nodes"]["slave-01"] = {
+                "id": slave["node_output"].id,
+                "name": slave_config.name,
+                "private_ip": slave["node_output"].private_ip,
+            }
+        
+        return outputs
+    
+    def deploy_six_node(self) -> Dict[str, Any]:
+        """
+        Deploy a 6-node cluster topology (Scenario III).
+        
+        Creates:
+        - VPC and Private Network
+        - Public Gateway with NAT and DHCP
+        - 2 Security Groups (bastion and internal)
+        - 1 Bootstrap node (private only)
+        - 1 Bastion node (public + private)
+        - 4 Slave nodes (private only)
+        
+        This demonstrates the power of Python loops for infrastructure
+        provisioning - the 4 slave nodes are created programmatically.
+        
+        Returns:
+            Dictionary with deployment outputs
+        """
+        # Get node configurations
+        nodes_by_role = self._organize_nodes_by_role()
+        
+        # Look up Rocky Linux image
+        image_id = self.compute.get_os_image(
+            self.config.os_name,
+            self.config.os_version
+        )
+        
+        # Create network infrastructure
+        network_output = self.network.create_full_network()
+        
+        # Create security groups
+        sg_bastion = self.compute.create_bastion_security_group()
+        sg_internal = self.compute.create_internal_security_group(
+            private_subnet=self.config.network.private_subnet
+        )
+        
+        # Deploy nodes
+        outputs = {
+            "topology": Topology.SIX_NODE.value,
+            "network": {
+                "vpc_id": network_output.vpc_id,
+                "private_network_id": network_output.private_network_id,
+                "gateway_id": network_output.gateway_id,
+                "gateway_ip": network_output.gateway_ip,
+                "subnet": network_output.subnet,
+            },
+            "nodes": {},
+            "node_ids": [],
+        }
+        
+        # Deploy Bootstrap node (private only, accessed via bastion)
+        if "bootstrap" in nodes_by_role:
+            bootstrap_config = nodes_by_role["bootstrap"][0]
+            bootstrap = self._deploy_internal_node(
+                node_config=bootstrap_config,
+                image_id=image_id,
+                security_group=sg_internal,
+            )
+            outputs["nodes"]["bootstrap"] = {
+                "id": bootstrap["node_output"].id,
+                "name": bootstrap_config.name,
+                "private_ip": bootstrap["node_output"].private_ip,
+            }
+        
+        # Deploy Bastion node (for upgrades and downloads)
+        if "bastion" in nodes_by_role:
+            bastion_config = nodes_by_role["bastion"][0]
+            bastion = self._deploy_bastion_node(
+                node_config=bastion_config,
+                image_id=image_id,
+                security_group=sg_bastion,
+            )
+            outputs["nodes"]["bastion"] = {
+                "id": bastion["node_output"].id,
+                "name": bastion_config.name,
+                "public_ip": bastion["node_output"].public_ip,
+                "private_ip": bastion["node_output"].private_ip,
+            }
+            outputs["bastion_public_ip"] = bastion["node_output"].public_ip
+        
+        # Deploy Nodes (4 nodes programmatically, private only)
+        if "node" in nodes_by_role:
+            for node_config in nodes_by_role["node"]:
+                node = self._deploy_internal_node(
+                    node_config=node_config,
+                    image_id=image_id,
+                    security_group=sg_internal,
+                )
+                outputs["nodes"][node_config.name] = {
+                    "id": node["node_output"].id,
+                    "name": node_config.name,
+                    "private_ip": node["node_output"].private_ip,
+                }
+                outputs["node_ids"].append(node["node_output"].id)
+        
+        return outputs
+    
+    def _organize_nodes_by_role(self) -> Dict[str, List[NodeConfig]]:
+        """
+        Organize node configurations by role for easier processing.
+        
+        Returns:
+            Dictionary mapping role names to lists of node configs
+        """
+        nodes_by_role: Dict[str, List[NodeConfig]] = {}
+        for node in self.config.nodes:
+            if node.role not in nodes_by_role:
+                nodes_by_role[node.role] = []
+            nodes_by_role[node.role].append(node)
+        return nodes_by_role
+    
+    def _deploy_internal_node(
+        self,
+        node_config: NodeConfig,
+        image_id: str,
+        security_group: Any,
+    ) -> Dict[str, Any]:
+        """
+        Deploy an internal node (private network only).
+        
+        Creates an instance and attaches it to the private network.
+        
+        Args:
+            node_config: Node configuration
+            image_id: OS image ID
+            security_group: Security group resource
+            
+        Returns:
+            Dictionary with instance and NIC resources
+        """
+        # Create instance without public IP (private only)
+        instance_output = self.compute.create_instance(
+            name=node_config.name,
+            image=image_id,
+            instance_type=node_config.instance_type,
+            security_group=security_group,
+            tags=node_config.tags,
+            user_data=node_config.user_data,
+            create_public_ip=False,  # No public IP for internal nodes
+        )
+        
+        # Attach to private network
+        nic = self.compute.attach_to_private_network(
+            instance=instance_output.resource,
+            network=self.network.private_network,
+            instance_name=node_config.name,
+        )
+        
+        # Update node_output with private IP from NIC (use apply for Pulumi Output)
+        instance_output.private_ip = nic.private_ips.apply(lambda ips: ips[0] if ips and len(ips) > 0 else None)
+        
+        return {
+            "instance": instance_output.resource,
+            "node_output": instance_output,
+            "nic": nic,
+        }
+    
+    def _deploy_bastion_node(
+        self,
+        node_config: NodeConfig,
+        image_id: str,
+        security_group: Any,
+    ) -> Dict[str, Any]:
+        """
+        Deploy a bastion node (public + private network).
+        
+        Creates an instance with public IP and attaches it to
+        the private network for accessing internal nodes.
+        
+        Args:
+            node_config: Node configuration
+            image_id: OS image ID
+            security_group: Security group resource
+            
+        Returns:
+            Dictionary with instance, node_output, and NIC resources
+        """
+        # Create instance (has public IP by default)
+        instance_output = self.compute.create_instance(
+            name=node_config.name,
+            image=image_id,
+            instance_type=node_config.instance_type,
+            security_group=security_group,
+            tags=node_config.tags,
+            user_data=node_config.user_data,
+        )
+        
+        # Attach to private network
+        nic = self.compute.attach_to_private_network(
+            instance=instance_output.resource,
+            network=self.network.private_network,
+            instance_name=node_config.name,
+        )
+        
+        # Update node_output with private IP from NIC (use apply for Pulumi Output)
+        instance_output.private_ip = nic.private_ips.apply(lambda ips: ips[0] if ips and len(ips) > 0 else None)
+        
+        return {
+            "instance": instance_output.resource,
+            "node_output": instance_output,
+            "nic": nic,
+        }
+

@@ -1,0 +1,7 @@
+name: new-platform-spawner
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Multi-cloud platform spawner supporting Scaleway, AWS, and OVH with configurable topologies
+

@@ -1,0 +1,136 @@
+"""
+Provider-agnostic data models for infrastructure configuration.
+
+These dataclasses define the structure of configurations and outputs
+that are shared across all cloud providers.
+"""
+
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
+from enum import Enum
+
+
+class Topology(Enum):
+    """Supported cluster topologies."""
+    SINGLE = "single-node"
+    THREE_NODE = "3-nodes"
+    SIX_NODE = "6-nodes"
+
+
+class Provider(Enum):
+    """Supported cloud providers."""
+    SCALEWAY = "scaleway"
+    AWS = "aws"
+    OVH = "ovh"
+
+
+@dataclass
+class NodeConfig:
+    """
+    Configuration for a single node/instance.
+    
+    Attributes:
+        name: Unique identifier for the node
+        role: Node role (bastion, node)
+        instance_type: Provider-specific instance type
+        has_public_ip: Whether the node should have a public IP
+        has_private_ip: Whether the node should be on private network
+        user_data: Cloud-init or startup script
+        tags: List of tags for resource management
+        storage_size_gb: Optional additional storage in GB
+    """
+    name: str
+    role: str
+    instance_type: str
+    has_public_ip: bool = True
+    has_private_ip: bool = False
+    user_data: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+    storage_size_gb: Optional[int] = None
+
+
+@dataclass
+class NetworkConfig:
+    """
+    Network configuration for the cluster.
+    
+    Attributes:
+        enable_private_network: Whether to create a private network
+        enable_gateway: Whether to create a NAT gateway
+        private_subnet: CIDR block for private network
+        dns_local_name: Local DNS domain name
+    """
+    enable_private_network: bool = False
+    enable_gateway: bool = False
+    private_subnet: str = "192.168.10.0/24"
+    dns_local_name: str = "cluster.local"
+
+
+@dataclass
+class ClusterConfig:
+    """
+    Complete cluster configuration.
+    
+    Attributes:
+        topology: The topology to deploy
+        provider: Cloud provider to use
+        region: Provider region
+        zone: Provider availability zone
+        project_id: Provider project/account ID
+        os_name: Operating system name (used if image_id not provided)
+        os_version: Operating system version (used if image_id not provided)
+        image_id: Custom image/snapshot ID (overrides os_name/os_version)
+        ssh_key_ids: List of SSH key IDs to attach to instances (for CI/CD)
+        network: Network configuration
+        nodes: List of node configurations
+    """
+    topology: Topology
+    provider: Provider
+    region: str
+    zone: str
+    project_id: str
+    os_name: str = "rockylinux"
+    os_version: str = "9"
+    image_id: Optional[str] = None
+    ssh_key_ids: List[str] = field(default_factory=list)
+    network: NetworkConfig = field(default_factory=NetworkConfig)
+    nodes: List[NodeConfig] = field(default_factory=list)
+
+
+@dataclass
+class NodeOutput:
+    """
+    Output information for a deployed node.
+    
+    Attributes:
+        id: Provider resource ID
+        name: Node name
+        public_ip: Public IP address (if any)
+        private_ip: Private IP address (if any)
+        resource: Provider-specific resource object
+    """
+    id: str
+    name: str
+    public_ip: Optional[str] = None
+    private_ip: Optional[str] = None
+    resource: Any = None
+
+
+@dataclass
+class NetworkOutput:
+    """
+    Output information for deployed network resources.
+    
+    Attributes:
+        vpc_id: VPC/Network ID
+        private_network_id: Private network ID
+        gateway_id: Gateway ID (if any)
+        gateway_ip: Gateway public IP (if any)
+        subnet: Private subnet CIDR
+    """
+    vpc_id: Optional[str] = None
+    private_network_id: Optional[str] = None
+    gateway_id: Optional[str] = None
+    gateway_ip: Optional[str] = None
+    subnet: Optional[str] = None
+
