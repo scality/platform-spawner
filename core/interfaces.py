@@ -99,16 +99,27 @@ class ComputeInterface(ABC):
         self.config = config
     
     @abstractmethod
-    def get_os_image(self, os_name: str, version: str) -> str:
+    def get_bastion_os_image(self) -> str:
         """
-        Look up the current OS image ID for the specified OS.
+        Get the OS image for the bastion node.
         
-        Args:
-            os_name: Operating system name (e.g., "rockylinux")
-            version: OS version (e.g., "9")
-            
+        Uses the bastion OS configuration from ClusterConfig to get
+        the appropriate marketplace image.
+        
         Returns:
-            Provider-specific image ID
+            Provider-specific image ID or label
+        """
+        pass
+    
+    @abstractmethod
+    def get_worker_image(self) -> str:
+        """
+        Get the snapshot/image ID for worker nodes.
+        
+        Returns the worker snapshot ID from ClusterConfig.
+        
+        Returns:
+            Provider-specific snapshot/image ID
         """
         pass
     

@@ -1,0 +1,20 @@
+{
+    "version": 3,
+    "checkpoint": {
+        "stack": "organization/new-platform-spawner/dev",
+        "latest": {
+            "manifest": {
+                "time": "2025-12-15T15:56:37.992141+01:00",
+                "magic": "8ef908d5c16a773b74afbf60e20d5cd9b4b27443e091b5a836119759afdc3519",
+                "version": "v3.212.0"
+            },
+            "secrets_providers": {
+                "type": "passphrase",
+                "state": {
+                    "salt": "v1:N6WBi4wRof8=:v1:0pRlD83rWOMVB3xs:Hed5MOj16gjautxVKDxXOfRv7rNQVQ=="
+                }
+            },
+            "metadata": {}
+        }
+    }
+}

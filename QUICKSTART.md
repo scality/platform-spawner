@@ -39,6 +39,9 @@ pulumi stack init dev
 pulumi config set project_id YOUR_PROJECT_ID
 pulumi config set topology single-node
 
+# Optional: Set worker snapshot (if not set, uses same OS as bastion)
+# pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID
+
 # Set secrets
 pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
 pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
@@ -80,17 +83,23 @@ pulumi config set topology 6-nodes
 pulumi up
 ```
 
-## Use Custom Images/Snapshots
+## Image Configuration
 
-Instead of marketplace images, use your own snapshots:
+The spawner uses different images for different node types:
+
+- **Bastion Node**: Uses marketplace OS image (always latest patched version)
+- **Worker Nodes**: Uses custom snapshot if provided, otherwise same OS as bastion
 
 ```bash
-# Set your snapshot ID (get from Scaleway Console → Images)
-pulumi config set image_id 11111111-2222-3333-4444-555555555555
-pulumi up
+# Option 1: Use custom snapshot for workers (production)
+pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
 
-# Remove to go back to marketplace images
-pulumi config rm image_id
+# Option 2: Use same OS as bastion (development/testing)
+# Simply don't set worker_snapshot_id
+
+# Optional: Customize bastion OS (defaults to Rocky Linux 9)
+pulumi config set bastion_os_name rockylinux
+pulumi config set bastion_os_version 9
 ```
 
 ## View Deployed Resources
@@ -125,10 +134,19 @@ pulumi destroy
 
 ## Common Issues
 
-**"Image not found" error:**
+**"Image not found" error for bastion:**
 ```bash
-pulumi config set os_name rockylinux
-pulumi config set os_version 9
+pulumi config set bastion_os_name rockylinux
+pulumi config set bastion_os_version 9
+```
+
+**"worker snapshot not found" error:**
+```bash
+# Either use a valid snapshot/image ID
+pulumi config set worker_snapshot_id YOUR_VALID_IMAGE_ID
+
+# Or remove it to use marketplace image (same as bastion)
+pulumi config rm worker_snapshot_id
 ```
 
 **Authentication fails:**
@@ -153,7 +171,9 @@ pulumi config set instance_type PRO2-S
 | Change topology | `pulumi config set topology 3-nodes` |
 | Change region | `pulumi config set region nl-ams` |
 | Change zone | `pulumi config set zone nl-ams-1` |
+| Set worker snapshot | `pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID` |
 | Change worker node instance type | `pulumi config set instance_type PRO2-S` |
+| Change bastion OS | `pulumi config set bastion_os_name rockylinux` |
 | View all config | `pulumi config` |
 | View all outputs | `pulumi stack output --json` |
 

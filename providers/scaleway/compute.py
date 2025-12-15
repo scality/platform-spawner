@@ -35,27 +35,36 @@ class ScalewayCompute(ComputeInterface):
         self._instances: Dict[str, scaleway.instance.Server] = {}
         self._nics: Dict[str, scaleway.instance.PrivateNic] = {}
     
-    def get_os_image(self, os_name: str, version: str) -> str:
+    def get_bastion_os_image(self) -> str:
         """
-        Look up the current OS image ID for the specified OS.
+        Get the OS image label for the bastion node.
         
-        Uses dynamic marketplace lookup to ensure the latest
-        security-patched version is used, unless a custom image_id
-        is specified in the config (e.g., for snapshots).
+        Since bastion always uses PLAY2-NANO (block-storage-only instance),
+        we return the marketplace image label format (e.g., "rockylinux_9")
+        rather than a UUID.
         
-        Args:
-            os_name: Operating system name (e.g., "rockylinux")
-            version: OS version (e.g., "9")
-            
         Returns:
-            Image ID (UUID)
+            Image label in format "os_version" (e.g., "rockylinux_9")
         """
-        return get_os_image(
-            os_name, 
-            version, 
-            self.config.zone,
-            custom_image_id=self.config.image_id
-        )
+        # Bastion uses PLAY2-NANO which is block-storage-only
+        # These instances need the marketplace label format, not UUID
+        return f"{self.config.bastion_os_name}_{self.config.bastion_os_version}"
+    
+    def get_worker_image(self) -> str:
+        """
+        Get the snapshot/image ID for worker nodes.
+        
+        If worker_snapshot_id is configured, uses that.
+        Otherwise, falls back to the same OS as bastion (marketplace image).
+        
+        Returns:
+            Snapshot/Image ID (UUID) or marketplace image label
+        """
+        if self.config.worker_snapshot_id:
+            return self.config.worker_snapshot_id
+        else:
+            # Fall back to same OS as bastion
+            return f"{self.config.bastion_os_name}_{self.config.bastion_os_version}"
     
     def create_security_group(
         self,
@@ -162,19 +171,42 @@ class ScalewayCompute(ComputeInterface):
                                     instance_type.startswith("STARDUST") or
                                     instance_type.startswith("PRO2-"))
         
-        # For block-storage-only instances, use image label instead of UUID
+        # For block-storage-only instances using marketplace images, 
+        # use image label instead of UUID (only for bastion nodes with marketplace images)
+        # Worker nodes should use the snapshot UUID directly
         server_image = image
-        if uses_block_storage_only:
-            # Use the marketplace label format: "rockylinux_9", "ubuntu_jammy", etc.
-            # This avoids the local volume specs embedded in marketplace image UUIDs
-            server_image = f"{self.config.os_name}_{self.config.os_version}"
+        # Note: The 'image' parameter should already be in the correct format
+        # (either a UUID for snapshots or a marketplace label for bastion)
         
         # Configure root volume based on instance type
         # CRITICAL: For block-storage-only instances, do NOT specify root_volume at all
         # Any root_volume specification attempts to create local storage, which is not supported
         root_volume = None
+
+        # Only create volume from snapshot for worker nodes (not bastion)
+        # Check if image is a UUID (snapshot) vs marketplace label
+        is_snapshot = self.config.worker_snapshot_id and image == self.config.worker_snapshot_id
         
-        if not uses_block_storage_only and kwargs.get("root_volume_size_gb"):
+        if is_snapshot and uses_block_storage_only:
+            # For block-storage instances with snapshots, create a boot volume
+            snapshot = scaleway.block.get_snapshot(
+                snapshot_id=self.config.worker_snapshot_id,
+                zone=self.config.zone,
+                project_id=self.config.project_id,
+            )
+            from_snapshot = scaleway.block.Volume(
+                f"vol-{name}",  # Unique name per instance
+                name=f"{name}-boot",
+                snapshot_id=snapshot.id,
+                iops=5000,
+                zone=self.config.zone,
+                project_id=self.config.project_id,
+            )
+            root_volume = scaleway.instance.ServerRootVolumeArgs(
+                volume_id=from_snapshot.id,
+                volume_type="sbs_volume",
+            )
+        elif not uses_block_storage_only and kwargs.get("root_volume_size_gb"):
             # Only for instances that support local storage (DEV1, GP1, etc.)
             root_volume = scaleway.instance.ServerRootVolumeArgs(
                 size_in_gb=kwargs.get("root_volume_size_gb"),
@@ -198,19 +230,34 @@ class ScalewayCompute(ComputeInterface):
         # Note: SSH keys are injected via cloud-init in user_data
         # IMPORTANT: cloud-init (user_data) only runs at instance creation,
         # so changes to user_data will trigger instance replacement
+        
+        # When using root_volume with volume_id, we cannot specify image
+        # When using image, we cannot specify root_volume with volume_id
+        server_args = {
+            "name": name,
+            "type": instance_type,
+            "ip_id": ip_id,
+            "security_group_id": security_group.id,
+            "tags": tags,
+            "project_id": self.config.project_id,
+            "zone": self.config.zone,
+            "user_data": user_data_dict,
+            "additional_volume_ids": additional_volumes if additional_volumes else None,
+        }
+        
+        # Either use image OR root_volume with volume_id (mutually exclusive)
+        if root_volume and hasattr(root_volume, 'volume_id'):
+            # Boot from existing volume (e.g., from snapshot)
+            server_args["root_volume"] = root_volume
+        else:
+            # Boot from image (marketplace or custom)
+            server_args["image"] = server_image
+            if root_volume:  # root_volume without volume_id (size-based)
+                server_args["root_volume"] = root_volume
+        
         server = scaleway.instance.Server(
             f"instance-{name}",
-            name=name,
-            type=instance_type,
-            image=server_image,
-            ip_id=ip_id,  # Attach public IP if created
-            security_group_id=security_group.id,
-            tags=tags,
-            project_id=self.config.project_id,
-            zone=self.config.zone,
-            user_data=user_data_dict,
-            root_volume=root_volume,
-            additional_volume_ids=additional_volumes if additional_volumes else None,
+            **server_args,
             opts=pulumi.ResourceOptions(
                 replace_on_changes=["user_data"],  # Force replacement when user_data changes
                 depends_on=[security_group],  # Ensure SG exists before instance

@@ -61,11 +61,9 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Look up Rocky Linux image
-        image_id = self.compute.get_os_image(
-            self.config.os_name,
-            self.config.os_version
-        )
+        # Get images for different node types
+        bastion_image = self.compute.get_bastion_os_image()
+        worker_image = self.compute.get_worker_image()
         
         # Create network infrastructure
         network_output = self.network.create_full_network()
@@ -92,7 +90,7 @@ class ScalewayCluster(ClusterInterface):
             bastion_config = nodes_by_role["bastion"][0]
             bastion = self._deploy_bastion_node(
                 node_config=bastion_config,
-                image_id=image_id,
+                image_id=bastion_image,
                 security_group=sg_bastion,
             )
             outputs["nodes"]["bastion"] = {
@@ -109,7 +107,7 @@ class ScalewayCluster(ClusterInterface):
             node_config = nodes_by_role["node"][0]
             node_item = self._deploy_internal_node(
                 node_config=node_config,
-                image_id=image_id,
+                image_id=worker_image,
                 security_group=sg_internal,
             )
             outputs["nodes"]["node-01"] = {
@@ -141,11 +139,9 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Look up Rocky Linux image
-        image_id = self.compute.get_os_image(
-            self.config.os_name,
-            self.config.os_version
-        )
+        # Get images for different node types
+        bastion_image = self.compute.get_bastion_os_image()
+        worker_image = self.compute.get_worker_image()
         
         # Create network infrastructure
         network_output = self.network.create_full_network()
@@ -172,7 +168,7 @@ class ScalewayCluster(ClusterInterface):
             bastion_config = nodes_by_role["bastion"][0]
             bastion = self._deploy_bastion_node(
                 node_config=bastion_config,
-                image_id=image_id,
+                image_id=bastion_image,
                 security_group=sg_bastion,
             )
             outputs["nodes"]["bastion"] = {
@@ -189,7 +185,7 @@ class ScalewayCluster(ClusterInterface):
             for node_config in nodes_by_role["node"]:
                 node_item = self._deploy_internal_node(
                     node_config=node_config,
-                    image_id=image_id,
+                    image_id=worker_image,
                     security_group=sg_internal,
                 )
                 outputs["nodes"][node_config.name] = {
@@ -221,11 +217,9 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Look up Rocky Linux image
-        image_id = self.compute.get_os_image(
-            self.config.os_name,
-            self.config.os_version
-        )
+        # Get images for different node types
+        bastion_image = self.compute.get_bastion_os_image()
+        worker_image = self.compute.get_worker_image()
         
         # Create network infrastructure
         network_output = self.network.create_full_network()
@@ -253,7 +247,7 @@ class ScalewayCluster(ClusterInterface):
             bastion_config = nodes_by_role["bastion"][0]
             bastion = self._deploy_bastion_node(
                 node_config=bastion_config,
-                image_id=image_id,
+                image_id=bastion_image,
                 security_group=sg_bastion,
             )
             outputs["nodes"]["bastion"] = {
@@ -270,7 +264,7 @@ class ScalewayCluster(ClusterInterface):
             for node_config in nodes_by_role["node"]:
                 node = self._deploy_internal_node(
                     node_config=node_config,
-                    image_id=image_id,
+                    image_id=worker_image,
                     security_group=sg_internal,
                 )
                 outputs["nodes"][node_config.name] = {
@@ -324,7 +318,7 @@ class ScalewayCluster(ClusterInterface):
             security_group=security_group,
             tags=node_config.tags,
             user_data=node_config.user_data,
-            create_public_ip=False,  # No public IP for internal nodes
+            create_public_ip=False,  # Private only, no public IP
         )
         
         # Attach to private network
@@ -374,6 +368,7 @@ class ScalewayCluster(ClusterInterface):
             security_group=security_group,
             tags=node_config.tags,
             user_data=node_config.user_data,
+            create_public_ip=True,  # Bastion needs public IP for SSH access
         )
         
         # Attach to private network

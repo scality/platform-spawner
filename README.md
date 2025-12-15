@@ -96,15 +96,18 @@ pulumi stack init dev
 # Configure required settings
 pulumi config set project_id YOUR_SCALEWAY_PROJECT_ID
 pulumi config set topology single-node  # or "3-nodes" or "6-nodes"
+pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID  # Snapshot for worker nodes
 
 # Configure Scaleway credentials (stored encrypted)
 pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
 pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
 
 # Optional: Override defaults
+pulumi config set bastion_os_name rockylinux  # OS for bastion (default)
+pulumi config set bastion_os_version 9  # OS version for bastion (default)
 pulumi config set region fr-par
 pulumi config set zone fr-par-1
-pulumi config set instance_type PLAY2-NANO
+pulumi config set instance_type PRO2-S  # Instance type for worker nodes
 ```
 
 ## Usage
@@ -180,33 +183,49 @@ pulumi stack output --json
 - 1 Bastion node (public + private)
 - 4 Slave nodes (private): slave-01, slave-02, slave-03, slave-04
 
-### Using Custom Images or Snapshots
+### Image Configuration
 
-You can use your own custom images or snapshots instead of marketplace images:
+The spawner uses different images for different node types:
+
+- **Bastion Node**: Uses marketplace OS image (always the latest patched version from Scaleway marketplace)
+- **Worker Nodes**: Either uses your custom snapshot OR falls back to same OS as bastion
 
 ```bash
-# Use a custom snapshot (e.g., pre-configured with your software)
-pulumi config set image_id 11111111-2222-3333-4444-555555555555
-
-# Deploy with your custom image
+# Option 1: Use custom snapshot for workers (production)
+pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
 pulumi up
 
-# To go back to marketplace images, unset image_id
-pulumi config rm image_id
+# Option 2: Use same OS as bastion for workers (development/testing)
+# Just don't set worker_snapshot_id - workers will use rockylinux 9
+pulumi config rm worker_snapshot_id  # Remove if previously set
+pulumi up
+
+# Optional: Customize bastion OS (defaults to Rocky Linux 9)
+pulumi config set bastion_os_name ubuntu
+pulumi config set bastion_os_version jammy
 ```
 
-**Use Cases for Custom Images:**
-- Pre-configured software stack
+**Use Cases for Worker Snapshots:**
+- Pre-configured Artesca OS
+- Pre-installed software stack
 - Security-hardened base images
-- Snapshots of existing instances
 - Custom kernel configurations
 - Company-specific base images
 
+**Use Cases for Marketplace Images (no snapshot):**
+- Development and testing
+- Quick prototyping
+- When you don't need custom software pre-installed
+
 **Finding Your Snapshot ID:**
 1. Go to [Scaleway Console → Images](https://console.scaleway.com/instance/images)
-2. Find your snapshot or custom image
+2. Find your snapshot or custom image (not volume snapshots!)
 3. Copy the UUID
-4. Set it with `pulumi config set image_id YOUR_UUID`
+4. Set it with `pulumi config set worker_snapshot_id YOUR_UUID`
+
+**Why Separate Images?**
+- **Bastion**: Small, lightweight OS for SSH access only - always up-to-date from marketplace
+- **Workers**: Custom snapshot with your application stack pre-installed, or marketplace image for testing
 
 ### Switching Topologies
 
@@ -278,7 +297,8 @@ pulumi stack output bastion_public_ip
     "provider": "scaleway",
     "region": "fr-par",
     "zone": "fr-par-1",
-    "os": "rockylinux 9",
+    "bastion_os": "rockylinux 9",
+    "worker_snapshot_id": "11111111-2222-...",
     "instance_types": {
       "bastion": "PLAY2-NANO",
       "worker_nodes": "PRO2-S"
@@ -310,9 +330,9 @@ pulumi stack output bastion_public_ip
 | `provider` | Cloud provider | `scaleway` |
 | `region` | Provider region | `fr-par` |
 | `zone` | Provider zone | `fr-par-1` |
-| `os_name` | Operating system | `rockylinux` |
-| `os_version` | OS version | `9` |
-| `image_id` | Custom image/snapshot ID (overrides os_name/version) | `None` |
+| `bastion_os_name` | OS for bastion node | `rockylinux` |
+| `bastion_os_version` | OS version for bastion | `9` |
+| `worker_snapshot_id` | Snapshot for workers (if not set, uses bastion OS) | `None` |
 | `instance_type` | Instance size for worker nodes | `PRO2-S` |
 
 **Note:** Bastion always uses `PLAY2-NANO` (small machine for SSH access only).
@@ -484,12 +504,19 @@ pulumi stack import < stack-backup.json
 
 ### Image Not Found
 
-If Rocky Linux image lookup fails:
+If bastion OS image lookup fails:
 
 ```bash
 # Verify image label exists in your zone
-pulumi config set os_name rockylinux
-pulumi config set os_version 9
+pulumi config set bastion_os_name rockylinux
+pulumi config set bastion_os_version 9
+```
+
+If worker snapshot not found:
+
+```bash
+# Verify your snapshot ID is correct and in the same zone
+pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID
 ```
 
 ### Authentication Errors

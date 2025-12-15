@@ -77,9 +77,9 @@ class ClusterConfig:
         region: Provider region
         zone: Provider availability zone
         project_id: Provider project/account ID
-        os_name: Operating system name (used if image_id not provided)
-        os_version: Operating system version (used if image_id not provided)
-        image_id: Custom image/snapshot ID (overrides os_name/os_version)
+        worker_snapshot_id: Custom snapshot/image ID for worker nodes (required)
+        bastion_os_name: Operating system name for bastion node (marketplace image)
+        bastion_os_version: Operating system version for bastion node
         ssh_key_ids: List of SSH key IDs to attach to instances (for CI/CD)
         network: Network configuration
         nodes: List of node configurations
@@ -89,9 +89,9 @@ class ClusterConfig:
     region: str
     zone: str
     project_id: str
-    os_name: str = "rockylinux"
-    os_version: str = "9"
-    image_id: Optional[str] = None
+    worker_snapshot_id: Optional[str] = None
+    bastion_os_name: str = "rockylinux"
+    bastion_os_version: str = "9"
     ssh_key_ids: List[str] = field(default_factory=list)
     network: NetworkConfig = field(default_factory=NetworkConfig)
     nodes: List[NodeConfig] = field(default_factory=list)

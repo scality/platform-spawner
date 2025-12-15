@@ -6,7 +6,6 @@ cluster configuration, and deploys the requested topology.
 """
 
 import pulumi
-import pulumiverse_scaleway as scaleway
 from core.models import Topology, Provider, ClusterConfig
 from core.topology import get_topology_config
 from core.factory import create_cluster
@@ -26,18 +25,21 @@ def main():
     topology_str = config.require("topology")
     project_id = config.require("project_id")
     
+    # Optional worker snapshot (if not provided, uses same OS as bastion)
+    worker_snapshot_id = config.get("worker_snapshot_id")
+       
     # Optional configuration with defaults
     provider_str = config.get("provider") or "scaleway"
     region = config.get("region") or "fr-par"
     zone = config.get("zone") or "fr-par-1"
-    os_name = config.get("os_name") or "rockylinux"
-    os_version = config.get("os_version") or "9"
+    
+    # Bastion OS configuration (marketplace image)
+    bastion_os_name = config.get("bastion_os_name") or "rockylinux"
+    bastion_os_version = config.get("bastion_os_version") or "9"
+    
     # Instance type for worker nodes (default: PRO2-S)
     # Note: Bastion always uses PLAY2-NANO (small machine for SSH only)
     instance_type = config.get("instance_type") or "PRO2-S"
-    
-    # Optional: Custom image/snapshot ID (overrides os_name/os_version)
-    image_id = config.get("image_id")  # If set, uses this snapshot instead of marketplace image
     
     # Optional: SSH public keys for instance access (recommended for CI/CD)
     # Supports both single key (sshPublicKey) and multiple keys (sshPublicKeys - comma-separated)
@@ -108,9 +110,9 @@ users:
         region=region,
         zone=zone,
         project_id=project_id,
-        os_name=os_name,
-        os_version=os_version,
-        image_id=image_id,
+        worker_snapshot_id=worker_snapshot_id,
+        bastion_os_name=bastion_os_name,
+        bastion_os_version=bastion_os_version,
         ssh_key_ids=[],  # Not used with cloud-init approach
         nodes=topology_config["nodes"],
         network=topology_config["network"],
@@ -119,10 +121,11 @@ users:
     # Log configuration for debugging
     pulumi.log.info(f"Deploying {topology.value} topology on {provider.value}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
-    if image_id:
-        pulumi.log.info(f"Using custom image/snapshot: {image_id}")
+    pulumi.log.info(f"Bastion OS: {bastion_os_name} {bastion_os_version} (marketplace image)")
+    if worker_snapshot_id:
+        pulumi.log.info(f"Worker nodes: Custom snapshot {worker_snapshot_id}")
     else:
-        pulumi.log.info(f"Using marketplace image: {os_name} {os_version}")
+        pulumi.log.info(f"Worker nodes: Same as bastion ({bastion_os_name} {bastion_os_version})")
     pulumi.log.info(f"Instance type for worker nodes: {instance_type}")
     pulumi.log.info(f"Instance type for bastion: PLAY2-NANO (fixed)")
     pulumi.log.info(f"Number of nodes: {len(cluster_config.nodes)}")
@@ -143,7 +146,8 @@ users:
         "provider": provider.value,
         "region": region,
         "zone": zone,
-        "os": f"{os_name} {os_version}",
+        "bastion_os": f"{bastion_os_name} {bastion_os_version}",
+        "worker_image": worker_snapshot_id if worker_snapshot_id else f"{bastion_os_name} {bastion_os_version} (marketplace)",
         "instance_types": {
             "bastion": "PLAY2-NANO",  # Fixed: small machine for SSH access
             "worker_nodes": instance_type,  # Configurable: default PRO2-S
