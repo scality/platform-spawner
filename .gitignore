@@ -1,0 +1,63 @@
+# Pulumi
+.pulumi/
+*.pulumi.*
+Pulumi.*.yaml
+!Pulumi.*.yaml.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+.hypothesis/
+
+# Environment variables
+.env
+.env.local
+*.secret
+secrets/
+
+# Logs
+*.log
+
+# SSH Keys (if stored locally)
+*.pem
+*.key
+!*.pub
+
