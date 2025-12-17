@@ -52,8 +52,8 @@ def _get_single_node_config(instance_type: str) -> Dict[str, Any]:
     Generate configuration for single-node topology.
     
     Topology:
-    - 1 Bastion node (public + private for SSH access, PLAY2-NANO)
     - 1 Node (private only)
+    - Gateway with bastion feature for SSH access
     
     Args:
         instance_type: Instance type to use for the node
@@ -63,14 +63,6 @@ def _get_single_node_config(instance_type: str) -> Dict[str, Any]:
     """
     return {
         "nodes": [
-            NodeConfig(
-                name="bastion",
-                role="bastion",
-                instance_type="PLAY2-NANO",  # Always small machine for SSH access
-                has_public_ip=True,
-                has_private_ip=True,
-                tags=["role:bastion", "topology:single-node", "os:rocky9"]
-            ),
             NodeConfig(
                 name="node-01",
                 role="node",
@@ -82,7 +74,7 @@ def _get_single_node_config(instance_type: str) -> Dict[str, Any]:
         ],
         "network": NetworkConfig(
             enable_private_network=True,
-            enable_gateway=False
+            enable_gateway=True  # Gateway provides SSH bastion + NAT
         )
     }
 
@@ -92,8 +84,8 @@ def _get_three_node_config(instance_type: str) -> Dict[str, Any]:
     Generate configuration for 3-node cluster topology.
     
     Topology:
-    - 1 Bastion node (public + private for SSH access, PLAY2-NANO)
     - 3 Nodes (private only)
+    - Gateway with bastion feature for SSH access + NAT
     
     Args:
         instance_type: Instance type to use for the 3 nodes
@@ -103,14 +95,6 @@ def _get_three_node_config(instance_type: str) -> Dict[str, Any]:
     """
     return {
         "nodes": [
-            NodeConfig(
-                name="bastion",
-                role="bastion",
-                instance_type="PLAY2-NANO",  # Always small machine for SSH access
-                has_public_ip=True,
-                has_private_ip=True,
-                tags=["role:bastion", "topology:3-nodes", "os:rocky9"]
-            ),
             # Worker nodes use configured instance type (default: PRO2-S)
             NodeConfig(name="node-01", role="node", instance_type=instance_type, has_public_ip=False, has_private_ip=True, tags=["role:node", "index:01", "topology:3-nodes", "os:rocky9"]),
             NodeConfig(name="node-02", role="node", instance_type=instance_type, has_public_ip=False, has_private_ip=True, tags=["role:node", "index:02", "topology:3-nodes", "os:rocky9"]),
@@ -118,7 +102,7 @@ def _get_three_node_config(instance_type: str) -> Dict[str, Any]:
         ],
         "network": NetworkConfig(
             enable_private_network=True,  # Required for internal communication
-            enable_gateway=False,  # NO gateway - bootstrap/nodes must NOT have internet
+            enable_gateway=True,  # Gateway provides SSH bastion + NAT
             private_subnet="192.168.10.0/24",
             dns_local_name="cluster.local"
         )
@@ -130,8 +114,8 @@ def _get_six_node_config(instance_type: str) -> Dict[str, Any]:
     Generate configuration for 6-node cluster topology.
     
     Topology:
-    - 1 Bastion node (public + private for SSH access, PLAY2-NANO)
     - 6 Nodes (private only)
+    - Gateway with bastion feature for SSH access + NAT
     
     Uses Python list comprehension to generate the 6 nodes
     programmatically, demonstrating the power of using Python for IaC.
@@ -142,19 +126,8 @@ def _get_six_node_config(instance_type: str) -> Dict[str, Any]:
     Returns:
         Configuration dictionary
     """
-    # Start with bastion (always small machine PLAY2-NANO for SSH access)
-    nodes = [
-        NodeConfig(
-            name="bastion",
-            role="bastion",
-            instance_type="PLAY2-NANO",  # Always small machine for SSH access
-            has_public_ip=True,
-            has_private_ip=True,
-            tags=["role:bastion", "topology:6-node", "os:rocky9"]
-        ),
-    ]
-    
-    # Add 6 worker nodes programmatically (use configured instance type, default: PRO2-S)
+    # Generate 6 worker nodes programmatically (use configured instance type, default: PRO2-S)
+    nodes = []
     for i in range(1, 7):
         node_index = f"{i:02d}"  # Format as 01, 02, 03, 04, 05, 06
         nodes.append(
@@ -162,7 +135,7 @@ def _get_six_node_config(instance_type: str) -> Dict[str, Any]:
                 name=f"node-{node_index}",
                 role="node",
                 instance_type=instance_type,  # Worker node uses configured instance type (default: PRO2-S)
-                has_public_ip=False,  # Private only, accessed via bastion
+                has_public_ip=False,  # Private only, accessed via gateway bastion
                 has_private_ip=True,
                 tags=[
                     "role:node",
@@ -177,7 +150,7 @@ def _get_six_node_config(instance_type: str) -> Dict[str, Any]:
         "nodes": nodes,
         "network": NetworkConfig(
             enable_private_network=True,
-            enable_gateway=False,
+            enable_gateway=True,  # Gateway provides SSH bastion + NAT
             private_subnet="192.168.10.0/24",
             dns_local_name="cluster.local"
         )

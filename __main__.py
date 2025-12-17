@@ -26,7 +26,7 @@ def main():
     topology_str = config.require("topology")
     project_id = config.require("project_id")
     
-    # Optional worker snapshot (if not provided, uses same OS as bastion)
+    # Optional worker snapshot (if not provided, uses marketplace image)
     worker_snapshot_id = config.get("worker_snapshot_id")
        
     # Optional configuration with defaults
@@ -34,12 +34,12 @@ def main():
     region = config.get("region") or "fr-par"
     zone = config.get("zone") or "fr-par-1"
     
-    # Bastion OS configuration (marketplace image)
+    # Worker OS configuration (marketplace image if no snapshot provided)
     bastion_os_name = config.get("bastion_os_name") or "rockylinux"
     bastion_os_version = config.get("bastion_os_version") or "9"
     
     # Instance type for worker nodes (default: PRO2-S)
-    # Note: Bastion always uses PLAY2-NANO (small machine for SSH only)
+    # Note: No bastion VM - using gateway bastion feature instead
     instance_type = config.get("instance_type") or "PRO2-S"
     
     # Optional: Additional volumes for worker nodes
@@ -112,15 +112,29 @@ users:
     # Generate topology-specific node and network configuration
     topology_config = get_topology_config(topology, instance_type)
     
-    # Inject SSH key into node configurations if provided
+    # Inject SSH key into all node configurations if provided
+    # SSH keys are needed on all nodes for gateway bastion to access them
     if ssh_user_data:
         for node in topology_config["nodes"]:
-            if node.has_public_ip:  # Only add SSH to nodes with public IPs
-                # Merge with existing user_data if any
-                if node.user_data:
-                    node.user_data = node.user_data + "\n" + ssh_user_data
-                else:
-                    node.user_data = ssh_user_data
+            # Merge with existing user_data if any
+            if node.user_data:
+                node.user_data = node.user_data + "\n" + ssh_user_data
+            else:
+                node.user_data = ssh_user_data
+    
+    # Create IAM SSH keys for gateway bastion access (if provided)
+    iam_ssh_key_ids = []
+    if ssh_keys:
+        import pulumiverse_scaleway as scaleway
+        for idx, key in enumerate(ssh_keys):
+            iam_key = scaleway.IamSshKey(
+                f"ssh-key-{idx+1}",
+                public_key=key,
+                name=f"platform-spawner-key-{idx+1}",
+                project_id=project_id,
+            )
+            iam_ssh_key_ids.append(iam_key.id)
+        pulumi.log.info(f"Created {len(iam_ssh_key_ids)} IAM SSH keys for gateway bastion access")
     
     # Prepare SSH key for cloud-init injection (if provided)
     # This is simpler than IAM SSH key resources and works for all providers
@@ -142,14 +156,13 @@ users:
     # Log configuration for debugging
     pulumi.log.info(f"Deploying {topology.value} topology on {provider.value}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
-    pulumi.log.info(f"Bastion OS: {bastion_os_name} {bastion_os_version} (marketplace image)")
+    pulumi.log.info(f"Using Gateway SSH bastion feature (no bastion VM)")
     if worker_snapshot_id:
         pulumi.log.info(f"Worker nodes: Custom snapshot {worker_snapshot_id}")
     else:
-        pulumi.log.info(f"Worker nodes: Same as bastion ({bastion_os_name} {bastion_os_version})")
+        pulumi.log.info(f"Worker nodes: Marketplace image ({bastion_os_name} {bastion_os_version})")
     pulumi.log.info(f"Instance type for worker nodes: {instance_type}")
-    pulumi.log.info(f"Instance type for bastion: PLAY2-NANO (fixed)")
-    pulumi.log.info(f"Number of nodes: {len(cluster_config.nodes)}")
+    pulumi.log.info(f"Number of worker nodes: {len(cluster_config.nodes)}")
     
     # Create cluster implementation via factory
     cluster = create_cluster(cluster_config)
@@ -167,10 +180,9 @@ users:
         "provider": provider.value,
         "region": region,
         "zone": zone,
-        "bastion_os": f"{bastion_os_name} {bastion_os_version}",
         "worker_image": worker_snapshot_id if worker_snapshot_id else f"{bastion_os_name} {bastion_os_version} (marketplace)",
         "instance_types": {
-            "bastion": "PLAY2-NANO",  # Fixed: small machine for SSH access
+            "gateway_bastion": "VPC-GW-S",  # Gateway provides SSH bastion
             "worker_nodes": instance_type,  # Configurable: default PRO2-S
         },
     })

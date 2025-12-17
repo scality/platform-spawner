@@ -102,27 +102,29 @@ class ScalewayNetwork(NetworkInterface):
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Create a Public Gateway for NAT and DHCP services.
+        Create a Public Gateway for NAT, DHCP, and SSH bastion services.
         
         The Public Gateway provides:
         - NAT/Masquerading for outbound internet access
         - DHCP server for IP assignment
-        - Optional bastion/jump host functionality
+        - SSH bastion/jump host functionality for accessing private instances
         
         This method creates three resources:
         1. PublicGatewayIp - The public IP for the gateway
-        2. PublicGateway - The gateway appliance
+        2. PublicGateway - The gateway appliance with bastion enabled
         3. GatewayNetwork - Attachment to the private network
         
         Args:
             network_ref: Private network to attach gateway to
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters:
+                - gateway_type: Gateway instance type (default: VPC-GW-S)
+                - enable_bastion: Enable SSH bastion feature (default: True)
             
         Returns:
             Dictionary with gateway resources
         """
         gateway_type = kwargs.get("gateway_type", "VPC-GW-S")
-        enable_bastion = kwargs.get("enable_bastion", False)
+        enable_bastion = kwargs.get("enable_bastion", True)  # Default to enabled
         
         # 1. Allocate a public IP for the gateway
         self._gateway_ip = scaleway.network.PublicGatewayIp(
@@ -131,16 +133,17 @@ class ScalewayNetwork(NetworkInterface):
             zone=self.config.zone,
         )
         
-        # 2. Create the Public Gateway appliance
+        # 2. Create the Public Gateway appliance with SSH bastion enabled
         self._gateway = scaleway.network.PublicGateway(
             "gateway",
             name=f"{self.config.topology.value}-gateway",
             type=gateway_type,
             ip_id=self._gateway_ip.id,
-            bastion_enabled=enable_bastion,
+            bastion_enabled=enable_bastion,  # Enable SSH bastion functionality
+            refresh_ssh_keys="always",  # Automatically refresh SSH keys from IAM
             project_id=self.config.project_id,
             zone=self.config.zone,
-            tags=["managed-by:pulumi", "service:nat-gateway"],
+            tags=["managed-by:pulumi", "service:nat-gateway", "service:ssh-bastion"],
         )
         
         # 3. Attach the gateway to the private network with IPAM/DHCP
@@ -199,7 +202,7 @@ class ScalewayNetwork(NetworkInterface):
         if self.config.network.enable_gateway:
             gateway_resources = self.create_gateway(
                 network_ref=private_network,
-                enable_bastion=False,  # We create our own bastion node
+                enable_bastion=True,  # Enable built-in SSH bastion feature
             )
         
         # Build output

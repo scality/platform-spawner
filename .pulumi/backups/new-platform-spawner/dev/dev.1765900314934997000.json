@@ -1,0 +1,3495 @@
+{
+    "version": 3,
+    "checkpoint": {
+        "stack": "organization/new-platform-spawner/dev",
+        "latest": {
+            "manifest": {
+                "time": "2025-12-16T16:51:54.852725+01:00",
+                "magic": "8ef908d5c16a773b74afbf60e20d5cd9b4b27443e091b5a836119759afdc3519",
+                "version": "v3.212.0"
+            },
+            "secrets_providers": {
+                "type": "passphrase",
+                "state": {
+                    "salt": "v1:N6WBi4wRof8=:v1:0pRlD83rWOMVB3xs:Hed5MOj16gjautxVKDxXOfRv7rNQVQ=="
+                }
+            },
+            "resources": [
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "custom": false,
+                    "type": "pulumi:pulumi:Stack",
+                    "outputs": {
+                        "config": {
+                            "instance_types": {
+                                "gateway_bastion": "VPC-GW-S",
+                                "worker_nodes": "PRO2-S"
+                            },
+                            "provider": "scaleway",
+                            "region": "fr-par",
+                            "topology": "6-nodes",
+                            "worker_image": "b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                            "zone": "fr-par-1"
+                        },
+                        "gateway_bastion_ip": "51.15.205.173",
+                        "network": {
+                            "gateway_id": "fr-par-1/1ad6c8b5-0066-473a-988c-0499802a461c",
+                            "private_network_id": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                            "subnet": "192.168.10.0/24",
+                            "vpc_id": "fr-par/d3342fea-aef8-49d9-8ba5-70c27715d0fc"
+                        },
+                        "node_ids": [
+                            "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                            "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                            "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                            "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                            "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                            "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f"
+                        ],
+                        "nodes": {
+                            "node-01": {
+                                "id": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                                "instance_type": "PRO2-S",
+                                "name": "node-01",
+                                "private_ip": "172.16.8.6"
+                            },
+                            "node-02": {
+                                "id": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                                "instance_type": "PRO2-S",
+                                "name": "node-02",
+                                "private_ip": "172.16.8.2"
+                            },
+                            "node-03": {
+                                "id": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                                "instance_type": "PRO2-S",
+                                "name": "node-03",
+                                "private_ip": "172.16.8.3"
+                            },
+                            "node-04": {
+                                "id": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                                "instance_type": "PRO2-S",
+                                "name": "node-04",
+                                "private_ip": "172.16.8.4"
+                            },
+                            "node-05": {
+                                "id": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                                "instance_type": "PRO2-S",
+                                "name": "node-05",
+                                "private_ip": "172.16.8.5"
+                            },
+                            "node-06": {
+                                "id": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f",
+                                "instance_type": "PRO2-S",
+                                "name": "node-06",
+                                "private_ip": "172.16.8.7"
+                            }
+                        },
+                        "topology": "6-nodes"
+                    },
+                    "created": "2025-12-16T15:50:48.938034Z",
+                    "modified": "2025-12-16T15:50:48.938034Z",
+                    "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse",
+                    "custom": true,
+                    "id": "d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "type": "pulumi:providers:scaleway",
+                    "inputs": {
+                        "__internal": {
+                            "pluginDownloadURL": "github://api.github.com/pulumiverse"
+                        },
+                        "access_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:1RythMOqhmXwPXRg:dBKDlGHJbnwenFVf6O3gQ7cNoJI6UnKxQpOTIY4wlFAkjyfQmBU="
+                        },
+                        "secret_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:eRFjp5cAaVORbkjf:NkZNdnIEpRKMKIlx2KrwpT3O2nHcux+fVbVfYLac6MLyEMRSvTgiIwAKTwzcyHMsZpEqPzJJ"
+                        },
+                        "version": "1.39.0"
+                    },
+                    "outputs": {
+                        "access_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:1RythMOqhmXwPXRg:dBKDlGHJbnwenFVf6O3gQ7cNoJI6UnKxQpOTIY4wlFAkjyfQmBU="
+                        },
+                        "secret_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:eRFjp5cAaVORbkjf:NkZNdnIEpRKMKIlx2KrwpT3O2nHcux+fVbVfYLac6MLyEMRSvTgiIwAKTwzcyHMsZpEqPzJJ"
+                        },
+                        "version": "1.39.0"
+                    },
+                    "created": "2025-12-16T15:50:48.938968Z",
+                    "modified": "2025-12-16T15:50:48.938968Z"
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:network/vpc:Vpc::vpc-6-nodes-vpc",
+                    "custom": true,
+                    "id": "fr-par/d3342fea-aef8-49d9-8ba5-70c27715d0fc",
+                    "type": "scaleway:network/vpc:Vpc",
+                    "inputs": {
+                        "__defaults": [],
+                        "name": "6-nodes-vpc",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "region": "fr-par",
+                        "tags": [
+                            "managed-by:pulumi",
+                            "topology:6-nodes"
+                        ]
+                    },
+                    "outputs": {
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "tags": {
+                                        "arr": {}
+                                    }
+                                }
+                            }
+                        },
+                        "createdAt": "2025-12-16T15:50:49Z",
+                        "enableCustomRoutesPropagation": true,
+                        "enableRouting": true,
+                        "id": "fr-par/d3342fea-aef8-49d9-8ba5-70c27715d0fc",
+                        "isDefault": false,
+                        "name": "6-nodes-vpc",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "region": "fr-par",
+                        "tags": [
+                            "managed-by:pulumi",
+                            "topology:6-nodes"
+                        ],
+                        "updatedAt": "2025-12-16T15:50:49Z"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "region": [],
+                        "tags": []
+                    },
+                    "created": "2025-12-16T15:50:49.088783Z",
+                    "modified": "2025-12-16T15:50:49.088783Z",
+                    "sourcePosition": "project:///providers/scaleway/network.py#56",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#56"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#185"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#193"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:index/iamSshKey:IamSshKey::ssh-key-1",
+                    "custom": true,
+                    "id": "176536af-d4f2-4729-8c29-8c4884805fd1",
+                    "type": "scaleway:index/iamSshKey:IamSshKey",
+                    "inputs": {
+                        "__defaults": [
+                            "disabled"
+                        ],
+                        "disabled": false,
+                        "name": "platform-spawner-key-1",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com"
+                    },
+                    "outputs": {
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "createdAt": "2025-12-16T15:50:49Z",
+                        "disabled": false,
+                        "fingerprint": "256 MD5:f3:f6:48:01:e5:a5:5a:f5:6c:a1:82:45:b5:60:c0:e0 (ssh-ed25519)",
+                        "id": "176536af-d4f2-4729-8c29-8c4884805fd1",
+                        "name": "platform-spawner-key-1",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl",
+                        "updatedAt": "2025-12-16T15:50:49Z"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "publicKey": []
+                    },
+                    "created": "2025-12-16T15:50:49.14629Z",
+                    "modified": "2025-12-16T15:50:49.14629Z",
+                    "sourcePosition": "project:///__main__.py#130",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///__main__.py#130"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGatewayIp:PublicGatewayIp::gateway-ip",
+                    "custom": true,
+                    "id": "fr-par-1/3e3647d0-012e-4d1c-8426-56e82e084dd2",
+                    "type": "scaleway:network/publicGatewayIp:PublicGatewayIp",
+                    "inputs": {
+                        "__defaults": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "address": "51.15.205.173",
+                        "createdAt": "2025-12-16T15:50:49Z",
+                        "id": "fr-par-1/3e3647d0-012e-4d1c-8426-56e82e084dd2",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "reverse": "173-205-15-51.instances.scw.cloud",
+                        "tags": null,
+                        "updatedAt": "2025-12-16T15:50:49Z",
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "projectId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:49.465135Z",
+                    "modified": "2025-12-16T15:50:49.465135Z",
+                    "sourcePosition": "project:///providers/scaleway/network.py#130",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#130"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#203"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#193"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                    "custom": true,
+                    "id": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                    "type": "scaleway:instance/securityGroup:SecurityGroup",
+                    "inputs": {
+                        "__defaults": [
+                            "enableDefaultSecurity"
+                        ],
+                        "description": "Internal nodes - only accessible from private network",
+                        "enableDefaultSecurity": true,
+                        "inboundDefaultPolicy": "drop",
+                        "inboundRules": [
+                            {
+                                "__defaults": [],
+                                "action": "accept",
+                                "ipRange": "192.168.10.0/24",
+                                "protocol": "ANY"
+                            }
+                        ],
+                        "name": "internal",
+                        "outboundDefaultPolicy": "accept",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "stateful": true,
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":60000000000,\"default\":60000000000,\"delete\":60000000000,\"read\":60000000000,\"update\":60000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "inboundRules": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "outboundRules": {
+                                        "arr": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "inboundRules": "inbound_rule",
+                                    "outboundRules": "outbound_rule"
+                                }
+                            }
+                        },
+                        "description": "Internal nodes - only accessible from private network",
+                        "enableDefaultSecurity": true,
+                        "externalRules": false,
+                        "id": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "inboundDefaultPolicy": "drop",
+                        "inboundRules": [
+                            {
+                                "action": "accept",
+                                "ip": "",
+                                "ipRange": "192.168.10.0/24",
+                                "port": 0,
+                                "portRange": "",
+                                "protocol": "ANY"
+                            }
+                        ],
+                        "name": "internal",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "outboundDefaultPolicy": "accept",
+                        "outboundRules": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "stateful": true,
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "description": [],
+                        "inboundDefaultPolicy": [],
+                        "inboundRules": [],
+                        "name": [],
+                        "outboundDefaultPolicy": [],
+                        "projectId": [],
+                        "stateful": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:49.568327Z",
+                    "modified": "2025-12-16T15:50:49.568327Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#116",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#116"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#384"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#196"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal",
+                    "custom": true,
+                    "id": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                    "type": "scaleway:network/privateNetwork:PrivateNetwork",
+                    "inputs": {
+                        "__defaults": [],
+                        "name": "6-nodes-internal",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "region": "fr-par",
+                        "tags": [
+                            "internal",
+                            "managed-by:pulumi"
+                        ],
+                        "vpcId": "fr-par/d3342fea-aef8-49d9-8ba5-70c27715d0fc"
+                    },
+                    "outputs": {
+                        "__meta": "{\"schema_version\":\"1\"}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "ipv4Subnet": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "ipv6Subnets": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    }
+                                }
+                            }
+                        },
+                        "createdAt": "2025-12-16T15:50:49Z",
+                        "enableDefaultRoutePropagation": false,
+                        "id": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "ipv4Subnet": {
+                            "address": "172.16.8.0",
+                            "createdAt": "2025-12-16T15:50:49Z",
+                            "id": "960ba873-197a-4acb-9303-28a7571d4ad0",
+                            "prefixLength": 22,
+                            "subnet": "172.16.8.0/22",
+                            "subnetMask": "255.255.252.0",
+                            "updatedAt": "2025-12-16T15:50:49Z"
+                        },
+                        "ipv6Subnets": [
+                            {
+                                "address": "fdf7:b558:63f2:3328::",
+                                "createdAt": "2025-12-16T15:50:49Z",
+                                "id": "208e0a79-b8b3-4060-b2c6-b1c2cb30a3aa",
+                                "prefixLength": 64,
+                                "subnet": "fdf7:b558:63f2:3328::/64",
+                                "subnetMask": "255.255.255.255.255.255.255.255.0.0.0.0.0.0.0.0",
+                                "updatedAt": "2025-12-16T15:50:49Z"
+                            }
+                        ],
+                        "isRegional": true,
+                        "name": "6-nodes-internal",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "region": "fr-par",
+                        "tags": [
+                            "internal",
+                            "managed-by:pulumi"
+                        ],
+                        "updatedAt": "2025-12-16T15:50:49Z",
+                        "vpcId": "fr-par/d3342fea-aef8-49d9-8ba5-70c27715d0fc",
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/vpc:Vpc::vpc-6-nodes-vpc"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "region": [],
+                        "tags": [],
+                        "vpcId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/vpc:Vpc::vpc-6-nodes-vpc"
+                        ]
+                    },
+                    "created": "2025-12-16T15:50:49.812923Z",
+                    "modified": "2025-12-16T15:50:49.812923Z",
+                    "sourcePosition": "project:///providers/scaleway/network.py#88",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#88"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#194"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#193"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-01",
+                    "custom": true,
+                    "id": "fr-par-1/a9417792-1db6-40b4-9f39-ca3842196731",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-01-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/a9417792-1db6-40b4-9f39-ca3842196731",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-01-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:54.837125Z",
+                    "modified": "2025-12-16T15:50:54.837125Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-02",
+                    "custom": true,
+                    "id": "fr-par-1/3d42b4bc-d06f-4e07-9587-677f11526611",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-02-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/3d42b4bc-d06f-4e07-9587-677f11526611",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-02-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:55.001859Z",
+                    "modified": "2025-12-16T15:50:55.001859Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-03",
+                    "custom": true,
+                    "id": "fr-par-1/582a009c-debf-41d6-be5b-503630b002db",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-03-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/582a009c-debf-41d6-be5b-503630b002db",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-03-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:55.259147Z",
+                    "modified": "2025-12-16T15:50:55.259147Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-04",
+                    "custom": true,
+                    "id": "fr-par-1/a5969002-07bb-4307-9d17-14b652597626",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-04-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/a5969002-07bb-4307-9d17-14b652597626",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-04-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:55.519779Z",
+                    "modified": "2025-12-16T15:50:55.519779Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-05",
+                    "custom": true,
+                    "id": "fr-par-1/cdcdb09c-95f5-4335-bc67-cb9f3a77fbf0",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-05-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/cdcdb09c-95f5-4335-bc67-cb9f3a77fbf0",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-05-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:55.803519Z",
+                    "modified": "2025-12-16T15:50:55.803519Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-06",
+                    "custom": true,
+                    "id": "fr-par-1/1f969b84-17ef-422a-9a47-c9f46ddb74e5",
+                    "type": "scaleway:block/volume:Volume",
+                    "inputs": {
+                        "__defaults": [],
+                        "iops": 5000,
+                        "name": "node-06-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":300000000000,\"default\":300000000000,\"delete\":300000000000,\"read\":300000000000,\"update\":300000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {}
+                        },
+                        "id": "fr-par-1/1f969b84-17ef-422a-9a47-c9f46ddb74e5",
+                        "instanceVolumeId": null,
+                        "iops": 5000,
+                        "name": "node-06-boot",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "sizeInGb": 20,
+                        "snapshotId": "fr-par-1/b44b34cb-c892-4a50-a70b-cb35d68d0a71",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "iops": [],
+                        "name": [],
+                        "projectId": [],
+                        "snapshotId": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:50:56.710725Z",
+                    "modified": "2025-12-16T15:50:56.710725Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#197",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#197"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-02",
+                    "custom": true,
+                    "id": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-02",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/3d42b4bc-d06f-4e07-9587-677f11526611",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:02",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-02",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-02-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/3d42b4bc-d06f-4e07-9587-677f11526611",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:02",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-02"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-02"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:01.719408Z",
+                    "modified": "2025-12-16T15:51:01.719408Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-03",
+                    "custom": true,
+                    "id": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-03",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/582a009c-debf-41d6-be5b-503630b002db",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:03",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-03",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-03-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/582a009c-debf-41d6-be5b-503630b002db",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:03",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-03"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-03"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:01.876823Z",
+                    "modified": "2025-12-16T15:51:01.876823Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-04",
+                    "custom": true,
+                    "id": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-04",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/a5969002-07bb-4307-9d17-14b652597626",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:04",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-04",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-04-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/a5969002-07bb-4307-9d17-14b652597626",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:04",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-04",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-04"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:02.114614Z",
+                    "modified": "2025-12-16T15:51:02.114614Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-05",
+                    "custom": true,
+                    "id": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-05",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/cdcdb09c-95f5-4335-bc67-cb9f3a77fbf0",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:05",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-05",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-05-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/cdcdb09c-95f5-4335-bc67-cb9f3a77fbf0",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:05",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-05"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-05"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:02.493057Z",
+                    "modified": "2025-12-16T15:51:02.493057Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-01",
+                    "custom": true,
+                    "id": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-01",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/a9417792-1db6-40b4-9f39-ca3842196731",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:01",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-01",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-01-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/a9417792-1db6-40b4-9f39-ca3842196731",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:01",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-01"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-01"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:02.543678Z",
+                    "modified": "2025-12-16T15:51:02.543678Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-06",
+                    "custom": true,
+                    "id": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f",
+                    "type": "scaleway:instance/server:Server",
+                    "inputs": {
+                        "__defaults": [
+                            "bootType",
+                            "enableDynamicIp",
+                            "protected",
+                            "replaceOnTypeChange",
+                            "state"
+                        ],
+                        "bootType": "local",
+                        "enableDynamicIp": false,
+                        "name": "node-06",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "__defaults": [
+                                "boot",
+                                "deleteOnTermination"
+                            ],
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "volumeId": "fr-par-1/1f969b84-17ef-422a-9a47-c9f46ddb74e5",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:06",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":1200000000000,\"default\":1200000000000,\"delete\":1200000000000,\"read\":1200000000000,\"update\":1200000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "filesystems": {
+                                        "arr": {}
+                                    },
+                                    "privateIps": {
+                                        "arr": {}
+                                    },
+                                    "privateNetworks": {
+                                        "arr": {}
+                                    },
+                                    "publicIps": {
+                                        "arr": {}
+                                    },
+                                    "rootVolume": {
+                                        "plu": {
+                                            "i": {
+                                                "obj": {}
+                                            }
+                                        }
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "userData": {
+                                        "map": {}
+                                    }
+                                },
+                                "renamed": {
+                                    "privateNetworks": "private_network"
+                                }
+                            }
+                        },
+                        "additionalVolumeIds": null,
+                        "adminPasswordEncryptionSshKeyId": null,
+                        "bootType": "local",
+                        "bootscriptId": null,
+                        "cloudInit": null,
+                        "enableDynamicIp": false,
+                        "filesystems": [],
+                        "id": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f",
+                        "image": null,
+                        "ipId": "",
+                        "ipIds": null,
+                        "name": "node-06",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "placementGroupId": null,
+                        "placementGroupPolicyRespected": null,
+                        "privateIps": [],
+                        "privateNetworks": [],
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "protected": false,
+                        "publicIps": [],
+                        "replaceOnTypeChange": false,
+                        "rootVolume": {
+                            "boot": false,
+                            "deleteOnTermination": true,
+                            "name": "node-06-boot",
+                            "sbsIops": 5000,
+                            "sizeInGb": 20,
+                            "volumeId": "fr-par-1/1f969b84-17ef-422a-9a47-c9f46ddb74e5",
+                            "volumeType": "sbs_volume"
+                        },
+                        "securityGroupId": "fr-par-1/5029e204-e0c0-4683-bb14-34f4a9ad5cae",
+                        "state": "started",
+                        "tags": [
+                            "role:node",
+                            "index:06",
+                            "topology:6-node",
+                            "os:rocky9"
+                        ],
+                        "type": "PRO2-S",
+                        "userData": {
+                            "cloud-init": "#cloud-config\nusers:\n  - name: artesca-os\n    sudo: ALL=(ALL) NOPASSWD:ALL\n    groups: wheel\n    shell: /bin/bash\n    ssh_authorized_keys:\n      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL1pBXP7hMAHrwCUEIfUtgEPiDJvFUefQcsS9trLe5Tl valentin.daviot@scality.com\n"
+                        },
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-06"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "name": [],
+                        "projectId": [],
+                        "rootVolume": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:block/volume:Volume::vol-node-06"
+                        ],
+                        "securityGroupId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/securityGroup:SecurityGroup::sg-internal"
+                        ],
+                        "tags": [],
+                        "type": [],
+                        "userData": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:03.461274Z",
+                    "modified": "2025-12-16T15:51:03.461274Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#258",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#258"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#291"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ],
+                    "replaceOnChanges": [
+                        "userData"
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGateway:PublicGateway::gateway",
+                    "custom": true,
+                    "id": "fr-par-1/1ad6c8b5-0066-473a-988c-0499802a461c",
+                    "type": "scaleway:network/publicGateway:PublicGateway",
+                    "inputs": {
+                        "__defaults": [],
+                        "bastionEnabled": true,
+                        "ipId": "fr-par-1/3e3647d0-012e-4d1c-8426-56e82e084dd2",
+                        "name": "6-nodes-gateway",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "refreshSshKeys": "always",
+                        "tags": [
+                            "managed-by:pulumi",
+                            "service:nat-gateway",
+                            "service:ssh-bastion"
+                        ],
+                        "type": "VPC-GW-S",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "allowedIpRanges": {
+                                        "arr": {}
+                                    },
+                                    "tags": {
+                                        "arr": {}
+                                    },
+                                    "upstreamDnsServers": {
+                                        "arr": {}
+                                    }
+                                }
+                            }
+                        },
+                        "allowedIpRanges": [
+                            "0.0.0.0/0"
+                        ],
+                        "bandwidth": 100,
+                        "bastionEnabled": true,
+                        "bastionPort": 61000,
+                        "createdAt": "2025-12-16T15:50:49Z",
+                        "enableSmtp": false,
+                        "id": "fr-par-1/1ad6c8b5-0066-473a-988c-0499802a461c",
+                        "ipId": "fr-par-1/3e3647d0-012e-4d1c-8426-56e82e084dd2",
+                        "moveToIpam": null,
+                        "name": "6-nodes-gateway",
+                        "organizationId": "34708938-1363-4028-ae7f-9c19fd52fc10",
+                        "projectId": "cdcfeb46-9e5f-4abb-9225-f5443c49c29c",
+                        "refreshSshKeys": "always",
+                        "status": "running",
+                        "tags": [
+                            "managed-by:pulumi",
+                            "service:nat-gateway",
+                            "service:ssh-bastion"
+                        ],
+                        "type": "VPC-GW-S",
+                        "updatedAt": "2025-12-16T15:51:01Z",
+                        "upstreamDnsServers": [],
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGatewayIp:PublicGatewayIp::gateway-ip"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "bastionEnabled": [],
+                        "ipId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGatewayIp:PublicGatewayIp::gateway-ip"
+                        ],
+                        "name": [],
+                        "projectId": [],
+                        "refreshSshKeys": [],
+                        "tags": [],
+                        "type": [],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:04.759618Z",
+                    "modified": "2025-12-16T15:51:04.759618Z",
+                    "sourcePosition": "project:///providers/scaleway/network.py#137",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#137"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#203"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#193"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:network/gatewayNetwork:GatewayNetwork::gateway-network",
+                    "custom": true,
+                    "id": "fr-par-1/bd7037b2-7936-42fa-b9ae-b7863ab84138",
+                    "type": "scaleway:network/gatewayNetwork:GatewayNetwork",
+                    "inputs": {
+                        "__defaults": [],
+                        "enableMasquerade": true,
+                        "gatewayId": "fr-par-1/1ad6c8b5-0066-473a-988c-0499802a461c",
+                        "ipamConfigs": [
+                            {
+                                "__defaults": [],
+                                "pushDefaultRoute": false
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "ipamConfigs": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "renamed": {
+                                    "ipamConfigs": "ipam_config",
+                                    "privateIps": "private_ip"
+                                }
+                            }
+                        },
+                        "cleanupDhcp": null,
+                        "createdAt": "2025-12-16T15:51:05Z",
+                        "dhcpId": null,
+                        "enableDhcp": null,
+                        "enableMasquerade": true,
+                        "gatewayId": "fr-par-1/1ad6c8b5-0066-473a-988c-0499802a461c",
+                        "id": "fr-par-1/bd7037b2-7936-42fa-b9ae-b7863ab84138",
+                        "ipamConfigs": [
+                            {
+                                "ipamIpId": "cade21be-da79-40ec-be30-0e1e0653a8b6",
+                                "pushDefaultRoute": false
+                            }
+                        ],
+                        "macAddress": "02:00:00:15:3C:FD",
+                        "privateIps": [
+                            {
+                                "address": "172.16.8.8",
+                                "id": "fr-par/cade21be-da79-40ec-be30-0e1e0653a8b6"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "staticAddress": null,
+                        "status": "ready",
+                        "updatedAt": "2025-12-16T15:51:15Z",
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGateway:PublicGateway::gateway"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "enableMasquerade": [],
+                        "gatewayId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/publicGateway:PublicGateway::gateway"
+                        ],
+                        "ipamConfigs": [],
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:20.422321Z",
+                    "modified": "2025-12-16T15:51:20.422321Z",
+                    "sourcePosition": "project:///providers/scaleway/network.py#151",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#151"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/network.py#203"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#193"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-03",
+                    "custom": true,
+                    "id": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7/ac99b5a9-3647-411a-8a87-7ab1b0091a99",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7/ac99b5a9-3647-411a-8a87-7ab1b0091a99",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:16:9d:e2",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:264b:4b00:65ab:2fa7",
+                                "id": "fr-par/ee3705ce-1f58-4770-9ea1-3c0784b567c6"
+                            },
+                            {
+                                "address": "172.16.8.3",
+                                "id": "fr-par/9c00b5bb-2119-4dc5-8fd6-f0ac6f5db577"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/28793d55-5b16-43a5-b6ff-083543a7fee7",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-03"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-03"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:33.031801Z",
+                    "modified": "2025-12-16T15:51:33.031801Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-02",
+                    "custom": true,
+                    "id": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3/2f5ca192-ba20-455c-b012-f9cf275f57ad",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3/2f5ca192-ba20-455c-b012-f9cf275f57ad",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:14:d8:97",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:3c1a:527d:424c:9799",
+                                "id": "fr-par/51fd448c-977f-46ef-b131-90acb2030d8d"
+                            },
+                            {
+                                "address": "172.16.8.2",
+                                "id": "fr-par/7c9b40c3-6d97-461e-a174-1ed82458b7d5"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/d565cf26-83c5-47d9-a76e-5072524410c3",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-02"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-02"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:33.137197Z",
+                    "modified": "2025-12-16T15:51:33.137197Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-05",
+                    "custom": true,
+                    "id": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033/71769764-d83a-464f-820c-ad859cb85bea",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033/71769764-d83a-464f-820c-ad859cb85bea",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:19:e7:ad",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:a9bb:25fb:fd1c:daa2",
+                                "id": "fr-par/7e7613b1-365c-4493-a2f4-f44472b12aec"
+                            },
+                            {
+                                "address": "172.16.8.5",
+                                "id": "fr-par/dd234403-215b-40ed-97a5-5b514e1c47b4"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/a9efa7c9-2b22-4d77-a103-787b05e77033",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-05",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-05"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:33.659319Z",
+                    "modified": "2025-12-16T15:51:33.659319Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-01",
+                    "custom": true,
+                    "id": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b/8c40bd52-ba61-4f1d-91c3-71d2924c7089",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b/8c40bd52-ba61-4f1d-91c3-71d2924c7089",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:15:2e:5a",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:3336:b1f3:3383:460",
+                                "id": "fr-par/54c59e52-7561-4ed5-9a10-11eae443e66e"
+                            },
+                            {
+                                "address": "172.16.8.6",
+                                "id": "fr-par/fad2106e-bf22-4d8b-aa3e-c92e55b44322"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/417c80fa-e39d-42f9-b1ab-a34d25d4995b",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-01",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-01"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:43.862583Z",
+                    "modified": "2025-12-16T15:51:43.862583Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-04",
+                    "custom": true,
+                    "id": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a/dfd0a2b9-5577-48bc-9f1c-3d828f21af04",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a/dfd0a2b9-5577-48bc-9f1c-3d828f21af04",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:1c:90:91",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:db44:c600:e74e:5a77",
+                                "id": "fr-par/2b83ebc9-11d8-4938-8a1b-296aec9e5a49"
+                            },
+                            {
+                                "address": "172.16.8.4",
+                                "id": "fr-par/877fc9c9-e5d4-4337-a6a7-bd6742897a43"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/3e06a3d9-a4b9-4b76-8f48-ee9958ad585a",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-04",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-04"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:48.469353Z",
+                    "modified": "2025-12-16T15:51:48.469353Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                },
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::scaleway:instance/privateNic:PrivateNic::nic-node-06",
+                    "custom": true,
+                    "id": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f/c9b0f6c3-8f47-449a-a0f3-275df5f41c7c",
+                    "type": "scaleway:instance/privateNic:PrivateNic",
+                    "inputs": {
+                        "__defaults": [],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f",
+                        "zone": "fr-par-1"
+                    },
+                    "outputs": {
+                        "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"default\":600000000000,\"delete\":600000000000,\"read\":600000000000,\"update\":600000000000}}",
+                        "__pulumi_raw_state_delta": {
+                            "obj": {
+                                "ps": {
+                                    "privateIps": {
+                                        "arr": {
+                                            "el": {
+                                                "0": {
+                                                    "obj": {}
+                                                },
+                                                "1": {
+                                                    "obj": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "id": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f/c9b0f6c3-8f47-449a-a0f3-275df5f41c7c",
+                        "ipIds": null,
+                        "ipamIpIds": null,
+                        "macAddress": "02:00:00:14:08:e8",
+                        "privateIps": [
+                            {
+                                "address": "fdf7:b558:63f2:3328:ee38:7613:86c8:7fe2",
+                                "id": "fr-par/b76662f4-e32d-447e-b0bf-f8e16d44c743"
+                            },
+                            {
+                                "address": "172.16.8.7",
+                                "id": "fr-par/f6949a0d-4849-4279-a912-6dfb76c4e576"
+                            }
+                        ],
+                        "privateNetworkId": "fr-par/6d8fada2-0a93-4cfb-9db6-e9701a74c466",
+                        "serverId": "fr-par-1/0d2ca38c-05e5-47e1-b22c-a0e5beee4b5f",
+                        "tags": null,
+                        "zone": "fr-par-1"
+                    },
+                    "parent": "urn:pulumi:dev::new-platform-spawner::pulumi:pulumi:Stack::new-platform-spawner-dev",
+                    "dependencies": [
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal",
+                        "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-06"
+                    ],
+                    "provider": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse::d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "propertyDependencies": {
+                        "privateNetworkId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:network/privateNetwork:PrivateNetwork::pn-6-nodes-internal"
+                        ],
+                        "serverId": [
+                            "urn:pulumi:dev::new-platform-spawner::scaleway:instance/server:Server::instance-node-06"
+                        ],
+                        "zone": []
+                    },
+                    "created": "2025-12-16T15:51:54.82991Z",
+                    "modified": "2025-12-16T15:51:54.82991Z",
+                    "sourcePosition": "project:///providers/scaleway/compute.py#334",
+                    "stackTrace": [
+                        {
+                            "sourcePosition": "project:///providers/scaleway/compute.py#334"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#303"
+                        },
+                        {
+                            "sourcePosition": "project:///providers/scaleway/cluster.py#220"
+                        },
+                        {
+                            "sourcePosition": "project:///core/interfaces.py#259"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#171"
+                        },
+                        {
+                            "sourcePosition": "project:///__main__.py#193"
+                        },
+                        {},
+                        {},
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#188"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#207"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#178"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#79"
+                        },
+                        {
+                            "sourcePosition": "project:///venv/lib/python3.14/site-packages/pulumi/runtime/stack.py#181"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/events.py#94"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#2046"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#677"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py#706"
+                        },
+                        {
+                            "sourcePosition": "project:///../../../../../opt/homebrew/bin/pulumi-language-python-exec#232"
+                        }
+                    ]
+                }
+            ],
+            "metadata": {}
+        }
+    }
+}

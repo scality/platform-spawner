@@ -6,9 +6,9 @@ A production-grade, provider-agnostic infrastructure-as-code solution using Pulu
 
 This project enables deployment of Rocky Linux clusters in three different topologies:
 
-- **Single Node**: Standalone instance for development or simple applications
-- **3-Node Cluster**: Bootstrap + Bastion + 1 Slave node with private networking
-- **6-Node Cluster**: Bootstrap + Bastion + 4 Slave nodes with private networking
+- **Single Node**: 1 worker node with gateway bastion for SSH access
+- **3-Node Cluster**: 3 worker nodes with gateway bastion providing SSH access and NAT
+- **6-Node Cluster**: 6 worker nodes with gateway bastion providing SSH access and NAT
 
 The architecture is designed for multi-cloud support with clean abstractions, starting with Scaleway and designed for future AWS and OVH implementations.
 
@@ -89,6 +89,26 @@ Obtain your Scaleway API credentials from the [Scaleway Console](https://console
 
 ### 3. Initialize Pulumi Stack
 
+#### Option A: Interactive Setup (Recommended)
+
+Use the interactive setup script for easy configuration:
+
+```bash
+# Run the interactive setup script
+./setup.sh
+
+# The script will guide you through:
+# - Creating or selecting a stack
+# - Entering Scaleway credentials
+# - Choosing topology and configuration
+# - Setting up SSH keys (optional)
+# - Configuring additional volumes (optional)
+```
+
+#### Option B: Manual Configuration
+
+Configure manually with Pulumi CLI commands:
+
 ```bash
 # Initialize a new stack (e.g., "dev")
 pulumi stack init dev
@@ -131,12 +151,14 @@ pulumi stack output public_ip
 ```
 
 **Resources Created:**
-- 1 Security Group (SSH access)
-- 1 Rocky Linux instance with public IP
+- 1 VPC and Private Network
+- 1 Public Gateway with SSH bastion feature
+- 1 Security Group (internal)
+- 1 Rocky Linux worker node (private only)
 
 ### Deploy 3-Node Cluster
 
-Secure cluster with bastion host pattern for production use.
+Secure cluster with gateway bastion for production use.
 
 ```bash
 # Configure
@@ -145,22 +167,20 @@ pulumi config set topology 3-nodes
 # Deploy
 pulumi up
 
-# Access bastion
-BASTION_IP=$(pulumi stack output bastion_public_ip)
-ssh root@$BASTION_IP
+# Access gateway bastion
+GATEWAY_IP=$(pulumi stack output gateway_bastion_ip)
+ssh <username>@$GATEWAY_IP
 
-# From bastion, access internal nodes via private network
-# (Bootstrap and Slave nodes are only accessible via private network)
+# From gateway, access internal nodes via private network
+# (Worker nodes are only accessible via gateway bastion)
 ```
 
 **Resources Created:**
 - 1 VPC
 - 1 Private Network (192.168.10.0/24)
-- 1 Public Gateway (NAT + DHCP)
-- 2 Security Groups (bastion and internal)
-- 1 Bootstrap node (private only)
-- 1 Bastion node (public + private)
-- 1 Slave node (private only)
+- 1 Public Gateway (SSH bastion + NAT + DHCP)
+- 1 Security Group (internal)
+- 3 Worker nodes (private only)
 
 ### Deploy 6-Node Cluster
 
@@ -179,28 +199,25 @@ pulumi stack output --json
 
 **Resources Created:**
 - Same network infrastructure as 3-node
-- 1 Bootstrap node (private)
-- 1 Bastion node (public + private)
-- 4 Slave nodes (private): slave-01, slave-02, slave-03, slave-04
+- 6 Worker nodes (private only): node-01 through node-06
 
 ### Image Configuration
 
-The spawner uses different images for different node types:
+The spawner uses images for worker nodes:
 
-- **Bastion Node**: Uses marketplace OS image (always the latest patched version from Scaleway marketplace)
-- **Worker Nodes**: Either uses your custom snapshot OR falls back to same OS as bastion
+- **Worker Nodes**: Either uses your custom snapshot OR marketplace OS image
 
 ```bash
 # Option 1: Use custom snapshot for workers (production)
 pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
 pulumi up
 
-# Option 2: Use same OS as bastion for workers (development/testing)
+# Option 2: Use marketplace image for workers (development/testing)
 # Just don't set worker_snapshot_id - workers will use rockylinux 9
 pulumi config rm worker_snapshot_id  # Remove if previously set
 pulumi up
 
-# Optional: Customize bastion OS (defaults to Rocky Linux 9)
+# Optional: Customize marketplace OS (defaults to Rocky Linux 9)
 pulumi config set bastion_os_name ubuntu
 pulumi config set bastion_os_version jammy
 ```
@@ -222,10 +239,6 @@ pulumi config set bastion_os_version jammy
 2. Find your snapshot or custom image (not volume snapshots!)
 3. Copy the UUID
 4. Set it with `pulumi config set worker_snapshot_id YOUR_UUID`
-
-**Why Separate Images?**
-- **Bastion**: Small, lightweight OS for SSH access only - always up-to-date from marketplace
-- **Workers**: Custom snapshot with your application stack pre-installed, or marketplace image for testing
 
 ### Switching Topologies
 
@@ -270,37 +283,39 @@ pulumi stack output bastion_public_ip
 ```json
 {
   "topology": "single-node|3-nodes|6-nodes",
-  "bastion_public_ip": "51.159.x.x",
+  "gateway_bastion_ip": "51.159.x.x",
   "nodes": {
-    "bastion": {
-      "id": "fr-par-1/...",
-      "name": "bastion",
-      "instance_type": "PLAY2-NANO",
-      "public_ip": "51.159.x.x",
-      "private_ip": "192.168.10.x"
-    },
     "node-01": {
       "id": "fr-par-1/...",
       "name": "node-01",
       "instance_type": "PRO2-S",
-      "private_ip": "192.168.10.x"
+      "private_ip": "192.168.10.x",
+      "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@node-01.3-nodes-internal.internal"
+    },
+    "node-02": {
+      "id": "fr-par-1/...",
+      "name": "node-02",
+      "instance_type": "PRO2-S",
+      "private_ip": "192.168.10.x",
+      "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@node-02.3-nodes-internal.internal"
     },
     ...
   },
   "network": {
     "vpc_id": "...",
     "private_network_id": "...",
-    "subnet": "192.168.10.0/24"
+    "subnet": "192.168.10.0/24",
+    "gateway_id": "..."
   },
   "config": {
     "topology": "single-node",
     "provider": "scaleway",
     "region": "fr-par",
     "zone": "fr-par-1",
-    "bastion_os": "rockylinux 9",
-    "worker_snapshot_id": "11111111-2222-...",
+    "ssh_access": "Gateway bastion (no bastion VM)",
+    "worker_image": "11111111-2222-...",
     "instance_types": {
-      "bastion": "PLAY2-NANO",
+      "gateway_bastion": "VPC-GW-S",
       "worker_nodes": "PRO2-S"
     }
   }
@@ -308,11 +323,58 @@ pulumi stack output bastion_public_ip
 ```
 
 **Key Points:**
+- Gateway bastion IP is exported as `gateway_bastion_ip`
+- Each node includes a ready-to-use `ssh_command` for easy SSH jump access
+- SSH commands use port 61000 for the gateway bastion connection
 - Each node output includes its `instance_type`
-- Bastion always shows `PLAY2-NANO`
 - Worker nodes show the configured instance type (default: `PRO2-S`)
-- Only bastion has a `public_ip` field
-- All nodes in multi-node topologies have `private_ip`
+- All nodes are private-only (no public IPs)
+- SSH access is via the gateway bastion
+
+### Connecting to Nodes
+
+The easiest way to connect to your nodes is using the pre-generated SSH commands:
+
+```bash
+# Get the SSH command for a specific node
+SSH_CMD=$(pulumi stack output --json | jq -r '.nodes."node-01".ssh_command')
+echo $SSH_CMD
+
+# Execute it directly
+eval $SSH_CMD
+
+# Or copy-paste from the output
+pulumi stack output --json | jq -r '.nodes."node-01".ssh_command'
+# Output: ssh -J bastion@51.159.x.x:61000 artesca-os@node-01.3-nodes-internal.internal
+
+# Connect to different nodes
+pulumi stack output --json | jq -r '.nodes."node-02".ssh_command'
+pulumi stack output --json | jq -r '.nodes."node-03".ssh_command'
+```
+
+**Alternative methods:**
+
+```bash
+# Method 1: Manual SSH jump command
+GATEWAY_IP=$(pulumi stack output gateway_bastion_ip)
+ssh -J bastion@$GATEWAY_IP:61000 artesca-os@node-01.3-nodes-internal.internal
+
+# Method 2: Two-hop SSH (first to gateway, then to node)
+ssh artesca-os@$GATEWAY_IP
+# Once on gateway:
+ssh node-01.3-nodes-internal.internal
+```
+
+**SSH Command Format:**
+```
+ssh -J bastion@<gateway_ip>:61000 artesca-os@<node_name>.<network_name>.internal
+```
+
+Where:
+- `<gateway_ip>`: Gateway bastion public IP
+- `61000`: Gateway bastion SSH port
+- `<node_name>`: Node name (e.g., node-01, node-02)
+- `<network_name>`: Private network name (e.g., 3-nodes-internal)
 
 ## Configuration Reference
 
@@ -330,18 +392,18 @@ pulumi stack output bastion_public_ip
 | `provider` | Cloud provider | `scaleway` |
 | `region` | Provider region | `fr-par` |
 | `zone` | Provider zone | `fr-par-1` |
-| `bastion_os_name` | OS for bastion node | `rockylinux` |
-| `bastion_os_version` | OS version for bastion | `9` |
-| `worker_snapshot_id` | Snapshot for workers (if not set, uses bastion OS) | `None` |
+| `bastion_os_name` | OS for workers (if no snapshot) | `rockylinux` |
+| `bastion_os_version` | OS version for workers | `9` |
+| `worker_snapshot_id` | Snapshot for workers (if not set, uses marketplace image) | `None` |
 | `instance_type` | Instance size for worker nodes | `PRO2-S` |
 
-**Note:** Bastion always uses `PLAY2-NANO` (small machine for SSH access only).
+**Note:** SSH access is provided via Scaleway's Public Gateway bastion feature (VPC-GW-S).
 
 ### Scaleway Instance Types
 
 | Type | vCPUs | RAM | Use Case | Used For |
 |------|-------|-----|----------|----------|
-| `PLAY2-NANO` | 2 | 2 GB | Development | **Bastion (always)** |
+| `VPC-GW-S` | N/A | N/A | Gateway | **SSH bastion + NAT (always)** |
 | `PLAY2-MICRO` | 4 | 4 GB | Development | Worker nodes |
 | `PRO2-S` | 4 | 8 GB | Production | **Worker nodes (default)** |
 | `PRO2-M` | 8 | 16 GB | Production | Worker nodes |
@@ -382,38 +444,38 @@ new-platform-spawner/
     └── defaults.py
 ```
 
-## Network Architecture (Multi-Node Topologies)
+## Network Architecture (All Topologies)
 
 ```
 Internet
    │
-   ├─────────► Bastion Node (Public IP, PLAY2-NANO)
-   │              ↓ (SSH Access)
-   │           Private Network (192.168.10.0/24)
-   │              │
-   │              ├─► Node 01 (Private only, PRO2-S)
-   │              ├─► Node 02 (Private only, PRO2-S)
-   │              ├─► Node 03 (Private only, PRO2-S)
-   │              ├─► Node 04 (Private only, PRO2-S)
-   │              ├─► Node 05 (Private only, PRO2-S)
-   │              └─► Node 06 (Private only, PRO2-S)
    │
-   └─────────► Public Gateway (NAT)
-                  ↑ (Outbound Internet)
-                  └─ All private nodes
+   └─────────► Public Gateway (VPC-GW-S)
+                  │ - SSH Bastion (Port 22)
+                  │ - NAT for outbound
+                  │ - DHCP for private network
+                  ↓
+               Private Network (192.168.10.0/24)
+                  │
+                  ├─► Node 01 (Private only, PRO2-S)
+                  ├─► Node 02 (Private only, PRO2-S)
+                  ├─► Node 03 (Private only, PRO2-S)
+                  ├─► Node 04 (Private only, PRO2-S)
+                  ├─► Node 05 (Private only, PRO2-S)
+                  └─► Node 06 (Private only, PRO2-S)
 ```
 
 **Topology Overview:**
-- **single-node**: 1 bastion (PLAY2-NANO) + 1 worker node
-- **3-nodes**: 1 bastion (PLAY2-NANO) + 3 worker nodes
-- **6-nodes**: 1 bastion (PLAY2-NANO) + 6 worker nodes
+- **single-node**: Gateway bastion + 1 worker node
+- **3-nodes**: Gateway bastion + 3 worker nodes
+- **6-nodes**: Gateway bastion + 6 worker nodes
 
 **Security Model:**
-- Only bastion has inbound SSH access from internet
-- Bastion is always a small machine (PLAY2-NANO) for SSH access only
-- Worker nodes are private-only, accessed via bastion
+- Gateway provides SSH bastion functionality (no separate bastion VM)
+- SSH access to private nodes via gateway bastion
+- Worker nodes are private-only, accessed via gateway
 - Private nodes communicate via internal network
-- Outbound internet access via NAT gateway
+- Outbound internet access via gateway NAT
 - Security groups enforce network isolation
 
 ## Extending the Platform
@@ -559,7 +621,7 @@ For multi-node deployments, if private nodes can't reach internet:
    # Production: larger worker nodes
    pulumi config set instance_type PRO2-M --stack prod
    
-   # Note: Bastion always uses PLAY2-NANO regardless of this setting
+   # Note: Gateway always uses VPC-GW-S for SSH bastion + NAT
    ```
 
 3. **Tag resources appropriately:**
@@ -572,14 +634,15 @@ For multi-node deployments, if private nodes can't reach internet:
    - Pulumi config files with secrets are gitignored
    - Use `--secret` flag for sensitive values
 
-2. **Limit bastion access:**
-   - Consider restricting SSH to specific IPs
+2. **Limit gateway bastion access:**
+   - Consider restricting SSH to specific IPs via firewall rules
    - Use SSH key authentication only
-   - Implement fail2ban or similar
+   - Configure gateway bastion security settings in Scaleway console
 
 3. **Regular updates:**
-   - Rocky Linux images are dynamically looked up
+   - Worker node images use marketplace or custom snapshots
    - Redeploy periodically to get security patches
+   - Gateway is managed by Scaleway and auto-updated
 
 ### Production Deployment
 

@@ -31,6 +31,17 @@ Visit [Scaleway Console](https://console.scaleway.com/):
 
 ### 3. Initialize and Configure
 
+**Easy way - Interactive setup:**
+
+```bash
+# Run the setup script
+./setup.sh
+
+# Follow the prompts to configure your stack
+```
+
+**Manual way - CLI commands:**
+
 ```bash
 # Initialize Pulumi stack
 pulumi stack init dev
@@ -39,7 +50,7 @@ pulumi stack init dev
 pulumi config set project_id YOUR_PROJECT_ID
 pulumi config set topology single-node
 
-# Optional: Set worker snapshot (if not set, uses same OS as bastion)
+# Optional: Set worker snapshot (if not set, uses marketplace image)
 # pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID
 
 # Set secrets
@@ -56,15 +67,16 @@ pulumi preview
 # Deploy
 pulumi up
 
-# Get the public IP
-pulumi stack output public_ip
+# Get the gateway bastion IP
+pulumi stack output gateway_bastion_ip
 ```
 
-### 5. Access Your Instance
+### 5. Access Your Instances
 
 ```bash
-# SSH to your instance (default Rocky Linux user is root)
-ssh root@$(pulumi stack output public_ip)
+# SSH via gateway bastion to access private instances
+GATEWAY_IP=$(pulumi stack output gateway_bastion_ip)
+ssh <username>@$GATEWAY_IP
 ```
 
 ## Try Different Topologies
@@ -85,19 +97,18 @@ pulumi up
 
 ## Image Configuration
 
-The spawner uses different images for different node types:
+The spawner uses images for worker nodes:
 
-- **Bastion Node**: Uses marketplace OS image (always latest patched version)
-- **Worker Nodes**: Uses custom snapshot if provided, otherwise same OS as bastion
+- **Worker Nodes**: Uses custom snapshot if provided, otherwise marketplace OS image
 
 ```bash
 # Option 1: Use custom snapshot for workers (production)
 pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
 
-# Option 2: Use same OS as bastion (development/testing)
+# Option 2: Use marketplace image (development/testing)
 # Simply don't set worker_snapshot_id
 
-# Optional: Customize bastion OS (defaults to Rocky Linux 9)
+# Optional: Customize marketplace OS (defaults to Rocky Linux 9)
 pulumi config set bastion_os_name rockylinux
 pulumi config set bastion_os_version 9
 ```
@@ -107,16 +118,16 @@ pulumi config set bastion_os_version 9
 After deployment, view information about your infrastructure:
 
 ```bash
-# Get bastion IP for SSH access
-pulumi stack output bastion_public_ip
+# Get gateway bastion IP for SSH access
+pulumi stack output gateway_bastion_ip
 
 # View all outputs (includes instance types for each node)
 pulumi stack output --json
 
 # Example output shows:
-# - bastion: PLAY2-NANO (always)
-# - node-01: PRO2-S (or your configured type)
-# - All IPs and instance IDs
+# - gateway_bastion_ip: Public IP for SSH access
+# - node-01, node-02, etc.: Worker nodes with private IPs
+# - instance_types: VPC-GW-S (gateway), PRO2-S (workers)
 ```
 
 ## Clean Up
@@ -134,7 +145,7 @@ pulumi destroy
 
 ## Common Issues
 
-**"Image not found" error for bastion:**
+**"Image not found" error for workers:**
 ```bash
 pulumi config set bastion_os_name rockylinux
 pulumi config set bastion_os_version 9
@@ -145,7 +156,7 @@ pulumi config set bastion_os_version 9
 # Either use a valid snapshot/image ID
 pulumi config set worker_snapshot_id YOUR_VALID_IMAGE_ID
 
-# Or remove it to use marketplace image (same as bastion)
+# Or remove it to use marketplace image
 pulumi config rm worker_snapshot_id
 ```
 
@@ -161,7 +172,7 @@ pulumi config get scaleway:access_key
 # PRO2-S is the default (recommended for production)
 pulumi config set instance_type PRO2-S
 
-# Note: Bastion always uses PLAY2-NANO (small machine for SSH only)
+# Note: Gateway bastion always uses VPC-GW-S (provides SSH + NAT)
 ```
 
 ## Configuration Quick Reference
@@ -173,7 +184,7 @@ pulumi config set instance_type PRO2-S
 | Change zone | `pulumi config set zone nl-ams-1` |
 | Set worker snapshot | `pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID` |
 | Change worker node instance type | `pulumi config set instance_type PRO2-S` |
-| Change bastion OS | `pulumi config set bastion_os_name rockylinux` |
+| Change worker OS (no snapshot) | `pulumi config set bastion_os_name rockylinux` |
 | View all config | `pulumi config` |
 | View all outputs | `pulumi stack output --json` |
 
@@ -182,7 +193,7 @@ pulumi config set instance_type PRO2-S
 Before deploying to production:
 
 - [ ] Use production instance types for worker nodes (`PRO2-S` or higher)
-- [ ] Bastion automatically uses `PLAY2-NANO` (small, cost-effective)
+- [ ] Gateway bastion automatically uses `VPC-GW-S` (managed by Scaleway)
 - [ ] Use a dedicated stack (`pulumi stack init prod`)
 - [ ] Review security group rules
 - [ ] Set up monitoring and alerts

@@ -1,0 +1,93 @@
+{
+    "version": 3,
+    "checkpoint": {
+        "stack": "organization/new-platform-spawner/dev",
+        "latest": {
+            "manifest": {
+                "time": "2025-12-16T16:56:03.405729+01:00",
+                "magic": "8ef908d5c16a773b74afbf60e20d5cd9b4b27443e091b5a836119759afdc3519",
+                "version": "v3.212.0"
+            },
+            "secrets_providers": {
+                "type": "passphrase",
+                "state": {
+                    "salt": "v1:N6WBi4wRof8=:v1:0pRlD83rWOMVB3xs:Hed5MOj16gjautxVKDxXOfRv7rNQVQ=="
+                }
+            },
+            "resources": [
+                {
+                    "urn": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse",
+                    "custom": true,
+                    "id": "d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                    "type": "pulumi:providers:scaleway",
+                    "inputs": {
+                        "__internal": {
+                            "pluginDownloadURL": "github://api.github.com/pulumiverse"
+                        },
+                        "access_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:FGKaAf+Hl3dpmg3G:DdPYHXTTLJ+ER5vB3VLX1CSQKvEj1sydYSdEMipwaGe3JqKZIVs="
+                        },
+                        "secret_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:v+K8KTECkEL0j65k:2b98IdEAM+331cgOzCHDPH38JZ8VqT30vY5+grZ1ldpiAdVr44hnKrFMHRMvd9+wfcHqKpeu"
+                        },
+                        "version": "1.39.0"
+                    },
+                    "outputs": {
+                        "access_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:H2DcGU2Tvc5qlOCR:CkwMtlVX/1t+G6uwNV1U1cyU8jzdyNkyilLSAegUQvMMtbYeDBY="
+                        },
+                        "secret_key": {
+                            "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                            "ciphertext": "v1:Qhv+aDbPYOlYRgW7:XDYdAYG4XXYPSjvygwB8pNwX6mH0gyWnUVTelqB2UhrLC1PsoXUw3uVnok9bLYe7rJCZeW/n"
+                        },
+                        "version": "1.39.0"
+                    },
+                    "created": "2025-12-16T15:50:48.938968Z",
+                    "modified": "2025-12-16T15:50:48.938968Z"
+                }
+            ],
+            "pending_operations": [
+                {
+                    "resource": {
+                        "urn": "urn:pulumi:dev::new-platform-spawner::pulumi:providers:scaleway::default_1_39_0_github_/api.github.com/pulumiverse",
+                        "custom": true,
+                        "id": "d8ec9c6b-5fb2-4a77-bc99-304e33ca7556",
+                        "type": "pulumi:providers:scaleway",
+                        "inputs": {
+                            "__internal": {
+                                "pluginDownloadURL": "github://api.github.com/pulumiverse"
+                            },
+                            "access_key": {
+                                "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                                "ciphertext": "v1:FGKaAf+Hl3dpmg3G:DdPYHXTTLJ+ER5vB3VLX1CSQKvEj1sydYSdEMipwaGe3JqKZIVs="
+                            },
+                            "secret_key": {
+                                "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                                "ciphertext": "v1:v+K8KTECkEL0j65k:2b98IdEAM+331cgOzCHDPH38JZ8VqT30vY5+grZ1ldpiAdVr44hnKrFMHRMvd9+wfcHqKpeu"
+                            },
+                            "version": "1.39.0"
+                        },
+                        "outputs": {
+                            "access_key": {
+                                "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                                "ciphertext": "v1:H2DcGU2Tvc5qlOCR:CkwMtlVX/1t+G6uwNV1U1cyU8jzdyNkyilLSAegUQvMMtbYeDBY="
+                            },
+                            "secret_key": {
+                                "4dabf18193072939515e22adb298388d": "1b47061264138c4ac30d75fd1eb44270",
+                                "ciphertext": "v1:Qhv+aDbPYOlYRgW7:XDYdAYG4XXYPSjvygwB8pNwX6mH0gyWnUVTelqB2UhrLC1PsoXUw3uVnok9bLYe7rJCZeW/n"
+                            },
+                            "version": "1.39.0"
+                        },
+                        "created": "2025-12-16T15:50:48.938968Z",
+                        "modified": "2025-12-16T15:50:48.938968Z"
+                    },
+                    "type": "deleting"
+                }
+            ],
+            "metadata": {}
+        }
+    }
+}

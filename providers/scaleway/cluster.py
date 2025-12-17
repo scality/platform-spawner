@@ -48,9 +48,9 @@ class ScalewayCluster(ClusterInterface):
         
         Creates:
         - VPC and Private Network
-        - 2 Security Groups (bastion and internal)
-        - 1 Bastion node (public + private, small machine PLAY2-NANO)
-        - 1 Node (private only)
+        - Public Gateway with SSH bastion and NAT
+        - Security Group for internal nodes
+        - 1 Node (private only, accessed via gateway bastion)
         
         This is the simplest topology, suitable for development
         or standalone applications.
@@ -61,15 +61,13 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Get images for different node types
-        bastion_image = self.compute.get_bastion_os_image()
+        # Get worker image
         worker_image = self.compute.get_worker_image()
         
-        # Create network infrastructure
+        # Create network infrastructure (includes gateway with bastion)
         network_output = self.network.create_full_network()
         
-        # Create security groups
-        sg_bastion = self.compute.create_bastion_security_group()
+        # Create security group for internal nodes
         sg_internal = self.compute.create_internal_security_group(
             private_subnet=self.config.network.private_subnet
         )
@@ -81,28 +79,16 @@ class ScalewayCluster(ClusterInterface):
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
                 "subnet": network_output.subnet,
+                "gateway_id": network_output.gateway_id,
             },
             "nodes": {},
         }
         
-        # Deploy Bastion node (small machine for SSH access)
-        if "bastion" in nodes_by_role:
-            bastion_config = nodes_by_role["bastion"][0]
-            bastion = self._deploy_bastion_node(
-                node_config=bastion_config,
-                image_id=bastion_image,
-                security_group=sg_bastion,
-            )
-            outputs["nodes"]["bastion"] = {
-                "id": bastion["node_output"].id,
-                "name": bastion_config.name,
-                "instance_type": bastion_config.instance_type,
-                "public_ip": bastion["node_output"].public_ip,
-                "private_ip": bastion["node_output"].private_ip,
-            }
-            outputs["bastion_public_ip"] = bastion["node_output"].public_ip
+        # Add gateway bastion IP to outputs
+        if network_output.gateway_ip:
+            outputs["gateway_bastion_ip"] = network_output.gateway_ip
         
-        # Deploy Node (private only, accessed via bastion)
+        # Deploy Node (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
             node_config = nodes_by_role["node"][0]
             node_item = self._deploy_internal_node(
@@ -110,11 +96,19 @@ class ScalewayCluster(ClusterInterface):
                 image_id=worker_image,
                 security_group=sg_internal,
             )
+            
+            # Generate SSH jump command for accessing the node via bastion
+            network_name = f"{self.config.topology.value}-internal"
+            ssh_command = network_output.gateway_ip.apply(
+                lambda ip: f"ssh -J bastion@{ip}:61000 artesca-os@{node_config.name}.{network_name}.internal"
+            )
+            
             outputs["nodes"]["node-01"] = {
                 "id": node_item["node_output"].id,
                 "name": node_config.name,
                 "instance_type": node_config.instance_type,
                 "private_ip": node_item["node_output"].private_ip,
+                "ssh_command": ssh_command,
             }
         
         return outputs
@@ -125,13 +119,11 @@ class ScalewayCluster(ClusterInterface):
         
         Creates:
         - VPC and Private Network
-        - Public Gateway with NAT and DHCP
-        - 2 Security Groups (bastion and internal)
-        - 1 Bastion node (public + private, small machine PLAY2-NANO)
-        - 3 Nodes (private only)
+        - Public Gateway with SSH bastion, NAT and DHCP
+        - Security Group for internal nodes
+        - 3 Nodes (private only, accessed via gateway bastion)
         
-        The bastion provides SSH access to the private nodes.
-        The gateway provides outbound internet for private nodes.
+        The gateway provides both SSH bastion access and outbound internet for private nodes.
         
         Returns:
             Dictionary with deployment outputs
@@ -139,15 +131,13 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Get images for different node types
-        bastion_image = self.compute.get_bastion_os_image()
+        # Get worker image
         worker_image = self.compute.get_worker_image()
         
-        # Create network infrastructure
+        # Create network infrastructure (includes gateway with bastion)
         network_output = self.network.create_full_network()
         
-        # Create security groups
-        sg_bastion = self.compute.create_bastion_security_group()
+        # Create security group for internal nodes
         sg_internal = self.compute.create_internal_security_group(
             private_subnet=self.config.network.private_subnet
         )
@@ -159,40 +149,36 @@ class ScalewayCluster(ClusterInterface):
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
                 "subnet": network_output.subnet,
+                "gateway_id": network_output.gateway_id,
             },
             "nodes": {},
         }
         
-        # Deploy Bastion node (small machine for SSH access)
-        if "bastion" in nodes_by_role:
-            bastion_config = nodes_by_role["bastion"][0]
-            bastion = self._deploy_bastion_node(
-                node_config=bastion_config,
-                image_id=bastion_image,
-                security_group=sg_bastion,
-            )
-            outputs["nodes"]["bastion"] = {
-                "id": bastion["node_output"].id,
-                "name": bastion_config.name,
-                "instance_type": bastion_config.instance_type,
-                "public_ip": bastion["node_output"].public_ip,
-                "private_ip": bastion["node_output"].private_ip,
-            }
-            outputs["bastion_public_ip"] = bastion["node_output"].public_ip
+        # Add gateway bastion IP to outputs
+        if network_output.gateway_ip:
+            outputs["gateway_bastion_ip"] = network_output.gateway_ip
         
-        # Deploy 3 Nodes (private only, accessed via bastion)
+        # Deploy 3 Nodes (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
+            network_name = f"{self.config.topology.value}-internal"
             for node_config in nodes_by_role["node"]:
                 node_item = self._deploy_internal_node(
                     node_config=node_config,
                     image_id=worker_image,
                     security_group=sg_internal,
                 )
+                
+                # Generate SSH jump command for accessing the node via bastion
+                ssh_command = network_output.gateway_ip.apply(
+                    lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                )
+                
                 outputs["nodes"][node_config.name] = {
                     "id": node_item["node_output"].id,
                     "name": node_config.name,
                     "instance_type": node_config.instance_type,
                     "private_ip": node_item["node_output"].private_ip,
+                    "ssh_command": ssh_command,
                 }
         
         return outputs
@@ -203,10 +189,9 @@ class ScalewayCluster(ClusterInterface):
         
         Creates:
         - VPC and Private Network
-        - Public Gateway with NAT and DHCP
-        - 2 Security Groups (bastion and internal)
-        - 1 Bastion node (public + private, small machine PLAY2-NANO)
-        - 6 Nodes (private only)
+        - Public Gateway with SSH bastion, NAT and DHCP
+        - Security Group for internal nodes
+        - 6 Nodes (private only, accessed via gateway bastion)
         
         This demonstrates the power of Python loops for infrastructure
         provisioning - the 6 nodes are created programmatically.
@@ -217,15 +202,13 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Get images for different node types
-        bastion_image = self.compute.get_bastion_os_image()
+        # Get worker image
         worker_image = self.compute.get_worker_image()
         
-        # Create network infrastructure
+        # Create network infrastructure (includes gateway with bastion)
         network_output = self.network.create_full_network()
         
-        # Create security groups
-        sg_bastion = self.compute.create_bastion_security_group()
+        # Create security group for internal nodes
         sg_internal = self.compute.create_internal_security_group(
             private_subnet=self.config.network.private_subnet
         )
@@ -237,41 +220,37 @@ class ScalewayCluster(ClusterInterface):
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
                 "subnet": network_output.subnet,
+                "gateway_id": network_output.gateway_id,
             },
             "nodes": {},
             "node_ids": [],
         }
 
-        # Deploy Bastion node (small machine for SSH access)
-        if "bastion" in nodes_by_role:
-            bastion_config = nodes_by_role["bastion"][0]
-            bastion = self._deploy_bastion_node(
-                node_config=bastion_config,
-                image_id=bastion_image,
-                security_group=sg_bastion,
-            )
-            outputs["nodes"]["bastion"] = {
-                "id": bastion["node_output"].id,
-                "name": bastion_config.name,
-                "instance_type": bastion_config.instance_type,
-                "public_ip": bastion["node_output"].public_ip,
-                "private_ip": bastion["node_output"].private_ip,
-            }
-            outputs["bastion_public_ip"] = bastion["node_output"].public_ip
+        # Add gateway bastion IP to outputs
+        if network_output.gateway_ip:
+            outputs["gateway_bastion_ip"] = network_output.gateway_ip
         
-        # Deploy 6 Nodes (private only, accessed via bastion)
+        # Deploy 6 Nodes (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
+            network_name = f"{self.config.topology.value}-internal"
             for node_config in nodes_by_role["node"]:
                 node = self._deploy_internal_node(
                     node_config=node_config,
                     image_id=worker_image,
                     security_group=sg_internal,
                 )
+                
+                # Generate SSH jump command for accessing the node via bastion
+                ssh_command = network_output.gateway_ip.apply(
+                    lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                )
+                
                 outputs["nodes"][node_config.name] = {
                     "id": node["node_output"].id,
                     "name": node_config.name,
                     "instance_type": node_config.instance_type,
                     "private_ip": node["node_output"].private_ip,
+                    "ssh_command": ssh_command,
                 }
                 outputs["node_ids"].append(node["node_output"].id)
         
