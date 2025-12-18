@@ -1,590 +1,389 @@
 # Multi-Cloud Platform Spawner
 
-A production-grade, provider-agnostic infrastructure-as-code solution using Pulumi and Python to deploy configurable cluster topologies across multiple cloud providers.
+A production-grade infrastructure-as-code solution using Pulumi and Python to deploy configurable clusters with any number of worker nodes across cloud providers.
 
 ## Overview
 
-This project enables deployment of Rocky Linux clusters in three different topologies:
+This project deploys Rocky Linux clusters with flexible configuration:
 
-- **Single Node**: 1 worker node with gateway bastion for SSH access
-- **3-Node Cluster**: 3 worker nodes with gateway bastion providing SSH access and NAT
-- **6-Node Cluster**: 6 worker nodes with gateway bastion providing SSH access and NAT
+- **Any number of worker nodes**: 1, 3, 6, 12, 50, or any positive integer
+- **Resource naming prefixes**: Organize resources with custom prefixes (dev, staging, prod, etc.)
+- **Private network architecture**: All workers on private network with gateway bastion for SSH access
+- **Custom or marketplace images**: Use pre-configured snapshots or fresh marketplace images
+- **Additional volumes**: Attach multiple volumes per worker node with flexible sizing
 
-The architecture is designed for multi-cloud support with clean abstractions, starting with Scaleway and designed for future AWS and OVH implementations.
+The architecture is designed for multi-cloud support with clean abstractions, starting with Scaleway.
 
-## Architecture
+## Quick Start
 
-```
-┌─────────────────────────────────────────┐
-│           User Configuration            │
-│         (Pulumi Config Files)           │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│         Core Abstractions Layer         │
-│  (Provider-agnostic interfaces & models)│
-│  - ClusterInterface                     │
-│  - NetworkInterface                     │
-│  - ComputeInterface                     │
-│  - Topology Factory                     │
-└──────────────┬──────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────┐
-│        Provider Implementations         │
-│  ┌─────────────────────────────────┐   │
-│  │  Scaleway (Implemented)         │   │
-│  │  - ScalewayCluster              │   │
-│  │  - ScalewayNetwork (VPC/Gateway)│   │
-│  │  - ScalewayCompute (Instances)  │   │
-│  └─────────────────────────────────┘   │
-│  ┌─────────────────────────────────┐   │
-│  │  AWS (Planned)                  │   │
-│  └─────────────────────────────────┘   │
-│  ┌─────────────────────────────────┐   │
-│  │  OVH (Planned)                  │   │
-│  └─────────────────────────────────┘   │
-└─────────────────────────────────────────┘
+```bash
+# Install dependencies
+uv pip install -r requirements.txt
+
+# Configure
+pulumi stack init dev
+pulumi config set project_id YOUR_SCALEWAY_PROJECT_ID
+pulumi config set worker_count 3
+pulumi config set name_prefix dev
+pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
+pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
+
+# Deploy
+pulumi up
+
+# Access nodes
+pulumi stack output nodes --json | jq -r '.[] | .ssh_command'
 ```
 
 ## Prerequisites
 
-- **Python**: 3.8 or higher
-- **uv**: Fast Python package installer ([Install uv](https://github.com/astral-sh/uv))
+- **Python 3.8+**
 - **Pulumi CLI**: [Install Pulumi](https://www.pulumi.com/docs/get-started/install/)
-- **Scaleway Account**: With API credentials
-- **Git**: For version control
+- **Scaleway Account** with API credentials
+- **uv** (optional): Fast Python package installer
 
 ## Installation
 
-### 1. Clone and Setup
-
 ```bash
-# Navigate to the project directory
-cd new-platform-spawner
-
-# Install uv if not already installed
-# macOS/Linux:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# Or with pip: pip install uv
-
-# Install dependencies with uv (fast!)
+# Install dependencies
 uv pip install -r requirements.txt
 
-# Alternative: Use traditional venv if preferred
-# python3 -m venv venv
-# source venv/bin/activate
-# pip install -r requirements.txt
+# Alternative: traditional pip
+pip install -r requirements.txt
 ```
 
-### 2. Configure Scaleway Credentials
+## Configuration
 
-Obtain your Scaleway API credentials from the [Scaleway Console](https://console.scaleway.com/):
-
-1. Navigate to **IAM** → **API Keys**
-2. Generate a new API key pair
-3. Note down the **Access Key** and **Secret Key**
-4. Get your **Project ID** from the project settings
-
-### 3. Initialize Pulumi Stack
-
-#### Option A: Interactive Setup (Recommended)
-
-Use the interactive setup script for easy configuration:
+### Required Parameters
 
 ```bash
-# Run the interactive setup script
-./setup.sh
-
-# The script will guide you through:
-# - Creating or selecting a stack
-# - Entering Scaleway credentials
-# - Choosing topology and configuration
-# - Setting up SSH keys (optional)
-# - Configuring additional volumes (optional)
-```
-
-#### Option B: Manual Configuration
-
-Configure manually with Pulumi CLI commands:
-
-```bash
-# Initialize a new stack (e.g., "dev")
-pulumi stack init dev
-
-# Configure required settings
 pulumi config set project_id YOUR_SCALEWAY_PROJECT_ID
-pulumi config set topology single-node  # or "3-nodes" or "6-nodes"
-pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID  # Snapshot for worker nodes
-
-# Configure Scaleway credentials (stored encrypted)
-pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
-pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
-
-# Optional: Override defaults
-pulumi config set bastion_os_name rockylinux  # OS for bastion (default)
-pulumi config set bastion_os_version 9  # OS version for bastion (default)
-pulumi config set region fr-par
-pulumi config set zone fr-par-1
-pulumi config set instance_type PRO2-S  # Instance type for worker nodes
+pulumi config set worker_count 3  # Any positive integer
+pulumi config set --secret scaleway:access_key YOUR_KEY
+pulumi config set --secret scaleway:secret_key YOUR_SECRET
 ```
 
-## Usage
-
-### Deploy Single Node (Development)
-
-Perfect for testing or single-application deployments.
+### Optional Parameters
 
 ```bash
-# Configure
-pulumi config set topology single-node
+# Resource naming
+pulumi config set name_prefix prod                    # Prefix for all resources
 
-# Preview changes
-pulumi preview
+# Instance configuration
+pulumi config set instance_type PRO2-S                # Worker instance type
+pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID # Custom image for workers
 
-# Deploy
-pulumi up
+# Location
+pulumi config set region fr-par                       # Default: fr-par
+pulumi config set zone fr-par-1                       # Default: fr-par-1
 
-# Get outputs
-pulumi stack output public_ip
+# Marketplace OS (used only if worker_snapshot_id not set)
+pulumi config set bastion_os_name rockylinux         # Default: rockylinux
+pulumi config set bastion_os_version 9               # Default: 9
+
+# Additional volumes (JSON array)
+pulumi config set additional_volumes '[{"suffix":"service","size":120},{"suffix":"data","size":10,"count":12}]'
 ```
 
-**Resources Created:**
-- 1 VPC and Private Network
-- 1 Public Gateway with SSH bastion feature
-- 1 Security Group (internal)
-- 1 Rocky Linux worker node (private only)
+## Configuration Reference
 
-### Deploy 3-Node Cluster
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `worker_count` | integer | **required** | Number of worker nodes (1, 3, 6, 12, etc.) |
+| `project_id` | string | **required** | Scaleway project ID |
+| `name_prefix` | string | `""` | Prefix for all resource names |
+| `instance_type` | string | `PRO2-S` | Worker node instance type |
+| `worker_snapshot_id` | string | - | Custom snapshot for workers |
+| `region` | string | `fr-par` | Scaleway region |
+| `zone` | string | `fr-par-1` | Scaleway availability zone |
+| `bastion_os_name` | string | `rockylinux` | OS for workers (if no snapshot) |
+| `bastion_os_version` | string | `9` | OS version |
+| `additional_volumes` | JSON | `[]` | Additional volumes config |
 
-Secure cluster with gateway bastion for production use.
+## Usage Examples
 
-```bash
-# Configure
-pulumi config set topology 3-nodes
-
-# Deploy
-pulumi up
-
-# Access gateway bastion
-GATEWAY_IP=$(pulumi stack output gateway_bastion_ip)
-ssh <username>@$GATEWAY_IP
-
-# From gateway, access internal nodes via private network
-# (Worker nodes are only accessible via gateway bastion)
-```
-
-**Resources Created:**
-- 1 VPC
-- 1 Private Network (192.168.10.0/24)
-- 1 Public Gateway (SSH bastion + NAT + DHCP)
-- 1 Security Group (internal)
-- 3 Worker nodes (private only)
-
-### Deploy 6-Node Cluster
-
-Large cluster for distributed applications.
+### Development Environment (1 Worker)
 
 ```bash
-# Configure
-pulumi config set topology 6-nodes
-
-# Deploy
-pulumi up
-
-# View all outputs
-pulumi stack output --json
-```
-
-**Resources Created:**
-- Same network infrastructure as 3-node
-- 6 Worker nodes (private only): node-01 through node-06
-
-### Image Configuration
-
-The spawner uses images for worker nodes:
-
-- **Worker Nodes**: Either uses your custom snapshot OR marketplace OS image
-
-```bash
-# Option 1: Use custom snapshot for workers (production)
-pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
-pulumi up
-
-# Option 2: Use marketplace image for workers (development/testing)
-# Just don't set worker_snapshot_id - workers will use rockylinux 9
-pulumi config rm worker_snapshot_id  # Remove if previously set
-pulumi up
-
-# Optional: Customize marketplace OS (defaults to Rocky Linux 9)
-pulumi config set bastion_os_name ubuntu
-pulumi config set bastion_os_version jammy
-```
-
-**Use Cases for Worker Snapshots:**
-- Pre-configured Artesca OS
-- Pre-installed software stack
-- Security-hardened base images
-- Custom kernel configurations
-- Company-specific base images
-
-**Use Cases for Marketplace Images (no snapshot):**
-- Development and testing
-- Quick prototyping
-- When you don't need custom software pre-installed
-
-**Finding Your Snapshot ID:**
-1. Go to [Scaleway Console → Images](https://console.scaleway.com/instance/images)
-2. Find your snapshot or custom image (not volume snapshots!)
-3. Copy the UUID
-4. Set it with `pulumi config set worker_snapshot_id YOUR_UUID`
-
-### Switching Topologies
-
-You can change topologies by updating the configuration:
-
-```bash
-# Change from single-node to 3-nodes
-pulumi config set topology 3-nodes
-
-# Pulumi will destroy old resources and create new ones
+pulumi config set worker_count 1
+pulumi config set name_prefix dev
+pulumi config set instance_type PLAY2-MICRO
 pulumi up
 ```
 
-**Note**: Changing topologies will destroy existing infrastructure. Always backup data before switching.
+**Creates**: `dev-node-01`, `dev-vpc`, `dev-gateway`, `dev-internal`
 
-### Destroy Infrastructure
+### Production Environment (6 Workers)
 
 ```bash
-# Preview what will be destroyed
-pulumi destroy --preview
-
-# Destroy all resources
-pulumi destroy
+pulumi config set worker_count 6
+pulumi config set name_prefix prod
+pulumi config set instance_type PRO2-S
+pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID
+pulumi up
 ```
+
+**Creates**: `prod-node-01` through `prod-node-06`, `prod-vpc`, `prod-gateway`
+
+### Large Scale (20 Workers)
+
+```bash
+pulumi config set worker_count 20
+pulumi config set name_prefix prod-large
+pulumi config set instance_type PRO2-M
+pulumi up
+```
+
+**Creates**: 20 worker nodes with large instance type
+
+## Architecture
+
+```
+                Internet
+                   │
+                   ▼
+        ┌──────────────────────┐
+        │  Public Gateway       │
+        │  - SSH Bastion        │
+        │  - NAT for outbound   │
+        │  - DHCP               │
+        └──────────┬────────────┘
+                   │
+        Private Network (192.168.10.0/24)
+                   │
+        ┌──────────┼──────────┬─────────┐
+        ▼          ▼          ▼         ▼
+    node-01    node-02    node-03    node-N
+    (PRO2-S)   (PRO2-S)   (PRO2-S)   (PRO2-S)
+```
+
+### Security Model
+
+- **Gateway bastion**: Single SSH entry point (port 61000)
+- **Private-only workers**: No direct internet exposure
+- **NAT**: Outbound internet access via gateway
+- **Security groups**: Network isolation and firewall rules
+- **Internal communication**: Via private network (192.168.10.0/24)
 
 ## Pulumi Outputs
 
-After deployment, Pulumi exports useful information about your infrastructure. View outputs with:
+After deployment, view your infrastructure:
 
 ```bash
 # View all outputs
 pulumi stack output --json
 
-# View specific output
-pulumi stack output bastion_public_ip
+# Get gateway IP
+pulumi stack output gateway_bastion_ip
+
+# Get SSH commands for all nodes
+pulumi stack output nodes --json | jq -r '.[] | .ssh_command'
 ```
 
 ### Output Structure
 
-**For all topologies:**
-
 ```json
 {
-  "topology": "single-node|3-nodes|6-nodes",
+  "worker_count": 3,
   "gateway_bastion_ip": "51.159.x.x",
   "nodes": {
-    "node-01": {
-      "id": "fr-par-1/...",
-      "name": "node-01",
+    "prod-node-01": {
+      "id": "fr-par-1/11111111-1111-...",
+      "urn": "urn:pulumi:dev::platform-spawner::...",
+      "name": "prod-node-01",
       "instance_type": "PRO2-S",
-      "private_ip": "192.168.10.x",
-      "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@node-01.3-nodes-internal.internal"
-    },
-    "node-02": {
-      "id": "fr-par-1/...",
-      "name": "node-02",
-      "instance_type": "PRO2-S",
-      "private_ip": "192.168.10.x",
-      "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@node-02.3-nodes-internal.internal"
-    },
-    ...
+      "private_ip": "192.168.10.2",
+      "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@prod-node-01.prod-internal.internal",
+      "volumes": [
+        {
+          "id": "22222222-2222-...",
+          "urn": "urn:pulumi:dev::...",
+          "name": "prod-node-01-service",
+          "size_gb": 120
+        }
+      ]
+    }
   },
   "network": {
     "vpc_id": "...",
     "private_network_id": "...",
     "subnet": "192.168.10.0/24",
     "gateway_id": "..."
-  },
-  "config": {
-    "topology": "single-node",
-    "provider": "scaleway",
-    "region": "fr-par",
-    "zone": "fr-par-1",
-    "ssh_access": "Gateway bastion (no bastion VM)",
-    "worker_image": "11111111-2222-...",
-    "instance_types": {
-      "gateway_bastion": "VPC-GW-S",
-      "worker_nodes": "PRO2-S"
-    }
   }
 }
 ```
 
-**Key Points:**
-- Gateway bastion IP is exported as `gateway_bastion_ip`
-- Each node includes a ready-to-use `ssh_command` for easy SSH jump access
-- SSH commands use port 61000 for the gateway bastion connection
-- Each node output includes its `instance_type`
-- Worker nodes show the configured instance type (default: `PRO2-S`)
-- All nodes are private-only (no public IPs)
-- SSH access is via the gateway bastion
+## Accessing Your Infrastructure
 
-### Connecting to Nodes
+### SSH to Worker Nodes
 
-The easiest way to connect to your nodes is using the pre-generated SSH commands:
+Each node includes a pre-generated SSH command:
 
 ```bash
-# Get the SSH command for a specific node
-SSH_CMD=$(pulumi stack output --json | jq -r '.nodes."node-01".ssh_command')
+# Get SSH command for a node
+SSH_CMD=$(pulumi stack output nodes --json | jq -r '."prod-node-01".ssh_command')
 echo $SSH_CMD
+# Output: ssh -J bastion@51.159.x.x:61000 artesca-os@prod-node-01.prod-internal.internal
 
-# Execute it directly
+# Connect directly
 eval $SSH_CMD
 
-# Or copy-paste from the output
-pulumi stack output --json | jq -r '.nodes."node-01".ssh_command'
-# Output: ssh -J bastion@51.159.x.x:61000 artesca-os@node-01.3-nodes-internal.internal
-
-# Connect to different nodes
-pulumi stack output --json | jq -r '.nodes."node-02".ssh_command'
-pulumi stack output --json | jq -r '.nodes."node-03".ssh_command'
+# Or list all SSH commands
+pulumi stack output nodes --json | jq -r '.[] | "\(.name): \(.ssh_command)"'
 ```
 
-**Alternative methods:**
+### SSH Command Format
 
-```bash
-# Method 1: Manual SSH jump command
-GATEWAY_IP=$(pulumi stack output gateway_bastion_ip)
-ssh -J bastion@$GATEWAY_IP:61000 artesca-os@node-01.3-nodes-internal.internal
-
-# Method 2: Two-hop SSH (first to gateway, then to node)
-ssh artesca-os@$GATEWAY_IP
-# Once on gateway:
-ssh node-01.3-nodes-internal.internal
-```
-
-**SSH Command Format:**
 ```
 ssh -J bastion@<gateway_ip>:61000 artesca-os@<node_name>.<network_name>.internal
 ```
 
-Where:
-- `<gateway_ip>`: Gateway bastion public IP
-- `61000`: Gateway bastion SSH port
-- `<node_name>`: Node name (e.g., node-01, node-02)
-- `<network_name>`: Private network name (e.g., 3-nodes-internal)
+## Image Management
 
-## Configuration Reference
+### Option 1: Custom Snapshot (Recommended for Production)
 
-### Required Configuration
+Pre-configured images with your software stack:
 
-| Key | Description | Example |
-|-----|-------------|---------|
-| `project_id` | Scaleway project ID | `12345678-1234-...` |
-| `topology` | Cluster topology | `single-node`, `3-nodes`, or `6-nodes` |
+```bash
+pulumi config set worker_snapshot_id 11111111-2222-3333-4444-555555555555
+pulumi up
+```
 
-### Optional Configuration
+**Use cases:**
+- Pre-installed Artesca OS
+- Security-hardened base images
+- Custom software configurations
+- Faster deployment times
 
-| Key | Description | Default |
-|-----|-------------|---------|
-| `provider` | Cloud provider | `scaleway` |
-| `region` | Provider region | `fr-par` |
-| `zone` | Provider zone | `fr-par-1` |
-| `bastion_os_name` | OS for workers (if no snapshot) | `rockylinux` |
-| `bastion_os_version` | OS version for workers | `9` |
-| `worker_snapshot_id` | Snapshot for workers (if not set, uses marketplace image) | `None` |
-| `instance_type` | Instance size for worker nodes | `PRO2-S` |
+### Option 2: Marketplace Image (Development/Testing)
 
-**Note:** SSH access is provided via Scaleway's Public Gateway bastion feature (VPC-GW-S).
+Fresh OS from Scaleway marketplace:
 
-### Scaleway Instance Types
+```bash
+# Don't set worker_snapshot_id - will use marketplace image
+pulumi config rm worker_snapshot_id
+pulumi up
+```
 
-| Type | vCPUs | RAM | Use Case | Used For |
-|------|-------|-----|----------|----------|
-| `VPC-GW-S` | N/A | N/A | Gateway | **SSH bastion + NAT (always)** |
-| `PLAY2-MICRO` | 4 | 4 GB | Development | Worker nodes |
-| `PRO2-S` | 4 | 8 GB | Production | **Worker nodes (default)** |
-| `PRO2-M` | 8 | 16 GB | Production | Worker nodes |
-| `PRO2-L` | 16 | 32 GB | Production | Worker nodes |
+**Use cases:**
+- Development and testing
+- Quick prototyping
+- Vanilla OS installations
 
-### Scaleway Regions and Zones
+## Additional Volumes
 
-- **Paris** (`fr-par`): `fr-par-1`, `fr-par-2`, `fr-par-3`
-- **Amsterdam** (`nl-ams`): `nl-ams-1`, `nl-ams-2`
-- **Warsaw** (`pl-waw`): `pl-waw-1`, `pl-waw-2`
+Attach multiple volumes per worker node:
+
+```bash
+# Single service volume (120GB) + 12 data volumes (10GB each)
+pulumi config set additional_volumes '[
+  {"suffix": "service", "size": 120},
+  {"suffix": "data", "size": 10, "count": 12}
+]'
+```
+
+Volume naming: `{prefix}-node-{index}-{suffix}`
+- Example: `prod-node-01-service`, `prod-node-01-data-01`, `prod-node-01-data-02`
+
+## Snapshot Workflow
+
+Before destroying infrastructure, snapshot all resources:
+
+```bash
+# Snapshot all worker nodes
+for node_id in $(pulumi stack output nodes --json | jq -r '.[] | .id'); do
+  scw instance server backup \
+    server-id=$node_id \
+    zone=fr-par-1 \
+    name="backup-$(date +%Y%m%d-%H%M%S)"
+done
+
+# Snapshot all volumes
+pulumi stack output nodes --json | jq -r '.[] | .volumes[] | .id' | while read volume_id; do
+  scw instance snapshot create \
+    volume-id=$volume_id \
+    zone=fr-par-1 \
+    name="volume-backup-$(date +%Y%m%d-%H%M%S)"
+done
+```
+
+## Instance Types
+
+| Type | vCPUs | RAM | Use Case |
+|------|-------|-----|----------|
+| `PLAY2-MICRO` | 4 | 4 GB | Development |
+| `PRO2-S` | 4 | 8 GB | Production (default) |
+| `PRO2-M` | 8 | 16 GB | Production |
+| `PRO2-L` | 16 | 32 GB | High-performance |
+
+**Note**: Gateway always uses `VPC-GW-S` (managed by Scaleway)
+
+## Multi-Environment Deployments
+
+Use separate stacks for different environments:
+
+```bash
+# Development
+pulumi stack init dev
+pulumi config set worker_count 1
+pulumi config set name_prefix dev
+pulumi config set instance_type PLAY2-MICRO
+pulumi up --stack dev
+
+# Staging
+pulumi stack init staging
+pulumi config set worker_count 3
+pulumi config set name_prefix staging
+pulumi config set instance_type PRO2-S
+pulumi up --stack staging
+
+# Production
+pulumi stack init prod
+pulumi config set worker_count 6
+pulumi config set name_prefix prod
+pulumi config set instance_type PRO2-M
+pulumi up --stack prod
+```
 
 ## Project Structure
 
 ```
-new-platform-spawner/
-├── __main__.py                    # Entry point
-├── Pulumi.yaml                    # Project metadata
-├── requirements.txt               # Python dependencies
-├── README.md                      # This file
+platform-spawner/
+├── __main__.py              # Entry point
+├── Pulumi.yaml              # Project metadata
+├── requirements.txt         # Python dependencies
 │
-├── core/                          # Provider-agnostic abstractions
-│   ├── interfaces.py              # Abstract base classes
-│   ├── models.py                  # Data models
-│   ├── topology.py                # Topology configurations
-│   └── factory.py                 # Provider factory
+├── core/                    # Provider-agnostic abstractions
+│   ├── interfaces.py        # Abstract base classes
+│   ├── models.py            # Data models
+│   ├── topology.py          # Node configurations
+│   └── factory.py           # Provider factory
 │
-├── providers/                     # Provider implementations
-│   ├── scaleway/
-│   │   ├── cluster.py             # Cluster orchestration
-│   │   ├── network.py             # VPC, Private Network, Gateway
-│   │   ├── compute.py             # Instances, Security Groups
-│   │   ├── images.py              # OS image lookup
-│   │   └── config.py              # Scaleway-specific config
-│   ├── aws/                       # Future AWS implementation
-│   └── ovh/                       # Future OVH implementation
-│
-└── config/                        # Configuration defaults
-    └── defaults.py
+└── providers/               # Provider implementations
+    └── scaleway/
+        ├── cluster.py       # Cluster orchestration
+        ├── network.py       # VPC, Gateway, Private Network
+        ├── compute.py       # Instances, Security Groups
+        ├── images.py        # OS image lookup
+        └── config.py        # Scaleway configuration
 ```
 
-## Network Architecture (All Topologies)
+## Cleanup
 
+```bash
+# Preview deletion
+pulumi destroy --preview
+
+# Destroy all resources
+pulumi destroy
 ```
-Internet
-   │
-   │
-   └─────────► Public Gateway (VPC-GW-S)
-                  │ - SSH Bastion (Port 22)
-                  │ - NAT for outbound
-                  │ - DHCP for private network
-                  ↓
-               Private Network (192.168.10.0/24)
-                  │
-                  ├─► Node 01 (Private only, PRO2-S)
-                  ├─► Node 02 (Private only, PRO2-S)
-                  ├─► Node 03 (Private only, PRO2-S)
-                  ├─► Node 04 (Private only, PRO2-S)
-                  ├─► Node 05 (Private only, PRO2-S)
-                  └─► Node 06 (Private only, PRO2-S)
-```
-
-**Topology Overview:**
-- **single-node**: Gateway bastion + 1 worker node
-- **3-nodes**: Gateway bastion + 3 worker nodes
-- **6-nodes**: Gateway bastion + 6 worker nodes
-
-**Security Model:**
-- Gateway provides SSH bastion functionality (no separate bastion VM)
-- SSH access to private nodes via gateway bastion
-- Worker nodes are private-only, accessed via gateway
-- Private nodes communicate via internal network
-- Outbound internet access via gateway NAT
-- Security groups enforce network isolation
-
-## Extending the Platform
-
-### Adding a New Provider (e.g., AWS)
-
-1. **Create provider directory:**
-   ```bash
-   mkdir -p providers/aws
-   ```
-
-2. **Implement the interfaces:**
-   ```python
-   # providers/aws/cluster.py
-   from core.interfaces import ClusterInterface
-   
-   class AWSCluster(ClusterInterface):
-       def deploy_single_node(self):
-           # AWS-specific implementation
-           pass
-       
-       def deploy_three_node(self):
-           # AWS-specific implementation
-           pass
-       
-       def deploy_six_node(self):
-           # AWS-specific implementation
-           pass
-   ```
-
-3. **Implement network and compute:**
-   - `providers/aws/network.py`: VPC, Subnets, NAT Gateway
-   - `providers/aws/compute.py`: EC2 instances, Security Groups
-
-4. **Update factory:**
-   ```python
-   # core/factory.py
-   if config.provider == Provider.AWS:
-       from providers.aws.cluster import AWSCluster
-       return AWSCluster(config)
-   ```
-
-5. **Add dependencies:**
-   ```bash
-   # requirements.txt
-   pulumi-aws>=6.0.0
-   ```
-
-### Adding a New Topology
-
-1. **Update the Topology enum:**
-   ```python
-   # core/models.py
-   class Topology(Enum):
-       NINE_NODE = "9-nodes"
-   ```
-
-2. **Create topology configuration:**
-   ```python
-   # core/topology.py
-   def _get_nine_node_config(instance_type: str):
-       # Define nodes...
-       return {"nodes": nodes, "network": network_config}
-   ```
-
-3. **Implement deployment method:**
-   ```python
-   # providers/scaleway/cluster.py
-   def deploy_nine_node(self):
-       # Implementation...
-       pass
-   ```
 
 ## Troubleshooting
-
-### Pulumi State Issues
-
-```bash
-# Refresh state from cloud provider
-pulumi refresh
-
-# Export state for backup
-pulumi stack export > stack-backup.json
-
-# Import state
-pulumi stack import < stack-backup.json
-```
-
-### Image Not Found
-
-If bastion OS image lookup fails:
-
-```bash
-# Verify image label exists in your zone
-pulumi config set bastion_os_name rockylinux
-pulumi config set bastion_os_version 9
-```
-
-If worker snapshot not found:
-
-```bash
-# Verify your snapshot ID is correct and in the same zone
-pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID
-```
 
 ### Authentication Errors
 
 ```bash
-# Verify credentials are set
+# Verify credentials
 pulumi config get scaleway:access_key
 pulumi config get scaleway:secret_key
 
@@ -593,164 +392,68 @@ pulumi config set --secret scaleway:access_key YOUR_KEY
 pulumi config set --secret scaleway:secret_key YOUR_SECRET
 ```
 
-### Network Connectivity Issues
+### Image Not Found
 
-For multi-node deployments, if private nodes can't reach internet:
+```bash
+# Use marketplace image instead of snapshot
+pulumi config rm worker_snapshot_id
+pulumi config set bastion_os_name rockylinux
+pulumi config set bastion_os_version 9
+```
 
-1. Verify gateway is created: `pulumi stack output network`
-2. Check security groups allow outbound traffic
-3. Verify DHCP is enabled on gateway network
-4. Check instance network interfaces are attached
+### Network Connectivity
+
+```bash
+# Verify gateway is running
+pulumi stack output gateway_bastion_ip
+
+# Check private network configuration
+pulumi stack output network
+```
 
 ## Best Practices
 
-### Development Workflow
+### Production Deployments
 
-1. **Use separate stacks for environments:**
-   ```bash
-   pulumi stack init dev
-   pulumi stack init staging
-   pulumi stack init prod
-   ```
+1. **Use production instance types**: `PRO2-S` or larger for workers
+2. **Use custom snapshots**: Pre-configured images for faster, consistent deployments
+3. **Add name prefixes**: Organize resources with environment prefixes
+4. **Enable monitoring**: Use Scaleway's monitoring and alerting
+5. **Regular backups**: Snapshot nodes and volumes before major changes
+6. **Version control**: Track all configuration in Git
+7. **Separate stacks**: Dev, staging, prod in different stacks
 
-2. **Use different worker node instance types per environment:**
-   ```bash
-   # Development: smaller worker nodes
-   pulumi config set instance_type PLAY2-MICRO --stack dev
-   
-   # Production: larger worker nodes
-   pulumi config set instance_type PRO2-M --stack prod
-   
-   # Note: Gateway always uses VPC-GW-S for SSH bastion + NAT
-   ```
-
-3. **Tag resources appropriately:**
-   - Resources are auto-tagged with topology and management info
-   - Use tags for cost allocation and resource tracking
-
-### Security
-
-1. **Never commit credentials:**
-   - Pulumi config files with secrets are gitignored
-   - Use `--secret` flag for sensitive values
-
-2. **Limit gateway bastion access:**
-   - Consider restricting SSH to specific IPs via firewall rules
-   - Use SSH key authentication only
-   - Configure gateway bastion security settings in Scaleway console
-
-3. **Regular updates:**
-   - Worker node images use marketplace or custom snapshots
-   - Redeploy periodically to get security patches
-   - Gateway is managed by Scaleway and auto-updated
-
-### Production Deployment
-
-1. **Use production instance types for worker nodes:**
-   ```bash
-   # PRO2-S is the default (recommended for most workloads)
-   pulumi config set instance_type PRO2-S
-   
-   # Or use larger instances for heavy workloads
-   pulumi config set instance_type PRO2-M
-   ```
-
-2. **Enable monitoring:**
-   - Use Scaleway's monitoring features
-   - Set up alerts for resource usage
-
-3. **Implement backups:**
-   - Attach block volumes for persistent data
-   - Regular snapshots of volumes
-   - Export Pulumi state regularly
-
-4. **Infrastructure as Code best practices:**
-   - Version control all code changes
-   - Use pull requests for reviews
-   - Test in dev/staging before production
-
-## Advanced Usage
-
-### Custom Cloud-Init Scripts
-
-Add user data to nodes for automated configuration:
-
-```python
-# In __main__.py or by modifying topology.py
-node_config.user_data = """#!/bin/bash
-yum update -y
-yum install -y docker
-systemctl enable docker
-systemctl start docker
-"""
-```
-
-### Adding Block Storage
-
-Modify the cluster implementation to add persistent storage:
-
-```python
-# providers/scaleway/cluster.py
-volume = scaleway.instance.Volume(
-    "data-volume",
-    size_in_gb=100,
-    type="b_ssd",
-    zone=self.config.zone
-)
-
-# Attach to bootstrap node
-instance_output = self.compute.create_instance(
-    # ...
-    additional_volume_ids=[volume.id]
-)
-```
-
-### Multiple Regions
-
-Deploy across multiple regions by creating multiple stacks:
+### Cost Optimization
 
 ```bash
-# Paris stack
-pulumi stack init paris
-pulumi config set region fr-par --stack paris
-pulumi up --stack paris
+# Development: Use smaller instances
+pulumi config set instance_type PLAY2-MICRO
 
-# Amsterdam stack  
-pulumi stack init amsterdam
-pulumi config set region nl-ams --stack amsterdam
-pulumi up --stack amsterdam
+# Destroy dev environments when not in use
+pulumi destroy --stack dev
+
+# Use appropriate worker counts per environment
+# dev: 1 node, staging: 3 nodes, prod: 6+ nodes
 ```
 
 ## Contributing
 
-Contributions are welcome! Areas for contribution:
+The project uses clean abstractions to support multiple cloud providers:
 
-1. **New Providers**: AWS, OVH, GCP, Azure implementations
-2. **New Topologies**: Custom cluster configurations
-3. **Features**: Load balancers, auto-scaling, monitoring
-4. **Documentation**: Tutorials, architecture diagrams
-5. **Testing**: Unit tests, integration tests
+```python
+# Add new provider by implementing interfaces
+class AWSCluster(ClusterInterface):
+    def deploy_cluster(self):
+        # AWS-specific implementation
+        pass
+```
 
 ## License
 
 [Your License Here]
 
-## Additional Documentation
-
-- **[CUSTOM_IMAGES.md](CUSTOM_IMAGES.md)**: Complete guide to using custom images and snapshots
-- **[QUICKSTART.md](QUICKSTART.md)**: 5-minute quick start guide
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Technical architecture deep dive
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)**: Implementation details and metrics
-
 ## Support
 
-For issues and questions:
-
-- **GitHub Issues**: [Project Issues]
-- **Documentation**: [Pulumi Documentation](https://www.pulumi.com/docs/)
-- **Scaleway Docs**: [Scaleway Documentation](https://www.scaleway.com/en/docs/)
-
-## Acknowledgments
-
-Based on research into migrating from OVH to Scaleway using Pulumi with Python, emphasizing infrastructure-as-code best practices and multi-cloud architecture patterns.
-
+- [Pulumi Documentation](https://www.pulumi.com/docs/)
+- [Scaleway Documentation](https://www.scaleway.com/en/docs/)
+- [GitHub Issues](your-repo-url/issues)
