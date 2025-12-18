@@ -16,24 +16,18 @@ DEFAULT_INSTANCE_TYPES: Dict[str, Dict[str, str]] = {
         "development": "t3.micro",
         "production": "t3.medium",
     },
-    "ovh": {
-        "development": "d2-2",
-        "production": "b2-7",
-    }
 }
 
 # Default regions per provider
 DEFAULT_REGIONS: Dict[str, str] = {
     "scaleway": "fr-par",
     "aws": "us-east-1",
-    "ovh": "GRA",
 }
 
 # Default zones per provider
 DEFAULT_ZONES: Dict[str, str] = {
     "scaleway": "fr-par-1",
     "aws": "us-east-1a",
-    "ovh": "GRA1",
 }
 
 # SSH port for bastion access

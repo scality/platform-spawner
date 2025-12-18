@@ -54,13 +54,6 @@ def create_cluster(config: ClusterConfig) -> ClusterInterface:
             "implementing ClusterInterface."
         )
     
-    elif config.provider == Provider.OVH:
-        raise NotImplementedError(
-            "OVH provider is not yet implemented. "
-            "To add OVH support, create providers/ovh/cluster.py "
-            "implementing ClusterInterface."
-        )
-    
     else:
         raise ValueError(
             f"Unknown provider: {config.provider}. "
@@ -85,5 +78,5 @@ def list_planned_providers() -> list[str]:
     Returns:
         List of provider names that are planned
     """
-    return [Provider.AWS.value, Provider.OVH.value]
+    return [Provider.AWS.value]
 

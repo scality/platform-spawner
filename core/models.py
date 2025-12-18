@@ -29,7 +29,6 @@ class Provider(Enum):
     """Supported cloud providers."""
     SCALEWAY = "scaleway"
     AWS = "aws"
-    OVH = "ovh"
 
 
 @dataclass
