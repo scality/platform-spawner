@@ -103,12 +103,25 @@ class ScalewayCluster(ClusterInterface):
                 lambda ip: f"ssh -J bastion@{ip}:61000 artesca-os@{node_config.name}.{network_name}.internal"
             )
             
+            # Prepare volume information if volumes exist
+            volumes_info = []
+            if node_item.get("volumes"):
+                for vol_data in node_item["volumes"]:
+                    volumes_info.append({
+                        "id": vol_data["resource"].id,
+                        "urn": vol_data["resource"].urn,
+                        "name": vol_data["resource"].name,
+                        "size_gb": vol_data["size_gb"],
+                    })
+            
             outputs["nodes"]["node-01"] = {
                 "id": node_item["node_output"].id,
                 "name": node_config.name,
                 "instance_type": node_config.instance_type,
                 "private_ip": node_item["node_output"].private_ip,
                 "ssh_command": ssh_command,
+                "urn": node_item["instance"].urn,
+                "volumes": volumes_info,
             }
         
         return outputs
@@ -173,12 +186,25 @@ class ScalewayCluster(ClusterInterface):
                     lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
                 )
                 
+                # Prepare volume information if volumes exist
+                volumes_info = []
+                if node_item.get("volumes"):
+                    for vol_data in node_item["volumes"]:
+                        volumes_info.append({
+                            "id": vol_data["resource"].id,
+                            "urn": vol_data["resource"].urn,
+                            "name": vol_data["resource"].name,
+                            "size_gb": vol_data["size_gb"],
+                        })
+                
                 outputs["nodes"][node_config.name] = {
                     "id": node_item["node_output"].id,
                     "name": node_config.name,
                     "instance_type": node_config.instance_type,
                     "private_ip": node_item["node_output"].private_ip,
                     "ssh_command": ssh_command,
+                    "urn": node_item["instance"].urn,
+                    "volumes": volumes_info,
                 }
         
         return outputs
@@ -223,7 +249,6 @@ class ScalewayCluster(ClusterInterface):
                 "gateway_id": network_output.gateway_id,
             },
             "nodes": {},
-            "node_ids": [],
         }
 
         # Add gateway bastion IP to outputs
@@ -245,14 +270,26 @@ class ScalewayCluster(ClusterInterface):
                     lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
                 )
                 
+                # Prepare volume information if volumes exist
+                volumes_info = []
+                if node.get("volumes"):
+                    for vol_data in node["volumes"]:
+                        volumes_info.append({
+                            "id": vol_data["resource"].id,
+                            "urn": vol_data["resource"].urn,
+                            "name": vol_data["resource"].name,
+                            "size_gb": vol_data["size_gb"],
+                        })
+                
                 outputs["nodes"][node_config.name] = {
                     "id": node["node_output"].id,
                     "name": node_config.name,
                     "instance_type": node_config.instance_type,
                     "private_ip": node["node_output"].private_ip,
                     "ssh_command": ssh_command,
+                    "urn": node["instance"].urn,
+                    "volumes": volumes_info,
                 }
-                outputs["node_ids"].append(node["node_output"].id)
         
         return outputs
     
@@ -308,7 +345,11 @@ class ScalewayCluster(ClusterInterface):
                         name=volume_name,
                         size_gb=vol_config.size,
                     )
-                    volumes.append(volume)
+                    # Store volume with metadata for later reference
+                    volumes.append({
+                        "resource": volume,
+                        "size_gb": vol_config.size,
+                    })
                     volume_ids.append(volume.id)
         
         # Create instance without public IP (private only)
