@@ -113,10 +113,11 @@ class ScalewayNetwork(NetworkInterface):
         - NAT/Masquerading for outbound internet access
         - DHCP server for IP assignment
         - SSH bastion/jump host functionality for accessing private instances
+        - IP-based access control for SSH bastion (via allowed_ip_ranges)
         
         This method creates three resources:
         1. PublicGatewayIp - The public IP for the gateway
-        2. PublicGateway - The gateway appliance with bastion enabled
+        2. PublicGateway - The gateway appliance with bastion enabled and IP restrictions
         3. GatewayNetwork - Attachment to the private network
         
         Args:
@@ -130,6 +131,13 @@ class ScalewayNetwork(NetworkInterface):
         """
         gateway_type = kwargs.get("gateway_type", "VPC-GW-S")
         enable_bastion = kwargs.get("enable_bastion", True)  # Default to enabled
+        allowed_ips = self.config.network.allowed_ips or ["0.0.0.0/0"]
+        
+        # Log IP restriction configuration
+        if allowed_ips != ["0.0.0.0/0"]:
+            pulumi.log.info(f"Gateway bastion access restricted to IPs: {', '.join(allowed_ips)}")
+        else:
+            pulumi.log.info("Gateway bastion access open to all IPs (0.0.0.0/0)")
         
         # 1. Allocate a public IP for the gateway
         self._gateway_ip = scaleway.network.PublicGatewayIp(
@@ -146,6 +154,8 @@ class ScalewayNetwork(NetworkInterface):
             type=gateway_type,
             ip_id=self._gateway_ip.id,
             bastion_enabled=enable_bastion,  # Enable SSH bastion functionality
+            bastion_port=61000,  # Non-standard SSH port for bastion
+            allowed_ip_ranges=allowed_ips,  # IP-based access control for SSH bastion
             refresh_ssh_keys="always",  # Automatically refresh SSH keys from IAM
             project_id=self.config.project_id,
             zone=self.config.zone,

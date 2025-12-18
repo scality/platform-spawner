@@ -48,6 +48,18 @@ pulumi up
 pulumi stack output gateway_bastion_ip
 ```
 
+**Security Note:** By default, the gateway bastion SSH is accessible from any IP. For production, restrict access:
+
+```bash
+# Restrict to your current IP
+pulumi config set allowed_ips "$(curl -s https://api.ipify.org)/32"
+
+# Or specify multiple IPs/ranges
+pulumi config set allowed_ips "1.2.3.4/32,5.6.7.0/24"
+```
+
+This automatically configures the gateway to only accept SSH connections from the specified IP addresses.
+
 ## Step 5: Access Your Nodes
 
 ```bash
@@ -143,6 +155,7 @@ pulumi stack select STACK_NAME
 - Add name prefix: `pulumi config set name_prefix prod`
 - Use custom image: `pulumi config set worker_snapshot_id YOUR_ID`
 - Add volumes: `pulumi config set additional_volumes '[{"suffix":"data","size":100}]'`
+- Configure allowed IPs: `pulumi config set allowed_ips "1.2.3.4/32,5.6.7.0/24"`
 - Read full documentation: [README.md](README.md)
 
 ## Common Issues
@@ -173,6 +186,7 @@ Before deploying to production:
 - [ ] Use production instance type (`PRO2-S` or higher)
 - [ ] Set name_prefix for organization
 - [ ] Use custom snapshot with your software
+- [ ] **Configure allowed_ips to restrict gateway bastion access** (critical for production security)
 - [ ] Configure additional volumes if needed
 - [ ] Test in staging first
 - [ ] Set up monitoring

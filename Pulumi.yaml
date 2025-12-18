@@ -1,0 +1,6 @@
+name: platform-spawner
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Multi-cloud platform spawner supporting Scaleway and AWS in a single stack with configurable topologies

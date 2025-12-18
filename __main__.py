@@ -53,6 +53,18 @@ def main():
     # Note: No bastion VM - using gateway bastion feature instead
     instance_type = config.get("instance_type") or "PRO2-S"
     
+    # Gateway access control: List of allowed IPs for SSH bastion access
+    allowed_ips_str = config.get("allowed_ips")
+    allowed_ips = []
+    if allowed_ips_str:
+        # Parse comma-separated list of IPs/CIDR blocks
+        allowed_ips = [ip.strip() for ip in allowed_ips_str.split(',') if ip.strip()]
+        pulumi.log.info(f"Gateway bastion restricted to IPs: {', '.join(allowed_ips)}")
+    else:
+        # Default: allow all IPs (user should restrict for production)
+        allowed_ips = ["0.0.0.0/0"]
+        pulumi.log.warn("Gateway bastion open to all IPs (0.0.0.0/0). Set 'allowed_ips' config to restrict access for production.")
+    
     # Optional: Additional volumes for worker nodes
     # Format: [{"suffix": "service", "size": 120}, {"suffix": "data", "size": 10, "count": 12}]
     additional_volumes_str = config.get("additional_volumes")
@@ -71,11 +83,11 @@ def main():
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             pulumi.log.warn(f"Failed to parse additional_volumes configuration: {e}")
             additional_volumes = []
-    
+
     # Optional: SSH public keys for instance access (recommended for CI/CD)
-    # Supports both single key (sshPublicKey) and multiple keys (sshPublicKeys - comma-separated)
-    ssh_public_key = config.get("sshPublicKey")
-    ssh_public_keys_str = config.get("sshPublicKeys")  # Comma-separated list
+    # Supports both single key (ssh_public_key) and multiple keys (ssh_public_keys - comma-separated)
+    ssh_public_key = config.get("ssh_public_key")
+    ssh_public_keys_str = config.get("ssh_public_keys")  # Comma-separated list
     
     # Build list of SSH keys
     ssh_keys = []
@@ -112,6 +124,9 @@ users:
     
     # Generate cluster node and network configuration based on worker count
     cluster_topology = get_cluster_config(worker_count, instance_type, name_prefix)
+    
+    # Add allowed IPs to network configuration
+    cluster_topology["network"].allowed_ips = allowed_ips
     
     # Inject SSH key into all node configurations if provided
     # SSH keys are needed on all nodes for gateway bastion to access them

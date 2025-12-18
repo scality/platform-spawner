@@ -67,11 +67,13 @@ class NetworkConfig:
         enable_gateway: Whether to create a NAT gateway
         private_subnet: CIDR block for private network
         dns_local_name: Local DNS domain name
+        allowed_ips: List of IP addresses/CIDR blocks allowed to access the gateway bastion (default: ["0.0.0.0/0"])
     """
     enable_private_network: bool = False
     enable_gateway: bool = False
     private_subnet: str = "192.168.10.0/24"
     dns_local_name: str = "cluster.local"
+    allowed_ips: List[str] = field(default_factory=list)
 
 
 @dataclass

@@ -77,6 +77,9 @@ pulumi config set worker_snapshot_id YOUR_SNAPSHOT_ID # Custom image for workers
 pulumi config set region fr-par                       # Default: fr-par
 pulumi config set zone fr-par-1                       # Default: fr-par-1
 
+# Security - Gateway bastion access control (IMPORTANT for production!)
+pulumi config set allowed_ips "1.2.3.4/32,5.6.7.8/32" # IPs allowed to SSH to gateway (default: 0.0.0.0/0)
+
 # Marketplace OS (used only if worker_snapshot_id not set)
 pulumi config set bastion_os_name rockylinux         # Default: rockylinux
 pulumi config set bastion_os_version 9               # Default: 9
@@ -96,6 +99,7 @@ pulumi config set additional_volumes '[{"suffix":"service","size":120},{"suffix"
 | `worker_snapshot_id` | string | - | Custom snapshot for workers |
 | `region` | string | `fr-par` | Scaleway region |
 | `zone` | string | `fr-par-1` | Scaleway availability zone |
+| `allowed_ips` | string | `0.0.0.0/0` | Comma-separated IPs/CIDRs allowed to access gateway bastion SSH (port 61000) |
 | `bastion_os_name` | string | `rockylinux` | OS for workers (if no snapshot) |
 | `bastion_os_version` | string | `9` | OS version |
 | `additional_volumes` | JSON | `[]` | Additional volumes config |
@@ -160,6 +164,7 @@ pulumi up
 ### Security Model
 
 - **Gateway bastion**: Single SSH entry point (port 61000)
+- **IP-based access control**: Optionally restrict gateway bastion access to specific IPs
 - **Private-only workers**: No direct internet exposure
 - **NAT**: Outbound internet access via gateway
 - **Security groups**: Network isolation and firewall rules
@@ -418,10 +423,45 @@ pulumi stack output network
 1. **Use production instance types**: `PRO2-S` or larger for workers
 2. **Use custom snapshots**: Pre-configured images for faster, consistent deployments
 3. **Add name prefixes**: Organize resources with environment prefixes
-4. **Enable monitoring**: Use Scaleway's monitoring and alerting
-5. **Regular backups**: Snapshot nodes and volumes before major changes
-6. **Version control**: Track all configuration in Git
-7. **Separate stacks**: Dev, staging, prod in different stacks
+4. **Configure IP access control**: Restrict gateway bastion access to known IPs
+5. **Enable monitoring**: Use Scaleway's monitoring and alerting
+6. **Regular backups**: Snapshot nodes and volumes before major changes
+7. **Version control**: Track all configuration in Git
+8. **Separate stacks**: Dev, staging, prod in different stacks
+
+### Security Best Practices
+
+1. **IP Allowlisting** (critical for production): 
+   
+   Restrict gateway bastion SSH access to specific IP addresses:
+   ```bash
+   # Single office IP
+   pulumi config set allowed_ips "203.0.113.10/32"
+   
+   # Multiple IPs (office + VPN)
+   pulumi config set allowed_ips "203.0.113.10/32,198.51.100.0/24"
+   
+   # Get your current IP and restrict to it
+   curl https://api.ipify.org
+   pulumi config set allowed_ips "$(curl -s https://api.ipify.org)/32"
+   
+   # CI/CD pipeline IP
+   pulumi config set allowed_ips "203.0.113.10/32,192.0.2.50/32"
+   ```
+   
+   **Important**: By default, the gateway bastion is accessible from all IPs (`0.0.0.0/0`).
+   Always configure `allowed_ips` for production deployments to restrict SSH bastion access.
+
+2. **SSH Key Management**: Use IAM SSH keys for automated access
+   ```bash
+   pulumi config set ssh_public_key "ssh-rsa AAAA...,ssh-rsa BBBB..."
+   ```
+
+3. **Private-Only Workers**: Workers have no public IPs and are only accessible via the gateway bastion
+
+4. **Regular Key Rotation**: Gateway automatically refreshes SSH keys from IAM
+
+5. **Non-Standard SSH Port**: Gateway bastion uses port 61000 instead of 22
 
 ### Cost Optimization
 
