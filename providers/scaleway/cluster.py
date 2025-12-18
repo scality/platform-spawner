@@ -1,19 +1,16 @@
 """
 Scaleway cluster implementation.
 
-This module orchestrates the deployment of complete cluster topologies
-on Scaleway infrastructure:
-- Single-node: 1 bastion (PLAY2-NANO) + 1 node
-- 3-node: 1 bastion (PLAY2-NANO) + 3 nodes
-- 6-node: 1 bastion (PLAY2-NANO) + 6 nodes
+This module orchestrates the deployment of complete clusters
+on Scaleway infrastructure with any number of worker nodes.
 
-The bastion is always a small machine for SSH access. No bootstrap node.
+The gateway provides SSH bastion functionality for accessing private worker nodes.
 """
 
 import pulumi
 from typing import Dict, Any, List
 from core.interfaces import ClusterInterface
-from core.models import ClusterConfig, NodeConfig, Topology
+from core.models import ClusterConfig, NodeConfig
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
@@ -22,13 +19,9 @@ class ScalewayCluster(ClusterInterface):
     """
     Scaleway-specific cluster implementation.
     
-    Orchestrates network and compute resources to deploy:
-    - Single-node topology: 1 bastion (PLAY2-NANO) + 1 node
-    - 3-node topology: 1 bastion (PLAY2-NANO) + 3 nodes
-    - 6-node topology: 1 bastion (PLAY2-NANO) + 6 nodes
-    
-    The bastion is always a small machine (PLAY2-NANO) for SSH access.
-    No bootstrap node is needed in any topology.
+    Orchestrates network and compute resources to deploy clusters
+    with any number of worker nodes. All worker nodes are on a private
+    network and accessed via a gateway with SSH bastion functionality.
     """
     
     def __init__(self, config: ClusterConfig):
@@ -42,101 +35,15 @@ class ScalewayCluster(ClusterInterface):
         self.network = ScalewayNetwork(config)
         self.compute = ScalewayCompute(config)
     
-    def deploy_single_node(self) -> Dict[str, Any]:
+    def deploy_cluster(self) -> Dict[str, Any]:
         """
-        Deploy a single-node topology (Scenario I).
-        
-        Creates:
-        - VPC and Private Network
-        - Public Gateway with SSH bastion and NAT
-        - Security Group for internal nodes
-        - 1 Node (private only, accessed via gateway bastion)
-        
-        This is the simplest topology, suitable for development
-        or standalone applications.
-        
-        Returns:
-            Dictionary with deployment outputs
-        """
-        # Get node configurations
-        nodes_by_role = self._organize_nodes_by_role()
-        
-        # Get worker image
-        worker_image = self.compute.get_worker_image()
-        
-        # Create network infrastructure (includes gateway with bastion)
-        network_output = self.network.create_full_network()
-        
-        # Create security group for internal nodes
-        sg_internal = self.compute.create_internal_security_group(
-            private_subnet=self.config.network.private_subnet
-        )
-        
-        # Deploy nodes
-        outputs = {
-            "topology": Topology.SINGLE.value,
-            "network": {
-                "vpc_id": network_output.vpc_id,
-                "private_network_id": network_output.private_network_id,
-                "subnet": network_output.subnet,
-                "gateway_id": network_output.gateway_id,
-            },
-            "nodes": {},
-        }
-        
-        # Add gateway bastion IP to outputs
-        if network_output.gateway_ip:
-            outputs["gateway_bastion_ip"] = network_output.gateway_ip
-        
-        # Deploy Node (private only, accessed via gateway bastion)
-        if "node" in nodes_by_role:
-            node_config = nodes_by_role["node"][0]
-            node_item = self._deploy_internal_node(
-                node_config=node_config,
-                image_id=worker_image,
-                security_group=sg_internal,
-            )
-            
-            # Generate SSH jump command for accessing the node via bastion
-            network_name = f"{self.config.topology.value}-internal"
-            ssh_command = network_output.gateway_ip.apply(
-                lambda ip: f"ssh -J bastion@{ip}:61000 artesca-os@{node_config.name}.{network_name}.internal"
-            )
-            
-            # Prepare volume information if volumes exist
-            volumes_info = []
-            if node_item.get("volumes"):
-                for vol_data in node_item["volumes"]:
-                    volumes_info.append({
-                        "id": vol_data["resource"].id,
-                        "urn": vol_data["resource"].urn,
-                        "name": vol_data["resource"].name,
-                        "size_gb": vol_data["size_gb"],
-                    })
-            
-            outputs["nodes"]["node-01"] = {
-                "id": node_item["node_output"].id,
-                "name": node_config.name,
-                "instance_type": node_config.instance_type,
-                "private_ip": node_item["node_output"].private_ip,
-                "ssh_command": ssh_command,
-                "urn": node_item["instance"].urn,
-                "volumes": volumes_info,
-            }
-        
-        return outputs
-    
-    def deploy_three_node(self) -> Dict[str, Any]:
-        """
-        Deploy a 3-node cluster topology (Scenario II).
+        Deploy a cluster with the configured number of worker nodes.
         
         Creates:
         - VPC and Private Network
         - Public Gateway with SSH bastion, NAT and DHCP
         - Security Group for internal nodes
-        - 3 Nodes (private only, accessed via gateway bastion)
-        
-        The gateway provides both SSH bastion access and outbound internet for private nodes.
+        - N Worker Nodes (private only, accessed via gateway bastion)
         
         Returns:
             Dictionary with deployment outputs
@@ -157,91 +64,7 @@ class ScalewayCluster(ClusterInterface):
         
         # Deploy nodes
         outputs = {
-            "topology": Topology.THREE_NODE.value,
-            "network": {
-                "vpc_id": network_output.vpc_id,
-                "private_network_id": network_output.private_network_id,
-                "subnet": network_output.subnet,
-                "gateway_id": network_output.gateway_id,
-            },
-            "nodes": {},
-        }
-        
-        # Add gateway bastion IP to outputs
-        if network_output.gateway_ip:
-            outputs["gateway_bastion_ip"] = network_output.gateway_ip
-        
-        # Deploy 3 Nodes (private only, accessed via gateway bastion)
-        if "node" in nodes_by_role:
-            network_name = f"{self.config.topology.value}-internal"
-            for node_config in nodes_by_role["node"]:
-                node_item = self._deploy_internal_node(
-                    node_config=node_config,
-                    image_id=worker_image,
-                    security_group=sg_internal,
-                )
-                
-                # Generate SSH jump command for accessing the node via bastion
-                ssh_command = network_output.gateway_ip.apply(
-                    lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
-                )
-                
-                # Prepare volume information if volumes exist
-                volumes_info = []
-                if node_item.get("volumes"):
-                    for vol_data in node_item["volumes"]:
-                        volumes_info.append({
-                            "id": vol_data["resource"].id,
-                            "urn": vol_data["resource"].urn,
-                            "name": vol_data["resource"].name,
-                            "size_gb": vol_data["size_gb"],
-                        })
-                
-                outputs["nodes"][node_config.name] = {
-                    "id": node_item["node_output"].id,
-                    "name": node_config.name,
-                    "instance_type": node_config.instance_type,
-                    "private_ip": node_item["node_output"].private_ip,
-                    "ssh_command": ssh_command,
-                    "urn": node_item["instance"].urn,
-                    "volumes": volumes_info,
-                }
-        
-        return outputs
-    
-    def deploy_six_node(self) -> Dict[str, Any]:
-        """
-        Deploy a 6-node cluster topology (Scenario III).
-        
-        Creates:
-        - VPC and Private Network
-        - Public Gateway with SSH bastion, NAT and DHCP
-        - Security Group for internal nodes
-        - 6 Nodes (private only, accessed via gateway bastion)
-        
-        This demonstrates the power of Python loops for infrastructure
-        provisioning - the 6 nodes are created programmatically.
-        
-        Returns:
-            Dictionary with deployment outputs
-        """
-        # Get node configurations
-        nodes_by_role = self._organize_nodes_by_role()
-        
-        # Get worker image
-        worker_image = self.compute.get_worker_image()
-        
-        # Create network infrastructure (includes gateway with bastion)
-        network_output = self.network.create_full_network()
-        
-        # Create security group for internal nodes
-        sg_internal = self.compute.create_internal_security_group(
-            private_subnet=self.config.network.private_subnet
-        )
-        
-        # Deploy nodes
-        outputs = {
-            "topology": Topology.SIX_NODE.value,
+            "worker_count": self.config.worker_count,
             "network": {
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
@@ -255,9 +78,9 @@ class ScalewayCluster(ClusterInterface):
         if network_output.gateway_ip:
             outputs["gateway_bastion_ip"] = network_output.gateway_ip
         
-        # Deploy 6 Nodes (private only, accessed via gateway bastion)
+        # Deploy worker nodes (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
-            network_name = f"{self.config.topology.value}-internal"
+            network_name = f"{self.config.name_prefix}-internal" if self.config.name_prefix else "internal"
             for node_config in nodes_by_role["node"]:
                 node = self._deploy_internal_node(
                     node_config=node_config,

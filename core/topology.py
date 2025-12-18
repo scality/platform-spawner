@@ -2,145 +2,60 @@
 Topology configuration factory.
 
 This module provides functions to generate node and network configurations
-for different cluster topologies.
+based on the number of worker nodes.
 """
 
 from typing import Dict, Any
-from .models import Topology, NodeConfig, NetworkConfig
+from .models import NodeConfig, NetworkConfig
 
 
-def get_topology_config(
-    topology: Topology,
-    base_instance_type: str = "PRO2-S"
+def get_cluster_config(
+    worker_count: int,
+    base_instance_type: str = "PRO2-S",
+    name_prefix: str = ""
 ) -> Dict[str, Any]:
     """
-    Generate node and network configurations based on topology.
+    Generate node and network configurations based on worker count.
     
     This factory function creates the appropriate node list and network
-    configuration for the requested topology.
+    configuration for the requested number of worker nodes.
     
     Instance Types:
-    - Bastion: Always PLAY2-NANO (small machine for SSH access only)
-    - Nodes: Uses base_instance_type parameter (default: PRO2-S)
+    - Worker Nodes: Uses base_instance_type parameter (default: PRO2-S)
     
     Args:
-        topology: The topology to configure
-        base_instance_type: Instance type to use for worker nodes (not bastion)
+        worker_count: Number of worker nodes to deploy (must be >= 1)
+        base_instance_type: Instance type to use for worker nodes
+        name_prefix: Prefix to apply to all resource names (optional)
         
     Returns:
         Dictionary with 'nodes' and 'network' keys containing the
-        configuration for the topology
+        configuration for the cluster
         
     Raises:
-        ValueError: If topology is not supported
+        ValueError: If worker_count is less than 1
     """
+    if worker_count < 1:
+        raise ValueError(f"Worker count must be at least 1, got {worker_count}")
     
-    configs = {
-        Topology.SINGLE: _get_single_node_config,
-        Topology.THREE_NODE: _get_three_node_config,
-        Topology.SIX_NODE: _get_six_node_config,
-    }
+    # Prepare node name prefix
+    node_prefix = f"{name_prefix}-" if name_prefix else ""
     
-    if topology not in configs:
-        raise ValueError(f"Unsupported topology: {topology}")
-    
-    return configs[topology](base_instance_type)
-
-
-def _get_single_node_config(instance_type: str) -> Dict[str, Any]:
-    """
-    Generate configuration for single-node topology.
-    
-    Topology:
-    - 1 Node (private only)
-    - Gateway with bastion feature for SSH access
-    
-    Args:
-        instance_type: Instance type to use for the node
-        
-    Returns:
-        Configuration dictionary
-    """
-    return {
-        "nodes": [
-            NodeConfig(
-                name="node-01",
-                role="node",
-                instance_type=instance_type,  # Worker node uses configured instance type (default: PRO2-S)
-                has_public_ip=False,
-                has_private_ip=True,
-                tags=["role:node", "index:01", "topology:single-node", "os:rocky9"]
-            )
-        ],
-        "network": NetworkConfig(
-            enable_private_network=True,
-            enable_gateway=True  # Gateway provides SSH bastion + NAT
-        )
-    }
-
-
-def _get_three_node_config(instance_type: str) -> Dict[str, Any]:
-    """
-    Generate configuration for 3-node cluster topology.
-    
-    Topology:
-    - 3 Nodes (private only)
-    - Gateway with bastion feature for SSH access + NAT
-    
-    Args:
-        instance_type: Instance type to use for the 3 nodes
-        
-    Returns:
-        Configuration dictionary
-    """
-    return {
-        "nodes": [
-            # Worker nodes use configured instance type (default: PRO2-S)
-            NodeConfig(name="node-01", role="node", instance_type=instance_type, has_public_ip=False, has_private_ip=True, tags=["role:node", "index:01", "topology:3-nodes", "os:rocky9"]),
-            NodeConfig(name="node-02", role="node", instance_type=instance_type, has_public_ip=False, has_private_ip=True, tags=["role:node", "index:02", "topology:3-nodes", "os:rocky9"]),
-            NodeConfig(name="node-03", role="node", instance_type=instance_type, has_public_ip=False, has_private_ip=True, tags=["role:node", "index:03", "topology:3-nodes", "os:rocky9"]),
-        ],
-        "network": NetworkConfig(
-            enable_private_network=True,  # Required for internal communication
-            enable_gateway=True,  # Gateway provides SSH bastion + NAT
-            private_subnet="192.168.10.0/24",
-            dns_local_name="cluster.local"
-        )
-    }
-
-
-def _get_six_node_config(instance_type: str) -> Dict[str, Any]:
-    """
-    Generate configuration for 6-node cluster topology.
-    
-    Topology:
-    - 6 Nodes (private only)
-    - Gateway with bastion feature for SSH access + NAT
-    
-    Uses Python list comprehension to generate the 6 nodes
-    programmatically, demonstrating the power of using Python for IaC.
-    
-    Args:
-        instance_type: Instance type to use for the 6 nodes
-        
-    Returns:
-        Configuration dictionary
-    """
-    # Generate 6 worker nodes programmatically (use configured instance type, default: PRO2-S)
+    # Generate worker nodes programmatically
     nodes = []
-    for i in range(1, 7):
-        node_index = f"{i:02d}"  # Format as 01, 02, 03, 04, 05, 06
+    for i in range(1, worker_count + 1):
+        node_index = f"{i:02d}"  # Format as 01, 02, 03, etc.
         nodes.append(
             NodeConfig(
-                name=f"node-{node_index}",
+                name=f"{node_prefix}node-{node_index}",
                 role="node",
-                instance_type=instance_type,  # Worker node uses configured instance type (default: PRO2-S)
+                instance_type=base_instance_type,
                 has_public_ip=False,  # Private only, accessed via gateway bastion
                 has_private_ip=True,
                 tags=[
                     "role:node",
                     f"index:{node_index}",
-                    "topology:6-node",
+                    f"cluster:{worker_count}-nodes",
                     "os:rocky9"
                 ]
             )

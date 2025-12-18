@@ -31,9 +31,9 @@ def create_cluster(config: ClusterConfig) -> ClusterInterface:
         ValueError: If the provider is not supported or not yet implemented
         
     Example:
-        >>> from core.models import ClusterConfig, Provider, Topology
+        >>> from core.models import ClusterConfig, Provider
         >>> config = ClusterConfig(
-        ...     topology=Topology.SINGLE,
+        ...     worker_count=3,
         ...     provider=Provider.SCALEWAY,
         ...     region="fr-par",
         ...     zone="fr-par-1",

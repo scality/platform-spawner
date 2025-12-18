@@ -2,13 +2,13 @@
 Main entry point for the Pulumi multi-cloud platform spawner.
 
 This module reads configuration from Pulumi, creates the appropriate
-cluster configuration, and deploys the requested topology.
+cluster configuration, and deploys the requested cluster.
 """
 
 import pulumi
 import json
-from core.models import Topology, Provider, ClusterConfig, VolumeConfig
-from core.topology import get_topology_config
+from core.models import Provider, ClusterConfig, VolumeConfig
+from core.topology import get_cluster_config
 from core.factory import create_cluster
 
 
@@ -23,11 +23,22 @@ def main():
     config = pulumi.Config()
     
     # Required configuration
-    topology_str = config.require("topology")
+    worker_count_str = config.require("worker_count")
     project_id = config.require("project_id")
+    
+    # Parse worker count
+    try:
+        worker_count = int(worker_count_str)
+        if worker_count < 1:
+            raise ValueError("Worker count must be at least 1")
+    except ValueError as e:
+        raise ValueError(f"Invalid worker_count '{worker_count_str}': {e}")
     
     # Optional worker snapshot (if not provided, uses marketplace image)
     worker_snapshot_id = config.get("worker_snapshot_id")
+    
+    # Optional name prefix for all resources (nodes, volumes, VPC, gateway, etc.)
+    name_prefix = config.get("name_prefix") or ""
        
     # Optional configuration with defaults
     provider_str = config.get("provider") or "scaleway"
@@ -89,16 +100,6 @@ users:
 """
         pulumi.log.info(f"SSH keys ({len(ssh_keys)}) will be injected via cloud-init for user 'artesca-os'")
     
-    # Parse and validate topology
-    try:
-        topology = Topology(topology_str)
-    except ValueError:
-        valid_topologies = [t.value for t in Topology]
-        raise ValueError(
-            f"Invalid topology '{topology_str}'. "
-            f"Valid options: {', '.join(valid_topologies)}"
-        )
-    
     # Parse and validate provider
     try:
         provider = Provider(provider_str)
@@ -109,13 +110,13 @@ users:
             f"Valid options: {', '.join(valid_providers)}"
         )
     
-    # Generate topology-specific node and network configuration
-    topology_config = get_topology_config(topology, instance_type)
+    # Generate cluster node and network configuration based on worker count
+    cluster_topology = get_cluster_config(worker_count, instance_type, name_prefix)
     
     # Inject SSH key into all node configurations if provided
     # SSH keys are needed on all nodes for gateway bastion to access them
     if ssh_user_data:
-        for node in topology_config["nodes"]:
+        for node in cluster_topology["nodes"]:
             # Merge with existing user_data if any
             if node.user_data:
                 node.user_data = node.user_data + "\n" + ssh_user_data
@@ -139,22 +140,24 @@ users:
     # Prepare SSH key for cloud-init injection (if provided)
     # This is simpler than IAM SSH key resources and works for all providers
     cluster_config = ClusterConfig(
-        topology=topology,
+        worker_count=worker_count,
         provider=provider,
         region=region,
         zone=zone,
         project_id=project_id,
+        name_prefix=name_prefix,
         worker_snapshot_id=worker_snapshot_id,
         bastion_os_name=bastion_os_name,
         bastion_os_version=bastion_os_version,
         ssh_key_ids=[],  # Not used with cloud-init approach
-        nodes=topology_config["nodes"],
-        network=topology_config["network"],
+        nodes=cluster_topology["nodes"],
+        network=cluster_topology["network"],
         additional_volumes=additional_volumes,
     )
     
     # Log configuration for debugging
-    pulumi.log.info(f"Deploying {topology.value} topology on {provider.value}")
+    prefix_msg = f" with prefix '{name_prefix}'" if name_prefix else ""
+    pulumi.log.info(f"Deploying {worker_count}-node cluster{prefix_msg} on {provider.value}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
     pulumi.log.info(f"Using Gateway SSH bastion feature (no bastion VM)")
     if worker_snapshot_id:
@@ -162,7 +165,7 @@ users:
     else:
         pulumi.log.info(f"Worker nodes: Marketplace image ({bastion_os_name} {bastion_os_version})")
     pulumi.log.info(f"Instance type for worker nodes: {instance_type}")
-    pulumi.log.info(f"Number of worker nodes: {len(cluster_config.nodes)}")
+    pulumi.log.info(f"Number of worker nodes: {worker_count}")
     
     # Create cluster implementation via factory
     cluster = create_cluster(cluster_config)
@@ -176,7 +179,8 @@ users:
     
     # Additional helpful exports
     pulumi.export("config", {
-        "topology": topology.value,
+        "name_prefix": name_prefix,
+        "worker_count": worker_count,
         "provider": provider.value,
         "region": region,
         "zone": zone,

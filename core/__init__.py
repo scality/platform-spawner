@@ -6,34 +6,34 @@ deploying infrastructure across multiple cloud providers.
 """
 
 from .models import (
-    Topology,
     Provider,
     NodeConfig,
     NetworkConfig,
     ClusterConfig,
     NodeOutput,
-    NetworkOutput
+    NetworkOutput,
+    VolumeConfig
 )
 from .interfaces import (
     NetworkInterface,
     ComputeInterface,
     ClusterInterface
 )
-from .topology import get_topology_config
+from .topology import get_cluster_config
 from .factory import create_cluster
 
 __all__ = [
-    "Topology",
     "Provider",
     "NodeConfig",
     "NetworkConfig",
     "ClusterConfig",
     "NodeOutput",
     "NetworkOutput",
+    "VolumeConfig",
     "NetworkInterface",
     "ComputeInterface",
     "ClusterInterface",
-    "get_topology_config",
+    "get_cluster_config",
     "create_cluster",
 ]
 

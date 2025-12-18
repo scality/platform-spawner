@@ -51,7 +51,8 @@ class ScalewayNetwork(NetworkInterface):
         Returns:
             Scaleway VPC resource
         """
-        tags = kwargs.get("tags", ["managed-by:pulumi", f"topology:{self.config.topology.value}"])
+        prefix_tag = f"prefix:{self.config.name_prefix}" if self.config.name_prefix else "no-prefix"
+        tags = kwargs.get("tags", ["managed-by:pulumi", prefix_tag])
         
         self._vpc = scaleway.network.Vpc(
             f"vpc-{name}",
@@ -92,6 +93,10 @@ class ScalewayNetwork(NetworkInterface):
             project_id=self.config.project_id,
             region=self.config.region,
             tags=tags,
+            # Configure the IPv4 subnet for this private network
+            ipv4_subnet=scaleway.network.PrivateNetworkIpv4SubnetArgs(
+                subnet=self.config.network.private_subnet,
+            ),
         )
         
         return self._private_network
@@ -134,9 +139,10 @@ class ScalewayNetwork(NetworkInterface):
         )
         
         # 2. Create the Public Gateway appliance with SSH bastion enabled
+        gateway_name = f"{self.config.name_prefix}-gateway" if self.config.name_prefix else "gateway"
         self._gateway = scaleway.network.PublicGateway(
             "gateway",
-            name=f"{self.config.topology.value}-gateway",
+            name=gateway_name,
             type=gateway_type,
             ip_id=self._gateway_ip.id,
             bastion_enabled=enable_bastion,  # Enable SSH bastion functionality
@@ -148,6 +154,7 @@ class ScalewayNetwork(NetworkInterface):
         
         # 3. Attach the gateway to the private network with IPAM/DHCP
         # Note: Using ipam_configs (modern approach, not deprecated dhcp_id/enable_dhcp)
+        # The subnet is configured on the PrivateNetwork itself, not here
         self._gateway_network = scaleway.network.GatewayNetwork(
             "gateway-network",
             gateway_id=self._gateway.id,
@@ -182,18 +189,21 @@ class ScalewayNetwork(NetworkInterface):
             return NetworkOutput()
         
         # Create VPC
+        vpc_name = f"{self.config.name_prefix}-vpc" if self.config.name_prefix else "vpc"
+        prefix_tag = f"prefix:{self.config.name_prefix}" if self.config.name_prefix else "no-prefix"
         vpc = self.create_vpc(
-            name=f"{self.config.topology.value}-vpc",
+            name=vpc_name,
             tags=[
                 "managed-by:pulumi",
-                f"topology:{self.config.topology.value}",
+                prefix_tag,
             ]
         )
         
         # Create Private Network
+        pn_name = f"{self.config.name_prefix}-internal" if self.config.name_prefix else "internal"
         private_network = self.create_private_network(
             vpc_ref=vpc,
-            name=f"{self.config.topology.value}-internal",
+            name=pn_name,
             tags=["internal", "managed-by:pulumi"]
         )
         

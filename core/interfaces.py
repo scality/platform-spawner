@@ -192,10 +192,10 @@ class ComputeInterface(ABC):
 
 class ClusterInterface(ABC):
     """
-    Main interface for deploying complete cluster topologies.
+    Main interface for deploying complete clusters with worker nodes.
     
     This is the primary interface that orchestrates network and compute
-    resources to deploy the requested topology.
+    resources to deploy the requested cluster configuration.
     """
     
     def __init__(self, config: ClusterConfig):
@@ -210,29 +210,9 @@ class ClusterInterface(ABC):
         self.compute: Optional[ComputeInterface] = None
     
     @abstractmethod
-    def deploy_single_node(self) -> Dict[str, Any]:
+    def deploy_cluster(self) -> Dict[str, Any]:
         """
-        Deploy a single-node topology.
-        
-        Returns:
-            Dictionary with deployment outputs
-        """
-        pass
-    
-    @abstractmethod
-    def deploy_three_node(self) -> Dict[str, Any]:
-        """
-        Deploy a 3-node cluster (bootstrap, bastion, slave).
-        
-        Returns:
-            Dictionary with deployment outputs
-        """
-        pass
-    
-    @abstractmethod
-    def deploy_six_node(self) -> Dict[str, Any]:
-        """
-        Deploy a 6-node cluster (bootstrap, bastion, 4 slaves).
+        Deploy a cluster with the configured number of worker nodes.
         
         Returns:
             Dictionary with deployment outputs
@@ -241,22 +221,12 @@ class ClusterInterface(ABC):
     
     def deploy(self) -> Dict[str, Any]:
         """
-        Deploy the configured topology.
+        Deploy the configured cluster.
         
-        This method routes to the appropriate deployment method based
-        on the configured topology.
+        This method calls the deploy_cluster implementation.
         
         Returns:
             Dictionary with deployment outputs
         """
-        from .models import Topology
-        
-        if self.config.topology == Topology.SINGLE:
-            return self.deploy_single_node()
-        elif self.config.topology == Topology.THREE_NODE:
-            return self.deploy_three_node()
-        elif self.config.topology == Topology.SIX_NODE:
-            return self.deploy_six_node()
-        else:
-            raise ValueError(f"Unknown topology: {self.config.topology}")
+        return self.deploy_cluster()
 

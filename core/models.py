@@ -25,13 +25,6 @@ class VolumeConfig:
     count: int = 1
 
 
-class Topology(Enum):
-    """Supported cluster topologies."""
-    SINGLE = "single-node"
-    THREE_NODE = "3-nodes"
-    SIX_NODE = "6-nodes"
-
-
 class Provider(Enum):
     """Supported cloud providers."""
     SCALEWAY = "scaleway"
@@ -87,11 +80,12 @@ class ClusterConfig:
     Complete cluster configuration.
     
     Attributes:
-        topology: The topology to deploy
+        worker_count: Number of worker nodes to deploy
         provider: Cloud provider to use
         region: Provider region
         zone: Provider availability zone
         project_id: Provider project/account ID
+        name_prefix: Prefix applied to all resource names (nodes, volumes, VPC, gateway, etc.)
         worker_snapshot_id: Custom snapshot/image ID for worker nodes (required)
         bastion_os_name: Operating system name for bastion node (marketplace image)
         bastion_os_version: Operating system version for bastion node
@@ -100,11 +94,12 @@ class ClusterConfig:
         nodes: List of node configurations
         additional_volumes: List of additional volume configurations for worker nodes
     """
-    topology: Topology
+    worker_count: int
     provider: Provider
     region: str
     zone: str
     project_id: str
+    name_prefix: str = ""
     worker_snapshot_id: Optional[str] = None
     bastion_os_name: str = "rockylinux"
     bastion_os_version: str = "9"
