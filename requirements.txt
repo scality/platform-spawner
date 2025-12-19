@@ -1,3 +1,1 @@
-pulumi>=3.0.0,<4.0.0
-pulumiverse-scaleway>=1.38.0
-
+.devcontainer/requirements.txt

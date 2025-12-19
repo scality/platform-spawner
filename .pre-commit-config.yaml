@@ -1,0 +1,28 @@
+---
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        files: src/.*\.py
+        name: Formatting Python
+      - id: black
+        files: (config|core|providers)/.*\.py
+        # We want this hook to be part of "lint" so that if we run
+        # `pre-commit run lint` we include this hook
+        alias: lint
+        name: Checking Python formatting
+        args:
+          - --check
+          - --diff
+
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.5
+    hooks:
+      - id: pylint
+        alias: lint
+        name: Lint Python (CLI)
+        files: (config|core|providers)/.*\.py
+        additional_dependencies:
+          - 'pulumi>=3.0.0,<4.0.0'
+          - 'pulumiverse-scaleway>=1.39.0'
