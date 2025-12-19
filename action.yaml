@@ -18,6 +18,14 @@ inputs:
     description: "The AWS region"
     required: true
 
+  # Scaleway credentials
+  scaleway_access_key:
+    description: "The Scaleway access key"
+    required: true
+  scaleway_secret_key:
+    description: "The Scaleway secret key"
+    required: true
+
   # Artifacts credentials
   artifacts_user:
     description: "The artifacts user (only for spawn action)"
@@ -128,6 +136,9 @@ runs:
         echo "AWS_ACCESS_KEY_ID=${{ inputs.aws_access_key_id }}" >> "$GITHUB_ENV"
         echo "AWS_SECRET_ACCESS_KEY=${{ inputs.aws_secret_key }}" >> "$GITHUB_ENV"
         echo "AWS_REGION=${{ inputs.aws_region }}" >> "$GITHUB_ENV"
+
+        echo "SCW_ACCESS_KEY=${{ inputs.scaleway_access_key }}" >> "$GITHUB_ENV"
+        echo "SCW_SECRET_KEY=${{ inputs.scaleway_secret_key }}" >> "$GITHUB_ENV"
 
         echo "PULUMI_DEFAULT_ARGS=--color always --non-interactive" >> "$GITHUB_ENV"
         echo "PULUMI_CONFIG_PASSPHRASE=" >> "$GITHUB_ENV"
