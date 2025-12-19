@@ -37,13 +37,13 @@ class ScalewayCluster(ClusterInterface):
     
     def deploy_cluster(self) -> Dict[str, Any]:
         """
-        Deploy a cluster with the configured number of worker nodes.
+        Deploy a cluster with the configured number of instances.
         
         Creates:
         - VPC and Private Network
         - Public Gateway with SSH bastion, NAT and DHCP
         - Security Group for internal nodes
-        - N Worker Nodes (private only, accessed via gateway bastion)
+        - N Instance Nodes (private only, accessed via gateway bastion)
         
         Returns:
             Dictionary with deployment outputs
@@ -51,8 +51,8 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
         
-        # Get worker image
-        worker_image = self.compute.get_worker_image()
+        # Get instance image
+        instance_image = self.compute.get_worker_image()
         
         # Create network infrastructure (includes gateway with bastion)
         network_output = self.network.create_full_network()
@@ -64,7 +64,7 @@ class ScalewayCluster(ClusterInterface):
         
         # Deploy nodes
         outputs = {
-            "worker_count": self.config.worker_count,
+            "instance_count": self.config.instance_count,
             "network": {
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
@@ -72,25 +72,36 @@ class ScalewayCluster(ClusterInterface):
                 "gateway_id": network_output.gateway_id,
             },
             "nodes": {},
+            "bastion": {},
         }
 
-        # Add gateway bastion IP to outputs
+        # Add gateway bastion info to outputs (action.yaml expects 'bastion' output)
         if network_output.gateway_ip:
+            outputs["bastion"] = {
+                "type": "gateway",
+                "ip": network_output.gateway_ip,
+                "port": 61000,
+                "user": "bastion",
+                "gateway_id": network_output.gateway_id,
+            }
+            # Also keep gateway_bastion_ip for backward compatibility
             outputs["gateway_bastion_ip"] = network_output.gateway_ip
         
-        # Deploy worker nodes (private only, accessed via gateway bastion)
+        # Deploy instance nodes (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
-            network_name = f"{self.config.name_prefix}-internal" if self.config.name_prefix else "internal"
+            # Get the actual private network name (includes product prefix)
+            private_network_name = f"{self.config.product}-internal" if self.config.product else "internal"
             for node_config in nodes_by_role["node"]:
                 node = self._deploy_internal_node(
                     node_config=node_config,
-                    image_id=worker_image,
+                    image_id=instance_image,
                     security_group=sg_internal,
                 )
                 
                 # Generate SSH jump command for accessing the node via bastion
+                # Scaleway internal DNS format: {hostname}.{private_network_name}.internal
                 ssh_command = network_output.gateway_ip.apply(
-                    lambda ip, name=node_config.name, net=network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                    lambda ip, name=node_config.name, net=private_network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
                 )
                 
                 # Prepare volume information if volumes exist
@@ -150,11 +161,11 @@ class ScalewayCluster(ClusterInterface):
         Returns:
             Dictionary with instance, volumes, and NIC resources
         """
-        # Create additional volumes for worker nodes only (not bastion)
+        # Create extra volumes for instance nodes only (not bastion)
         volume_ids = []
         volumes = []
-        if node_config.role == "node" and self.config.additional_volumes:
-            for vol_config in self.config.additional_volumes:
+        if node_config.role == "node" and self.config.extra_volumes:
+            for vol_config in self.config.extra_volumes:
                 # Create 'count' volumes for this configuration
                 for i in range(vol_config.count):
                     # Generate unique volume name

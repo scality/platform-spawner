@@ -51,8 +51,7 @@ class ScalewayNetwork(NetworkInterface):
         Returns:
             Scaleway VPC resource
         """
-        prefix_tag = f"prefix:{self.config.name_prefix}" if self.config.name_prefix else "no-prefix"
-        tags = kwargs.get("tags", ["managed-by:pulumi", prefix_tag])
+        tags = kwargs.get("tags", ["managed-by:pulumi"])
         
         self._vpc = scaleway.network.Vpc(
             f"vpc-{name}",
@@ -147,9 +146,9 @@ class ScalewayNetwork(NetworkInterface):
         )
         
         # 2. Create the Public Gateway appliance with SSH bastion enabled
-        gateway_name = f"{self.config.name_prefix}-gateway" if self.config.name_prefix else "gateway"
+        gateway_name = f"{self.config.product}-gateway" if self.config.product else "gateway"
         self._gateway = scaleway.network.PublicGateway(
-            "gateway",
+            gateway_name,
             name=gateway_name,
             type=gateway_type,
             ip_id=self._gateway_ip.id,
@@ -199,18 +198,14 @@ class ScalewayNetwork(NetworkInterface):
             return NetworkOutput()
         
         # Create VPC
-        vpc_name = f"{self.config.name_prefix}-vpc" if self.config.name_prefix else "vpc"
-        prefix_tag = f"prefix:{self.config.name_prefix}" if self.config.name_prefix else "no-prefix"
+        vpc_name = f"{self.config.product}-vpc" if self.config.product else "vpc"
         vpc = self.create_vpc(
             name=vpc_name,
-            tags=[
-                "managed-by:pulumi",
-                prefix_tag,
-            ]
+            tags=["managed-by:pulumi"]
         )
         
         # Create Private Network
-        pn_name = f"{self.config.name_prefix}-internal" if self.config.name_prefix else "internal"
+        pn_name = f"{self.config.product}-internal" if self.config.product else "internal"
         private_network = self.create_private_network(
             vpc_ref=vpc,
             name=pn_name,

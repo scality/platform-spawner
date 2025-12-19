@@ -10,44 +10,40 @@ from .models import NodeConfig, NetworkConfig
 
 
 def get_cluster_config(
-    worker_count: int,
+    instance_count: int,
     base_instance_type: str = "PRO2-S",
-    name_prefix: str = ""
+    product: str = ""
 ) -> Dict[str, Any]:
     """
-    Generate node and network configurations based on worker count.
+    Generate node and network configurations based on instance count.
     
     This factory function creates the appropriate node list and network
-    configuration for the requested number of worker nodes.
+    configuration for the requested number of instances.
     
     Instance Types:
-    - Worker Nodes: Uses base_instance_type parameter (default: PRO2-S)
+    - Instances: Uses base_instance_type parameter (default: PRO2-S)
     
     Args:
-        worker_count: Number of worker nodes to deploy (must be >= 1)
-        base_instance_type: Instance type to use for worker nodes
-        name_prefix: Prefix to apply to all resource names (optional)
+        instance_count: Number of instances to deploy (must be >= 1)
+        base_instance_type: Instance type to use for instances
         
     Returns:
         Dictionary with 'nodes' and 'network' keys containing the
         configuration for the cluster
         
     Raises:
-        ValueError: If worker_count is less than 1
+        ValueError: If instance_count is less than 1
     """
-    if worker_count < 1:
-        raise ValueError(f"Worker count must be at least 1, got {worker_count}")
+    if instance_count < 1:
+        raise ValueError(f"Instance count must be at least 1, got {instance_count}")
     
-    # Prepare node name prefix
-    node_prefix = f"{name_prefix}-" if name_prefix else ""
-    
-    # Generate worker nodes programmatically
+    # Generate instance nodes programmatically
     nodes = []
-    for i in range(1, worker_count + 1):
+    for i in range(1, instance_count + 1):
         node_index = f"{i:02d}"  # Format as 01, 02, 03, etc.
         nodes.append(
             NodeConfig(
-                name=f"{node_prefix}node-{node_index}",
+                name=f"{product}-node-{node_index}",
                 role="node",
                 instance_type=base_instance_type,
                 has_public_ip=False,  # Private only, accessed via gateway bastion
@@ -55,7 +51,7 @@ def get_cluster_config(
                 tags=[
                     "role:node",
                     f"index:{node_index}",
-                    f"cluster:{worker_count}-nodes",
+                    f"cluster:{instance_count}-nodes",
                     "os:rocky9"
                 ]
             )

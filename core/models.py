@@ -81,33 +81,96 @@ class ClusterConfig:
     Complete cluster configuration.
     
     Attributes:
-        worker_count: Number of worker nodes to deploy
+        instance_count: Number of instances to deploy
         provider: Cloud provider to use
         region: Provider region
         zone: Provider availability zone
         project_id: Provider project/account ID
+        instance_image: Image for the instances (AMI name for AWS, snapshot ID for Scaleway)
+        
+        # Global values
+        product: Product name for the resources
         name_prefix: Prefix applied to all resource names (nodes, volumes, VPC, gateway, etc.)
-        worker_snapshot_id: Custom snapshot/image ID for worker nodes (required)
-        bastion_os_name: Operating system name for bastion node (marketplace image)
-        bastion_os_version: Operating system version for bastion node
-        ssh_key_ids: List of SSH key IDs to attach to instances (for CI/CD)
+        
+        # Network configs
+        offline: If true, the platform will not be connected to the internet
+        authorized_tcp_ports: List of authorized TCP ports for ingress to the instances
+        authorized_udp_ports: List of authorized UDP ports for ingress to the instances
+        authorized_icmp: Whether ICMP traffic is authorized for ingress to the instances
+        authorized_cidrs: List of authorized CIDRs for the instances
+        
+        # Instance configs
+        instance_flavor: Flavor of the instance (small/medium/large)
+        instance_root_disk_size: Root disk size for the instance (in GiB)
+        
+        # Bastion host configuration
+        bastion_image: Image for the bastion host (e.g., "rocky-9")
+        bastion_flavor: Flavor of the bastion host
+        bastion_root_disk_size: Root disk size for the bastion host (in GiB)
+        
+        # SSH information
+        ssh_key_name: Name of the SSH key to use (either this or ssh_private_key_create must be set)
+        ssh_private_key_create: If true, a new SSH key will be created
+        
+        # Lifecycle
+        disable_auto_stop: If true, the instance will not be automatically stopped
+        
+        # Extra stuff
+        extra_volumes: Additional volumes to attach to the instances
+        
+        # Internal/computed fields
         network: Network configuration
         nodes: List of node configurations
-        additional_volumes: List of additional volume configurations for worker nodes
+        
+        # Deprecated fields (kept for backward compatibility)
+        bastion_os_name: Operating system name for bastion node (derived from bastion_image)
+        bastion_os_version: Operating system version for bastion node (derived from bastion_image)
     """
-    worker_count: int
+    # Required fields
+    instance_count: int
     provider: Provider
     region: str
     zone: str
     project_id: str
+    instance_image: str
+    
+    # Global values
+    product: str = "unknown"
     name_prefix: str = ""
-    worker_snapshot_id: Optional[str] = None
-    bastion_os_name: str = "rockylinux"
-    bastion_os_version: str = "9"
-    ssh_key_ids: List[str] = field(default_factory=list)
+    
+    # Network configs
+    offline: bool = False
+    authorized_tcp_ports: List[int] = field(default_factory=lambda: [22])
+    authorized_udp_ports: List[int] = field(default_factory=list)
+    authorized_icmp: bool = True
+    authorized_cidrs: List[str] = field(default_factory=list)
+    
+    # Instance configs
+    instance_flavor: str = "medium"
+    instance_root_disk_size: int = 50
+    
+    # Bastion host configuration
+    bastion_image: str = "rocky-9"
+    bastion_flavor: str = "small"
+    bastion_root_disk_size: int = 30
+    
+    # SSH information
+    ssh_key_name: str = ""
+    ssh_private_key_create: bool = False
+    
+    # Lifecycle
+    disable_auto_stop: bool = False
+    
+    # Extra stuff
+    extra_volumes: List[VolumeConfig] = field(default_factory=list)
+    
+    # Internal/computed fields
     network: NetworkConfig = field(default_factory=NetworkConfig)
     nodes: List[NodeConfig] = field(default_factory=list)
-    additional_volumes: List[VolumeConfig] = field(default_factory=list)
+    
+    # Deprecated fields (kept for backward compatibility, derived from bastion_image)
+    bastion_os_name: str = "rockylinux"
+    bastion_os_version: str = "9"
 
 
 @dataclass

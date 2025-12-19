@@ -54,17 +54,12 @@ class ScalewayCompute(ComputeInterface):
         """
         Get the snapshot/image ID for worker nodes.
         
-        If worker_snapshot_id is configured, uses that.
-        Otherwise, falls back to the same OS as bastion (marketplace image).
+        Uses the instance_image from configuration.
         
         Returns:
             Snapshot/Image ID (UUID) or marketplace image label
         """
-        if self.config.worker_snapshot_id:
-            return self.config.worker_snapshot_id
-        else:
-            # Fall back to same OS as bastion
-            return f"{self.config.bastion_os_name}_{self.config.bastion_os_version}"
+        return self.config.instance_image
     
     def create_security_group(
         self,
@@ -185,12 +180,12 @@ class ScalewayCompute(ComputeInterface):
 
         # Only create volume from snapshot for worker nodes (not bastion)
         # Check if image is a UUID (snapshot) vs marketplace label
-        is_snapshot = self.config.worker_snapshot_id and image == self.config.worker_snapshot_id
+        is_snapshot = self.config.instance_image and image == self.config.instance_image
         
         if is_snapshot and uses_block_storage_only:
             # For block-storage instances with snapshots, create a boot volume
             snapshot = scaleway.block.get_snapshot(
-                snapshot_id=self.config.worker_snapshot_id,
+                snapshot_id=self.config.instance_image,
                 zone=self.config.zone,
                 project_id=self.config.project_id,
             )
@@ -350,8 +345,9 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for bastion
         """
+        sg_name = f"{self.config.product}-bastion" if self.config.product else "bastion"
         return self.create_security_group(
-            name="bastion",
+            name=sg_name,
             rules=[
                 {
                     "action": "accept",
@@ -381,8 +377,9 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for internal nodes
         """
+        sg_name = f"{self.config.product}-internal" if self.config.product else "internal"
         return self.create_security_group(
-            name="internal",
+            name=sg_name,
             rules=[
                 {
                     "action": "accept",
@@ -405,8 +402,9 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for single node
         """
+        sg_name = f"{self.config.product}-single-node" if self.config.product else "single-node"
         return self.create_security_group(
-            name="single-node",
+            name=sg_name,
             rules=[
                 {
                     "action": "accept",

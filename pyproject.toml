@@ -1,0 +1,9 @@
+[project]
+name = "platform-spawner"
+version = "0.1.0"
+description = "Pulumi project to spawn platforms"
+requires-python = ">=3.10"
+dependencies = [
+    "pulumi>=3.0.0,<4.0.0",
+    "pulumiverse-scaleway>=1.38.0",
+]

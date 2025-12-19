@@ -58,6 +58,7 @@ secrets/
 *.log
 
 # SSH Keys (if stored locally)
+.ssh/
 *.pem
 *.key
 !*.pub
