@@ -25,6 +25,14 @@ inputs:
   scaleway_secret_key:
     description: "The Scaleway secret key"
     required: true
+  scaleway_project_id:
+    description: "The Scaleway project ID"
+    required: true
+
+  product:
+    description: "The product name"
+    required: false
+    default: ""
 
   # Artifacts credentials
   artifacts_user:
@@ -139,6 +147,7 @@ runs:
 
         echo "SCW_ACCESS_KEY=${{ inputs.scaleway_access_key }}" >> "$GITHUB_ENV"
         echo "SCW_SECRET_KEY=${{ inputs.scaleway_secret_key }}" >> "$GITHUB_ENV"
+        echo "SCW_DEFAULT_PROJECT_ID=${{ inputs.scaleway_project_id }}" >> "$GITHUB_ENV"
 
         echo "PULUMI_DEFAULT_ARGS=--color always --non-interactive" >> "$GITHUB_ENV"
         echo "PULUMI_CONFIG_PASSPHRASE=" >> "$GITHUB_ENV"
@@ -201,8 +210,9 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |-
-        if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
-          pulumi $PULUMI_DEFAULT_ARGS config set product "${{ github.event.repository.name }}"
+        pulumi $PULUMI_DEFAULT_ARGS config set project_id "${{ inputs.scaleway_project_id }}"
+        if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "" ]]; then
+          pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
