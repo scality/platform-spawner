@@ -33,6 +33,10 @@ inputs:
     description: "The product name"
     required: false
     default: ""
+  authorized_cidrs:
+    description: "Comma-separated list of authorized CIDRs for bastion access (e.g., '203.0.113.10/32,198.51.100.0/24')"
+    required: false
+    default: ""
 
   # Artifacts credentials
   artifacts_user:
@@ -213,6 +217,11 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS config set project_id "${{ inputs.scaleway_project_id }}"
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
+        fi
+        if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
+          # Convert comma-separated string to JSON array for Pulumi
+          CIDRS_JSON=$(echo "${{ inputs.authorized_cidrs }}" | python -c "import sys,json; print(json.dumps([x.strip() for x in sys.stdin.read().split(',')]))")
+          pulumi $PULUMI_DEFAULT_ARGS config set-all --plaintext "authorized_cidrs=$CIDRS_JSON"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
