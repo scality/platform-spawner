@@ -4,7 +4,7 @@ description: Spawn and destroy platforms
 inputs:
   action:
     description: "The action to perform (setup, list, spawn or destroy)"
-    required: true
+    required: false
     default: "spawn"
 
   # AWS credentials
