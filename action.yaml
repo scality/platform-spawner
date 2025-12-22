@@ -219,16 +219,8 @@ runs:
           pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
         fi
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
-          # Check if input is already a JSON array (starts with '[')
-          if [[ "${{ inputs.authorized_cidrs }}" =~ ^\[.*\]$ ]]; then
-            # Already JSON, pass through variable to avoid shell parsing issues
-            CIDRS_JSON='${{ inputs.authorized_cidrs }}'
-            pulumi $PULUMI_DEFAULT_ARGS config set "authorized_cidrs" "$CIDRS_JSON"
-          else
-            # Convert comma-separated string to JSON array for Pulumi
-            CIDRS_JSON=$(echo "${{ inputs.authorized_cidrs }}" | python -c "import sys,json; print(json.dumps([x.strip() for x in sys.stdin.read().split(',')]))")
-            pulumi $PULUMI_DEFAULT_ARGS config set "authorized_cidrs" "$CIDRS_JSON"
-          fi
+          # Use Python to properly parse and write the JSON array to the config file
+          python -c "import yaml,json,sys; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = '''${{ inputs.authorized_cidrs }}'''; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
