@@ -142,23 +142,22 @@ pulumi up
 
 ## Architecture
 
-```
-                Internet
-                   │
-                   ▼
-        ┌──────────────────────┐
-        │  Public Gateway       │
-        │  - SSH Bastion        │
-        │  - NAT for outbound   │
-        │  - DHCP               │
-        └──────────┬────────────┘
-                   │
-        Private Network (192.168.10.0/24)
-                   │
-        ┌──────────┼──────────┬─────────┐
-        ▼          ▼          ▼         ▼
-    node-01    node-02    node-03    node-N
-    (PRO2-S)   (PRO2-S)   (PRO2-S)   (PRO2-S)
+```mermaid
+graph TD
+    Internet([Internet])
+    Gateway[Public Gateway<br/>- SSH Bastion<br/>- NAT for outbound<br/>- DHCP]
+    PrivateNet[Private Network<br/>192.168.10.0/24]
+    Node1[node-01<br/>PRO2-S]
+    Node2[node-02<br/>PRO2-S]
+    Node3[node-03<br/>PRO2-S]
+    NodeN[node-N<br/>PRO2-S]
+    
+    Internet --> Gateway
+    Gateway --> PrivateNet
+    PrivateNet --> Node1
+    PrivateNet --> Node2
+    PrivateNet --> Node3
+    PrivateNet --> NodeN
 ```
 
 ### Security Model
