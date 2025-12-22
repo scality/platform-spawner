@@ -223,11 +223,11 @@ runs:
           if [[ "${{ inputs.authorized_cidrs }}" =~ ^\[.*\]$ ]]; then
             # Already JSON, pass through variable to avoid shell parsing issues
             CIDRS_JSON='${{ inputs.authorized_cidrs }}'
-            pulumi $PULUMI_DEFAULT_ARGS config set-all --plaintext "authorized_cidrs=$CIDRS_JSON"
+            pulumi $PULUMI_DEFAULT_ARGS config set "authorized_cidrs" "$CIDRS_JSON"
           else
             # Convert comma-separated string to JSON array for Pulumi
             CIDRS_JSON=$(echo "${{ inputs.authorized_cidrs }}" | python -c "import sys,json; print(json.dumps([x.strip() for x in sys.stdin.read().split(',')]))")
-            pulumi $PULUMI_DEFAULT_ARGS config set-all --plaintext "authorized_cidrs=$CIDRS_JSON"
+            pulumi $PULUMI_DEFAULT_ARGS config set "authorized_cidrs" "$CIDRS_JSON"
           fi
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
