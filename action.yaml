@@ -220,7 +220,8 @@ runs:
         fi
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
           # Use Python to properly parse and write the JSON array to the config file
-          python -c "import yaml,json,sys; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = '''${{ inputs.authorized_cidrs }}'''; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
+          # Pass via environment variable to avoid bash quote mangling
+          CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
