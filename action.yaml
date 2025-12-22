@@ -10,24 +10,24 @@ inputs:
   # AWS credentials
   aws_access_key_id:
     description: "The AWS access key"
-    required: true
+    required: false
   aws_secret_key:
     description: "The AWS secret key"
-    required: true
+    required: false
   aws_region:
     description: "The AWS region"
-    required: true
+    required: false
 
   # Scaleway credentials
   scaleway_access_key:
     description: "The Scaleway access key"
-    required: true
+    required: false
   scaleway_secret_key:
     description: "The Scaleway secret key"
-    required: true
+    required: false
   scaleway_project_id:
     description: "The Scaleway project ID"
-    required: true
+    required: false
 
   product:
     description: "The product name"
