@@ -6,6 +6,11 @@ inputs:
     description: "The action to perform (setup, list, spawn or destroy)"
     required: false
     default: "spawn"
+    
+  instance_image:
+    description: "Image for the instances (e.g.: AMI name for AWS)"
+    required: true
+    default: "rocky-9"
 
   # AWS credentials
   aws_access_key_id:
