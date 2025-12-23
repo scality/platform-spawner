@@ -220,7 +220,7 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS config set project_id "${{ inputs.scaleway_project_id }}"
-        if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "" ]]; then
+        if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
         fi
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
