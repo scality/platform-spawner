@@ -165,6 +165,9 @@ def main():
         ssh_keys_yaml = "\n".join([f"      - {key}" for key in ssh_keys])
 
         cloud_config = {
+            "bootcmd": [
+                "ip route add 169.254.42.42/32 dev eth0"
+            ],
             "users": [
                 {
                     "name": "artesca-os",
