@@ -7,6 +7,7 @@ cluster configuration, and deploys the requested cluster.
 
 import pulumi
 import json
+import yaml
 import os
 from core.models import Provider, ClusterConfig, VolumeConfig
 from core.topology import get_cluster_config
@@ -162,15 +163,23 @@ def main():
     if ssh_keys:
         # Format SSH keys for cloud-init
         ssh_keys_yaml = "\n".join([f"      - {key}" for key in ssh_keys])
-        ssh_user_data = f"""#cloud-config
-users:
-  - name: artesca-os
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: wheel
-    shell: /bin/bash
-    ssh_authorized_keys:
-{ssh_keys_yaml}
-"""
+
+        cloud_config = {
+            "users": [
+                {
+                    "name": "artesca-os",
+                    "sudo": "ALL=(ALL) NOPASSWD:ALL",
+                    "groups": "wheel",
+                    "shell": "/bin/bash",
+                    "ssh_authorized_keys": ssh_keys_yaml
+                }
+            ]
+        }
+
+        # Ensure the output starts with #cloud-config
+        ssh_user_data = "#cloud-config\n" + yaml.dump(cloud_config)
+
+
         pulumi.log.info(f"SSH keys ({len(ssh_keys)}) will be injected via cloud-init for user 'artesca-os'")
     
     # Generate cluster node and network configuration based on instance count
