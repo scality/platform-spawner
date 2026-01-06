@@ -259,33 +259,33 @@ runs:
           ln -s "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$TARGET"
         fi
 
-    # Save stack
-    - name: Prepare artifacts
-      if: ${{ inputs.action == 'spawn' && always() }}
-      shell: bash
-      working-directory: ${{ github.action_path }}
-      env:
-        OUT_DIR: "${{ github.workspace }}/_platform_artifacts/.platform_spawner/${{ env.STACK_NAME }}"
-      run: |-
-        mkdir -p "$OUT_DIR"
-        pulumi stack export --file "$OUT_DIR/stack.json"
+    # # Save stack
+    # - name: Prepare artifacts
+    #   if: ${{ inputs.action == 'spawn' && always() }}
+    #   shell: bash
+    #   working-directory: ${{ github.action_path }}
+    #   env:
+    #     OUT_DIR: "${{ github.workspace }}/_platform_artifacts/.platform_spawner/${{ env.STACK_NAME }}"
+    #   run: |-
+    #     mkdir -p "$OUT_DIR"
+    #     pulumi stack export --file "$OUT_DIR/stack.json"
 
-        cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/"
+    #     cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/"
 
-        if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_private_key_create)" == "true" ]]; then
-          ssh_key=$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_info | jq -r '.key')
-          cp "$ssh_key" "$OUT_DIR/"
-          cp "$ssh_key.pub" "$OUT_DIR/"
-        fi
-    - name: Upload artifacts
-      if: ${{ inputs.action == 'spawn' && always() }}
-      uses: scality/action-artifacts@v4
-      with:
-        method: upload
-        url: https://artifacts.scality.net
-        user: ${{ inputs.artifacts_user }}
-        password: ${{ inputs.artifacts_password }}
-        source: "${{ github.workspace }}/_platform_artifacts"
+    #     if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_private_key_create)" == "true" ]]; then
+    #       ssh_key=$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_info | jq -r '.key')
+    #       cp "$ssh_key" "$OUT_DIR/"
+    #       cp "$ssh_key.pub" "$OUT_DIR/"
+    #     fi
+    # - name: Upload artifacts
+    #   if: ${{ inputs.action == 'spawn' && always() }}
+    #   uses: scality/action-artifacts@v4
+    #   with:
+    #     method: upload
+    #     url: https://artifacts.scality.net
+    #     user: ${{ inputs.artifacts_user }}
+    #     password: ${{ inputs.artifacts_password }}
+    #     source: "${{ github.workspace }}/_platform_artifacts"
 
     # Add step summary
     - name: Step Summary
