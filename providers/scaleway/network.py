@@ -171,6 +171,13 @@ class ScalewayNetwork(NetworkInterface):
             ipam_configs=[
                 scaleway.network.GatewayNetworkIpamConfigArgs(
                     push_default_route=False,  # Do NOT push route - breaks public SSH
+                    # Manually push the route to the Scaleway Metadata API
+                    # This allows cloud-init to fetch your user_data/SSH keys
+                    additional_routes=[
+                        scaleway.network.GatewayNetworkIpamConfigAdditionalRouteArgs(
+                            dest_prefix="169.254.42.42/32",
+                        ),
+                    ]
                 )
             ],
             enable_masquerade=True,  # Critical: enables NAT
