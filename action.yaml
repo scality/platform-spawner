@@ -246,15 +246,24 @@ runs:
           # Pass via environment variable to avoid bash quote mangling
           CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         fi
+        
+        # SSH configuration - explicitly set to avoid using previous stack values
         if [[ "${{ inputs.ssh_key_name }}" != "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set ssh_key_name "${{ inputs.ssh_key_name }}"
+        else
+          pulumi $PULUMI_DEFAULT_ARGS config rm ssh_key_name || true
         fi
         if [[ "${{ inputs.ssh_public_key }}" != "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set ssh_public_key "${{ inputs.ssh_public_key }}"
+        else
+          pulumi $PULUMI_DEFAULT_ARGS config rm ssh_public_key || true
         fi
         if [[ "${{ inputs.ssh_private_key_create }}" == "true" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
+        else
+          pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create false
         fi
+        
         pulumi $PULUMI_DEFAULT_ARGS config set --type bool disable_auto_stop true
 
     # Preview and spawn
