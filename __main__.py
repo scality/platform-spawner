@@ -67,6 +67,7 @@ def main():
     
     # SSH information
     ssh_key_name = config.get("ssh_key_name") or ""
+    ssh_public_key = config.get("ssh_public_key") or ""
     ssh_private_key_create = config.get_bool("ssh_private_key_create") or False
     
     # Lifecycle
@@ -123,16 +124,22 @@ def main():
             extra_volumes = []
 
     # SSH key management
-    ssh_key_info = None
+    # Three options are supported:
+    # 1. ssh_key_name: Use an existing SSH key already present in the cloud provider
+    # 2. ssh_private_key_create: Generate a new SSH keypair
+    # 3. ssh_public_key: Provide an SSH public key to add
+    # Options 2 and 3 will register the key in IAM and inject via cloud-init
     
-    # If ssh_private_key_create is true, generate a new SSH key pair
+    ssh_key_info = None
+    ssh_keys = []
+    
+    # Option 2: Generate a new SSH keypair
     if ssh_private_key_create:
         pulumi.log.info("Generating new SSH key pair...")
         stack_name = pulumi.get_stack()
         key_name = f"platform-spawner-{stack_name}"
         
-         # Generate in .ssh directory under project root
-        # Use absolute path to ensure it works regardless of where Pulumi runs from
+        # Generate in .ssh directory under project root
         project_root = os.path.abspath(os.path.dirname(__file__))
         key_dir = os.path.join(project_root, ".ssh")
         
@@ -140,23 +147,12 @@ def main():
         ssh_key_info = generate_ssh_key_pair(key_name, output_dir=key_dir)
         
         pulumi.log.info(f"SSH key generated: {ssh_key_info['private_key_path']}")
-    
-    # Support both ssh_public_key and ssh_public_keys for backward compatibility
-    ssh_public_key = config.get("ssh_public_key")
-    ssh_public_keys_str = config.get("ssh_public_keys")  # Comma-separated list
-    
-    # Build list of SSH keys
-    ssh_keys = []
-    
-    # If we generated a key, add its public key
-    if ssh_key_info:
         ssh_keys.append(ssh_key_info["public_key_content"])
     
-    # Also add any explicitly provided keys
+    # Option 3: Use provided SSH public key
     if ssh_public_key:
         ssh_keys.append(ssh_public_key)
-    if ssh_public_keys_str:
-        ssh_keys.extend([key.strip() for key in ssh_public_keys_str.split(',') if key.strip()])
+        pulumi.log.info("SSH public key provided - will be added to cloud provider and cloud-init")
     
     # Prepare SSH key for cloud-init injection (if provided)
     ssh_user_data = None
@@ -203,7 +199,7 @@ def main():
     if ssh_keys:
         import pulumiverse_scaleway as scaleway
         for idx, key in enumerate(ssh_keys):
-            iam_key = scaleway.IamSshKey(
+            iam_key = scaleway.iam.SshKey(
                 f"ssh-key-{idx+1}",
                 public_key=key,
                 name=f"platform-spawner-key-{idx+1}",
@@ -293,6 +289,7 @@ def main():
             ssh_nodes = extract_node_info_for_ssh_config(nodes)
             
             # Generate SSH config
+            # Include private key path if we generated one
             private_key = ssh_key_info["private_key_path"] if ssh_key_info else None
             project_root = os.path.abspath(os.path.dirname(__file__))
             config_dir = os.path.join(project_root, ".ssh")
@@ -325,7 +322,7 @@ def main():
     if ssh_config_path:
         pulumi.export("ssh_config", ssh_config_path)
     
-    # Export SSH key info if we created one
+    # Export SSH key info if we generated one
     if ssh_key_info:
         pulumi.export("ssh_info", {
             "key": ssh_key_info["private_key_path"],

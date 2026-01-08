@@ -34,6 +34,16 @@ inputs:
     description: "The Scaleway project ID"
     required: false
 
+  # SSH key
+  ssh_public_key:
+    description: "SSH public key to add to the cloud provider and inject in cloud-init (for instance access)"
+    required: false
+    default: ""
+  ssh_private_key_create:
+    description: "Whether to generate a new SSH keypair (the public key will be added to cloud provider and cloud-init)"
+    required: false
+    default: "false"
+
   product:
     description: "The product name"
     required: false
@@ -228,6 +238,12 @@ runs:
           # Pass via environment variable to avoid bash quote mangling
           CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         fi
+        if [[ "${{ inputs.ssh_public_key }}" != "" ]]; then
+          pulumi $PULUMI_DEFAULT_ARGS config set ssh_public_key "${{ inputs.ssh_public_key }}"
+        fi
+        if [[ "${{ inputs.ssh_private_key_create }}" == "true" ]]; then
+          pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
+        fi
         pulumi $PULUMI_DEFAULT_ARGS config set --type bool disable_auto_stop true
 
     # Preview and spawn
@@ -266,9 +282,9 @@ runs:
     #   run: |-
     #     mkdir -p "$OUT_DIR"
     #     pulumi stack export --file "$OUT_DIR/stack.json"
-
+    #
     #     cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/"
-
+    #
     #     if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_private_key_create)" == "true" ]]; then
     #       ssh_key=$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_info | jq -r '.key')
     #       cp "$ssh_key" "$OUT_DIR/"
