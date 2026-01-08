@@ -100,6 +100,9 @@ pulumi config set additional_volumes '[{"suffix":"service","size":120},{"suffix"
 | `region` | string | `fr-par` | Scaleway region |
 | `zone` | string | `fr-par-1` | Scaleway availability zone |
 | `allowed_ips` | string | `0.0.0.0/0` | Comma-separated IPs/CIDRs allowed to access gateway bastion SSH (port 61000) |
+| `ssh_key_name` | string | `""` | Name of an existing SSH key in cloud provider |
+| `ssh_public_key` | string | `""` | SSH public key to add to cloud provider and cloud-init |
+| `ssh_private_key_create` | boolean | `false` | Generate a new SSH keypair |
 | `bastion_os_name` | string | `rockylinux` | OS for workers (if no snapshot) |
 | `bastion_os_version` | string | `9` | OS version |
 | `additional_volumes` | JSON | `[]` | Additional volumes config |
@@ -151,7 +154,7 @@ graph TD
     Node2[node-02<br/>PRO2-S]
     Node3[node-03<br/>PRO2-S]
     NodeN[node-N<br/>PRO2-S]
-    
+
     Internet --> Gateway
     Gateway --> PrivateNet
     PrivateNet --> Node1
@@ -430,30 +433,47 @@ pulumi stack output network
 
 ### Security Best Practices
 
-1. **IP Allowlisting** (critical for production): 
-   
+1. **IP Allowlisting** (critical for production):
+
    Restrict gateway bastion SSH access to specific IP addresses:
    ```bash
    # Single office IP
    pulumi config set allowed_ips "203.0.113.10/32"
-   
+
    # Multiple IPs (office + VPN)
    pulumi config set allowed_ips "203.0.113.10/32,198.51.100.0/24"
-   
+
    # Get your current IP and restrict to it
    curl https://api.ipify.org
    pulumi config set allowed_ips "$(curl -s https://api.ipify.org)/32"
-   
+
    # CI/CD pipeline IP
    pulumi config set allowed_ips "203.0.113.10/32,192.0.2.50/32"
    ```
-   
+
    **Important**: By default, the gateway bastion is accessible from all IPs (`0.0.0.0/0`).
    Always configure `allowed_ips` for production deployments to restrict SSH bastion access.
 
-2. **SSH Key Management**: Use IAM SSH keys for automated access
+2. **SSH Key Management**: Four options are available:
+
+   | Option | Config | Description |
+   |--------|--------|-------------|
+   | **Default** | *(none)* | Scaleway provides all IAM keys to instance automatically |
+   | **Existing key** | `ssh_key_name` | Use an existing SSH key by name from cloud provider |
+   | **Generate new** | `ssh_private_key_create` | Generate a new keypair (registered in IAM + cloud-init) |
+   | **Provide key** | `ssh_public_key` | Provide a public key (registered in IAM + cloud-init) |
+
    ```bash
-   pulumi config set ssh_public_key "ssh-rsa AAAA...,ssh-rsa BBBB..."
+   # Option 1: Default - use all IAM keys from Scaleway project (no config needed)
+
+   # Option 2: Use existing key by name
+   pulumi config set ssh_key_name "my-existing-key"
+
+   # Option 3: Generate new keypair
+   pulumi config set --type bool ssh_private_key_create true
+
+   # Option 4: Provide your public key
+   pulumi config set ssh_public_key "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5... user@host"
    ```
 
 3. **Private-Only Workers**: Workers have no public IPs and are only accessible via the gateway bastion

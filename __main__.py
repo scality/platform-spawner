@@ -124,16 +124,25 @@ def main():
             extra_volumes = []
 
     # SSH key management
-    # Three options are supported:
-    # 1. ssh_key_name: Use an existing SSH key already present in the cloud provider
-    # 2. ssh_private_key_create: Generate a new SSH keypair
-    # 3. ssh_public_key: Provide an SSH public key to add
-    # Options 2 and 3 will register the key in IAM and inject via cloud-init
+    # Four options are supported:
+    # 1. Default (no config): No cloud-init config, Scaleway provides all IAM keys to instance
+    # 2. ssh_key_name: Use an existing SSH key already registered in the cloud provider (by name)
+    # 3. ssh_private_key_create: Generate a new SSH keypair (registered in IAM + cloud-init)
+    # 4. ssh_public_key: Provide an SSH public key to add (registered in IAM + cloud-init)
+    # 
+    # Options 3 and 4 will register the key in IAM AND inject via cloud-init for artesca-os user
+    # Options 1 and 2 rely on Scaleway's automatic SSH key injection (no cloud-init override)
     
     ssh_key_info = None
-    ssh_keys = []
+    ssh_keys_to_register = []  # Keys to register in IAM
+    ssh_keys_for_cloud_init = []  # Keys to inject via cloud-init
     
-    # Option 2: Generate a new SSH keypair
+    # Option 2: Use existing SSH key by name (no cloud-init, just use provider's default)
+    if ssh_key_name:
+        pulumi.log.info(f"Using existing SSH key from provider: {ssh_key_name}")
+        # No need to register or inject - Scaleway will use this key automatically
+    
+    # Option 3: Generate a new SSH keypair
     if ssh_private_key_create:
         pulumi.log.info("Generating new SSH key pair...")
         stack_name = pulumi.get_stack()
@@ -147,19 +156,20 @@ def main():
         ssh_key_info = generate_ssh_key_pair(key_name, output_dir=key_dir)
         
         pulumi.log.info(f"SSH key generated: {ssh_key_info['private_key_path']}")
-        ssh_keys.append(ssh_key_info["public_key_content"])
+        ssh_keys_to_register.append(ssh_key_info["public_key_content"])
+        ssh_keys_for_cloud_init.append(ssh_key_info["public_key_content"])
     
-    # Option 3: Use provided SSH public key
+    # Option 4: Use provided SSH public key
     if ssh_public_key:
-        ssh_keys.append(ssh_public_key)
+        ssh_keys_to_register.append(ssh_public_key)
+        ssh_keys_for_cloud_init.append(ssh_public_key)
         pulumi.log.info("SSH public key provided - will be added to cloud provider and cloud-init")
     
-    # Prepare SSH key for cloud-init injection (if provided)
+    # Prepare SSH key for cloud-init injection ONLY if explicitly provided (options 3 or 4)
+    # If no ssh_keys specified, rely on Scaleway's automatic IAM SSH key injection
     ssh_user_data = None
-    if ssh_keys:
+    if ssh_keys_for_cloud_init:
         # Format SSH keys for cloud-init
-        ssh_keys_yaml = "\n".join([f"      - {key}" for key in ssh_keys])
-
         cloud_config = {
             "users": [
                 {
@@ -167,7 +177,7 @@ def main():
                     "sudo": "ALL=(ALL) NOPASSWD:ALL",
                     "groups": "wheel",
                     "shell": "/bin/bash",
-                    "ssh_authorized_keys": ssh_keys_yaml
+                    "ssh_authorized_keys": ssh_keys_for_cloud_init
                 }
             ]
         }
@@ -175,8 +185,9 @@ def main():
         # Ensure the output starts with #cloud-config
         ssh_user_data = "#cloud-config\n" + yaml.dump(cloud_config)
 
-
-        pulumi.log.info(f"SSH keys ({len(ssh_keys)}) will be injected via cloud-init for user 'artesca-os'")
+        pulumi.log.info(f"SSH keys ({len(ssh_keys_for_cloud_init)}) will be injected via cloud-init for user 'artesca-os'")
+    else:
+        pulumi.log.info("No SSH key specified - using default Scaleway IAM SSH keys (all keys registered in project)")
     
     # Generate cluster node and network configuration based on instance count
     cluster_topology = get_cluster_config(instance_count, instance_type, product)
@@ -185,7 +196,7 @@ def main():
     cluster_topology["network"].allowed_ips = authorized_cidrs
     
     # Inject SSH key into all node configurations if provided
-    # SSH keys are needed on all nodes for gateway bastion to access them
+    # Only inject if explicitly configured - otherwise rely on Scaleway defaults
     if ssh_user_data:
         for node in cluster_topology["nodes"]:
             # Merge with existing user_data if any
@@ -193,20 +204,6 @@ def main():
                 node.user_data = node.user_data + "\n" + ssh_user_data
             else:
                 node.user_data = ssh_user_data
-    
-    # Create IAM SSH keys for gateway bastion access (if provided)
-    iam_ssh_key_ids = []
-    if ssh_keys:
-        import pulumiverse_scaleway as scaleway
-        for idx, key in enumerate(ssh_keys):
-            iam_key = scaleway.iam.SshKey(
-                f"ssh-key-{idx+1}",
-                public_key=key,
-                name=f"platform-spawner-key-{idx+1}",
-                project_id=project_id,
-            )
-            iam_ssh_key_ids.append(iam_key.id)
-        pulumi.log.info(f"Created {len(iam_ssh_key_ids)} IAM SSH keys for gateway bastion access")
     
     # Create cluster configuration
     cluster_config = ClusterConfig(
@@ -242,6 +239,7 @@ def main():
         # SSH information
         ssh_key_name=ssh_key_name,
         ssh_private_key_create=ssh_private_key_create,
+        ssh_public_keys=ssh_keys_to_register,
         
         # Lifecycle
         disable_auto_stop=disable_auto_stop,
@@ -271,6 +269,10 @@ def main():
     
     # Create cluster implementation via factory
     cluster = create_cluster(cluster_config)
+    
+    # Register SSH keys in the cloud provider (delegated to provider implementation)
+    if ssh_keys_to_register:
+        cluster.register_ssh_keys(ssh_keys_to_register)
     
     # Deploy the infrastructure
     outputs = cluster.deploy()

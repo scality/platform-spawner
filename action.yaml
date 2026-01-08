@@ -34,7 +34,15 @@ inputs:
     description: "The Scaleway project ID"
     required: false
 
-  # SSH key
+  # SSH key options:
+  # 1. Default (no config): Scaleway provides all IAM keys to instance
+  # 2. ssh_key_name: Use an existing SSH key by name from cloud provider
+  # 3. ssh_private_key_create: Generate a new keypair (registered in IAM + cloud-init)
+  # 4. ssh_public_key: Provide a public key (registered in IAM + cloud-init)
+  ssh_key_name:
+    description: "Name of an existing SSH key in the cloud provider to use"
+    required: false
+    default: ""
   ssh_public_key:
     description: "SSH public key to add to the cloud provider and inject in cloud-init (for instance access)"
     required: false
@@ -237,6 +245,9 @@ runs:
           # Use Python to properly parse and write the JSON array to the config file
           # Pass via environment variable to avoid bash quote mangling
           CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
+        fi
+        if [[ "${{ inputs.ssh_key_name }}" != "" ]]; then
+          pulumi $PULUMI_DEFAULT_ARGS config set ssh_key_name "${{ inputs.ssh_key_name }}"
         fi
         if [[ "${{ inputs.ssh_public_key }}" != "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set ssh_public_key "${{ inputs.ssh_public_key }}"

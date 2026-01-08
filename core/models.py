@@ -109,8 +109,9 @@ class ClusterConfig:
         bastion_root_disk_size: Root disk size for the bastion host (in GiB)
 
         # SSH information
-        ssh_key_name: Name of an existing SSH key in the cloud provider to use
-        ssh_private_key_create: If true, a new SSH keypair will be generated
+        ssh_key_name: Name of an existing SSH key in the cloud provider to use (option 2)
+        ssh_private_key_create: If true, generate a new SSH keypair and register in IAM (option 3)
+        ssh_public_keys: List of SSH public keys to register in the cloud provider (option 3 & 4)
 
         # Lifecycle
         disable_auto_stop: If true, the instance will not be automatically stopped
@@ -157,6 +158,7 @@ class ClusterConfig:
     # SSH information
     ssh_key_name: str = ""
     ssh_private_key_create: bool = False
+    ssh_public_keys: List[str] = field(default_factory=list)
 
     # Lifecycle
     disable_auto_stop: bool = False
