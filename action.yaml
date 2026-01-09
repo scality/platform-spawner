@@ -222,6 +222,14 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS login "file://./"
     # }}}
 
+    # Login to s3
+    - name: Login to the s3 bucket
+      shell: bash
+      if: ${{ fromJSON(inputs.store_to_s3) }}
+      working-directory: ${{ github.action_path }}
+      run: |-
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://artesca-stacks/${{ github.event.repository.name }}"
+
     # List {{{
     - name: List stacks
       if: ${{ inputs.action == 'list' }}
@@ -236,7 +244,6 @@ runs:
           ) | .name]'
         )
         echo "STACKS_LIST=$stack_list" >> "$GITHUB_OUTPUT"
-
 
     # Spawn {{{
     # Prepare stack config
