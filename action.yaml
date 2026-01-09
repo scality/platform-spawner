@@ -43,14 +43,14 @@ inputs:
     description: "Name of an existing SSH key in the cloud provider to use"
     required: false
     default: ""
-  ssh_public_key:
-    description: "SSH public key to add to the cloud provider and inject in cloud-init (for instance access)"
-    required: false
-    default: ""
   ssh_private_key_create:
     description: "Whether to generate a new SSH keypair (the public key will be added to cloud provider and cloud-init)"
     required: false
     default: "false"
+  ssh_public_keys:
+    description: "SSH public keys to add to the cloud provider and inject in cloud-init (for instance access)"
+    required: false
+    default: "[]"
 
   product:
     description: "The product name"
@@ -253,10 +253,11 @@ runs:
         else
           pulumi $PULUMI_DEFAULT_ARGS config rm ssh_key_name || true
         fi
-        if [[ "${{ inputs.ssh_public_key }}" != "" ]]; then
-          pulumi $PULUMI_DEFAULT_ARGS config set ssh_public_key "${{ inputs.ssh_public_key }}"
+        if [[ "${{ inputs.ssh_public_keys }}" != "[]" ]] && [[ "${{ inputs.ssh_public_keys }}" != "" ]]; then
+          # Use Python to properly parse and write the JSON array to the config file
+          SSH_KEYS_INPUT='${{ inputs.ssh_public_keys }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); ssh_keys_input = os.environ['SSH_KEYS_INPUT']; config.setdefault('config', {})['platform-spawner:ssh_public_keys'] = json.loads(ssh_keys_input); yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         else
-          pulumi $PULUMI_DEFAULT_ARGS config rm ssh_public_key || true
+          pulumi $PULUMI_DEFAULT_ARGS config rm ssh_public_keys || true
         fi
         if [[ "${{ inputs.ssh_private_key_create }}" == "true" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true

@@ -86,6 +86,12 @@ config:
     type: boolean
     description: "If true, a new SSH key will be created (either this or ssh_key_name must be set)"
     default: false
+  ssh_public_keys:
+    type: array
+    items:
+      type: string
+    description: "SSH public keys to add to the cloud provider and inject in cloud-init (for instance access)"
+    default: []
 
   # Lifecycle
   disable_auto_stop:

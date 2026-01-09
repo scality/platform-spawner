@@ -67,7 +67,7 @@ def main():
     
     # SSH information
     ssh_key_name = config.get("ssh_key_name") or ""
-    ssh_public_key = config.get("ssh_public_key") or ""
+    ssh_public_keys = config.get_object("ssh_public_keys") or []
     ssh_private_key_create = config.get_bool("ssh_private_key_create") or False
     
     # Lifecycle
@@ -159,11 +159,14 @@ def main():
         ssh_keys_to_register.append(ssh_key_info["public_key_content"])
         ssh_keys_for_cloud_init.append(ssh_key_info["public_key_content"])
     
-    # Option 4: Use provided SSH public key
-    if ssh_public_key:
-        ssh_keys_to_register.append(ssh_public_key)
-        ssh_keys_for_cloud_init.append(ssh_public_key)
-        pulumi.log.info("SSH public key provided - will be added to cloud provider and cloud-init")
+    # Option 4: Use provided SSH public keys
+    if ssh_public_keys:
+        pulumi.log.info(f"Adding {len(ssh_public_keys)} SSH public key(s) to cloud provider and cloud-init")
+        for idx, key in enumerate(ssh_public_keys, 1):
+            if key and key.strip():  # Skip empty keys
+                ssh_keys_to_register.append(key)
+                ssh_keys_for_cloud_init.append(key)
+                pulumi.log.info(f"  - SSH public key {idx} added")
     
     # Prepare SSH key for cloud-init injection ONLY if explicitly provided (options 3 or 4)
     # If no ssh_keys specified, rely on Scaleway's automatic IAM SSH key injection
