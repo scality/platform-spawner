@@ -169,6 +169,12 @@ runs:
         sudo tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu
         rm -rf /tmp/uv.tar.gz
 
+    - name: Install Python dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |-
+        uv pip install --system -r requirements.txt
+
     # Set environment variables
     - name: Set environment variables
       shell: bash
