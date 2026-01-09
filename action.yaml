@@ -222,6 +222,31 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS login "file://./"
     # }}}
 
+    # Login to s3
+    - name: Login to the s3 bucket
+      shell: bash
+      if: ${{ fromJSON(inputs.store_to_s3) }}
+      working-directory: ${{ github.action_path }}
+      env:
+        SCW_DEFAULT_REGION: fr-par
+        SCW_S3_ENDPOINT_URL: https://s3.fr-par.scw.cloud
+        SCW_S3_ACCESS_KEY: ${{ inputs.scaleway_access_key }}
+        SCW_S3_SECRET_KEY: ${{ inputs.scaleway_secret_key }}
+      run: |-
+        # Configure AWS CLI for Pulumi S3 backend
+        aws configure set aws_access_key_id "${{ env.SCW_S3_ACCESS_KEY }}"
+        aws configure set aws_secret_access_key "${{ env.SCW_S3_SECRET_KEY }}"
+        aws configure set default.region "${{ env.SCW_DEFAULT_REGION }}"
+        aws configure set default.s3.endpoint_url "${{ env.SCW_S3_ENDPOINT_URL }}"
+        
+        # Set AWS environment variables for Pulumi (persist across steps)
+        echo "AWS_ACCESS_KEY_ID=$SCW_S3_ACCESS_KEY" >> "$GITHUB_ENV"
+        echo "AWS_SECRET_ACCESS_KEY=$SCW_S3_SECRET_KEY" >> "$GITHUB_ENV"
+        echo "AWS_REGION=$SCW_DEFAULT_REGION" >> "$GITHUB_ENV"
+        echo "AWS_ENDPOINT_URL=$SCW_S3_ENDPOINT_URL" >> "$GITHUB_ENV"
+        
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://artesca-stacks/${{ github.event.repository.name }}"
+
     # List {{{
     - name: List stacks
       if: ${{ inputs.action == 'list' }}
@@ -236,7 +261,6 @@ runs:
           ) | .name]'
         )
         echo "STACKS_LIST=$stack_list" >> "$GITHUB_OUTPUT"
-
 
     # Spawn {{{
     # Prepare stack config
