@@ -2,7 +2,7 @@
 Default configuration values for different providers and topologies.
 """
 
-from typing import Dict, Any
+from typing import Dict
 
 # Default instance types per provider (for worker nodes)
 # Note: Bastion always uses small machines (e.g., PLAY2-NANO for Scaleway)

@@ -8,7 +8,7 @@ SSH config files for accessing deployed infrastructure.
 import os
 import subprocess
 import tempfile
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 import pulumi
 
 
@@ -52,7 +52,7 @@ def generate_ssh_key_pair(key_name: str, output_dir: str = None) -> Dict[str, st
     
     # Generate ED25519 key (modern, secure, small)
     try:
-        result = subprocess.run(
+        subprocess.run(
             [
                 "ssh-keygen",
                 "-t", "ed25519",
@@ -164,10 +164,10 @@ def generate_ssh_config(
             "",
             f"Host {node_name}",
             f"  HostName {hostname}",
-            f"  User artesca-os",
-            f"  ProxyJump bastion",
-            f"  StrictHostKeyChecking no",
-            f"  UserKnownHostsFile /dev/null",
+            "  User artesca-os",
+            "  ProxyJump bastion",
+            "  StrictHostKeyChecking no",
+            "  UserKnownHostsFile /dev/null",
         ])
         
         if private_key_path:

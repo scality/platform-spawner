@@ -259,7 +259,7 @@ def main():
     pulumi.log.info(f"Deploying {instance_count}-node cluster on {provider.value}")
     pulumi.log.info(f"Product: {product}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
-    pulumi.log.info(f"Using Gateway SSH bastion feature (no bastion VM)")
+    pulumi.log.info("Using Gateway SSH bastion feature (no bastion VM)")
     pulumi.log.info(f"Instance image: {instance_image}")
     pulumi.log.info(f"Instance type: {instance_type} (flavor: {instance_flavor})")
     pulumi.log.info(f"Instance root disk size: {instance_root_disk_size} GiB")

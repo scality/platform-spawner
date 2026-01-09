@@ -5,7 +5,7 @@ This module provides helpers for validating and processing
 Scaleway-specific configuration values.
 """
 
-from typing import List, Dict
+from typing import List
 
 # Valid Scaleway instance types (subset of most common types)
 SCALEWAY_INSTANCE_TYPES = [

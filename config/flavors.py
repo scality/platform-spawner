@@ -5,7 +5,7 @@ This module provides mappings from abstract flavor names (small, medium, large)
 to provider-specific instance types, enabling consistent sizing across clouds.
 """
 
-from typing import Dict, Optional
+from typing import Dict
 from core.models import Provider
 
 

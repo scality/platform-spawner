@@ -10,7 +10,6 @@ import pulumiverse_scaleway as scaleway
 from typing import Any, Dict, List, Optional
 from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
-from .images import get_os_image
 
 
 class ScalewayCompute(ComputeInterface):
