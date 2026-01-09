@@ -160,6 +160,15 @@ runs:
         curl --fail -L -o /tmp/pulumi.tar.gz "https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz"
         sudo tar -xzf /tmp/pulumi.tar.gz -C /usr/local/bin --strip-components=1 pulumi
         rm -rf /tmp/pulumi.tar.gz
+    
+    - name: Install AWS CLI
+      shell: bash
+      if: ${{ fromJSON(inputs.store_to_s3) }}
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
     - name: Install uv
       shell: bash
       env:
@@ -198,13 +207,6 @@ runs:
         echo "STACK_NAME=$STACK_NAME" >> "$GITHUB_ENV"
         echo "PULUMI_STACK_FILE=Pulumi.$STACK_NAME.yaml" >> "$GITHUB_ENV"
 
-    # Login to s3
-    - name: Login to the s3 bucket
-      shell: bash
-      if: ${{ fromJSON(inputs.store_to_s3) }}
-      working-directory: ${{ github.action_path }}
-      run: |-
-        pulumi $PULUMI_DEFAULT_ARGS login "s3://artesca-stacks/${{ github.event.repository.name }}"
     - name: Login locally
       shell: bash
       if: ${{ ! fromJSON(inputs.store_to_s3) }}
@@ -295,12 +297,24 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS up --yes --skip-preview
 
     - name: Store stack to S3
-      if: ${{ inputs.action == 'spawn' }}
+      if: ${{ inputs.action == 'spawn' && fromJSON(inputs.store_to_s3) }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        SCW_DEFAULT_REGION: fr-par
+        SCW_S3_ACCESS_KEY: ${{ inputs.scaleway_access_key }}
+        SCW_S3_SECRET_KEY: ${{ inputs.scaleway_secret_key }}
+        SCW_S3_ENDPOINT_URL: https://s3.fr-par.scw.cloud
       run: |-
+        aws configure set aws_access_key_id "$SCW_S3_ACCESS_KEY"
+        aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
+        aws configure set default.region "$SCW_DEFAULT_REGION"
+
+        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
         pulumi $PULUMI_DEFAULT_ARGS stack output --json > stack.json
-        aws s3 cp stack.json "s3://artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
+        aws s3 cp stack.json "s3://$S3_KEY" \
+          --endpoint-url "$SCW_S3_ENDPOINT_URL" \
+          --metadata "project=${{ github.event.repository.name }},type=stack,build=${{ github.run_number }},from=${{ github.workflow }},commit=${{ github.sha }},branch=${{ github.ref_name }},build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ),workflow-run=${{ github.run_id }}"
 
     # Add symlink to ssh_config to workspace
     - name: Copy SSH config
@@ -389,6 +403,31 @@ runs:
     # }}}
 
     # Destroy {{{
+    - name: Recover stack info from S3
+      if: ${{ inputs.action == 'destroy' && fromJSON(inputs.store_to_s3) }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        SCW_DEFAULT_REGION: fr-par
+        SCW_S3_ACCESS_KEY: ${{ inputs.scaleway_access_key }}
+        SCW_S3_SECRET_KEY: ${{ inputs.scaleway_secret_key }}
+        SCW_S3_ENDPOINT_URL: https://s3.fr-par.scw.cloud
+      run: |-
+        aws configure set aws_access_key_id "$SCW_S3_ACCESS_KEY"
+        aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
+        aws configure set default.region "$SCW_DEFAULT_REGION"
+        
+        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
+        
+        echo "Downloading stack info from S3..."
+        if aws s3 cp "s3://$S3_KEY" stack.json \
+          --endpoint-url "$SCW_S3_ENDPOINT_URL" 2>/dev/null; then
+          echo "✓ Stack info recovered from S3:"
+          cat stack.json | jq '.' || cat stack.json
+        else
+          echo "⚠ No stack info found in S3 (this is okay if stack was created with store_to_s3: false)"
+        fi
+    
     - name: Refresh the config
       if: ${{ inputs.action == 'destroy' }}
       shell: bash
@@ -417,5 +456,29 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS stack rm --yes --remove-backups
+    
+    - name: Delete stack from S3
+      if: ${{ inputs.action == 'destroy' && fromJSON(inputs.store_to_s3) }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        SCW_DEFAULT_REGION: fr-par
+        SCW_S3_ACCESS_KEY: ${{ inputs.scaleway_access_key }}
+        SCW_S3_SECRET_KEY: ${{ inputs.scaleway_secret_key }}
+        SCW_S3_ENDPOINT_URL: https://s3.fr-par.scw.cloud
+      run: |-
+        aws configure set aws_access_key_id "$SCW_S3_ACCESS_KEY"
+        aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
+        aws configure set default.region "$SCW_DEFAULT_REGION"
+        
+        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
+        
+        echo "Deleting stack info from S3..."
+        if aws s3 rm "s3://$S3_KEY" \
+          --endpoint-url "$SCW_S3_ENDPOINT_URL" 2>/dev/null; then
+          echo "✓ Stack info deleted from S3"
+        else
+          echo "⚠ Stack info not found in S3 (may have been already deleted)"
+        fi
 
     # }}}
