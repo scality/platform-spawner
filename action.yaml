@@ -247,6 +247,8 @@ runs:
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        SSH_KEYS_INPUT: ${{ inputs.ssh_public_keys }}
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS config set project_id "${{ inputs.scaleway_project_id }}"
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
@@ -264,9 +266,9 @@ runs:
         else
           pulumi $PULUMI_DEFAULT_ARGS config rm ssh_key_name || true
         fi
-        if [[ "${{ inputs.ssh_public_keys }}" != "[]" ]] && [[ "${{ inputs.ssh_public_keys }}" != "" ]]; then
+        if [[ -n "$SSH_KEYS_INPUT" ]] && [[ "$SSH_KEYS_INPUT" != "[]" ]]; then
           # Use Python to properly parse and write the JSON array to the config file
-          SSH_KEYS_INPUT='${{ inputs.ssh_public_keys }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); ssh_keys_input = os.environ['SSH_KEYS_INPUT']; config.setdefault('config', {})['platform-spawner:ssh_public_keys'] = json.loads(ssh_keys_input); yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
+          python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); ssh_keys_input = os.environ['SSH_KEYS_INPUT']; config.setdefault('config', {})['platform-spawner:ssh_public_keys'] = json.loads(ssh_keys_input); yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         else
           pulumi $PULUMI_DEFAULT_ARGS config rm ssh_public_keys || true
         fi
