@@ -204,7 +204,7 @@ runs:
       if: ${{ fromJSON(inputs.store_to_s3) }}
       working-directory: ${{ github.action_path }}
       run: |-
-        pulumi $PULUMI_DEFAULT_ARGS login "s3://platform-spawner-stacks/${{ github.event.repository.name }}"
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://artesca-stacks/${{ github.event.repository.name }}"
     - name: Login locally
       shell: bash
       if: ${{ ! fromJSON(inputs.store_to_s3) }}
@@ -293,6 +293,14 @@ runs:
       working-directory: ${{ github.action_path }}
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS up --yes --skip-preview
+
+    - name: Store stack to S3
+      if: ${{ inputs.action == 'spawn' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |-
+        pulumi $PULUMI_DEFAULT_ARGS stack output --json > stack.json
+        aws s3 cp stack.json "s3://artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
 
     # Add symlink to ssh_config to workspace
     - name: Copy SSH config
