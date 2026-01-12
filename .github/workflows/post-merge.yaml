@@ -1,0 +1,89 @@
+name: "Post Merge"
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  single-node-spawn:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Spawn single-node platform
+        uses: ./
+        with:
+          action: spawn
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
+          configuration: |-
+            instance_image: rocky-9
+            instance_count: 1
+    
+      - name: Test ssh connections
+        run: |-
+          ssh -F ssh_config bastion hostname
+          ssh -F ssh_config node-1 hostname
+
+      - name: Run a test command
+        run: |-
+          ssh -F ssh_config bastion "ls"
+          ssh -F ssh_config node-1 "ls"
+
+      - name: Destroy single-node platform
+        uses: ./
+        with:
+          action: destroy
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
+
+
+  multi-node-spawn:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Spawn multi-node platform
+        uses: ./
+        with:
+          action: spawn
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          aws_region: ${{ vars.AWS_REGION }}
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
+          configuration: |-
+            instance_image: rocky-9
+            instance_count: 3
+
+      - name: Test ssh connections
+        run: |-
+          ssh -F ssh_config bastion hostname
+          ssh -F ssh_config node-1 hostname
+          ssh -F ssh_config node-2 hostname
+          ssh -F ssh_config node-3 hostname
+
+      - name: Run a test command
+        run: |-
+          ssh -F ssh_config bastion "ls"
+          ssh -F ssh_config node-1 "ls"
+          ssh -F ssh_config node-2 "ls"
+          ssh -F ssh_config node-3 "ls"
+
+      - name: Destroy multi-node platform
+        uses: ./
+        with:
+          action: destroy
+          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
