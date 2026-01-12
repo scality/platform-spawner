@@ -1,0 +1,81 @@
+name: "Cleanup old stacks"
+
+on:
+  workflow_dispatch:
+    inputs:
+        age_hours:
+            description: "Age in hours to cleanup stacks older than this"
+            required: false
+            default: "6"
+
+        aws_access_key_id:
+            description: "AWS Access Key ID"
+            required: true
+        aws_secret_key:
+            description: "AWS Secret Key"
+            required: true
+        aws_region:
+            description: "AWS Region"
+            required: true
+
+        scaleway_access_key:
+            description: "Scaleway Access Key"
+            required: true
+        scaleway_secret_key:
+            description: "Scaleway Secret Key"
+            required: true
+        scaleway_project_id:
+            description: "Scaleway Project ID"
+            required: true
+
+jobs:
+  fetch-stacks:
+    runs-on: ubuntu-24.04
+    outputs:
+      stacks: ${{ steps.list.outputs.stacks_list }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch stacks older than N hours
+        id: list
+        uses: ./
+        with:
+          action: list
+          aws_access_key_id: ${{ inputs.aws_access_key_id }}
+          aws_secret_key: ${{ inputs.aws_secret_key }}
+          aws_region: ${{ inputs.aws_region }}
+          scaleway_access_key: ${{ inputs.scaleway_access_key }}
+          scaleway_secret_key: ${{ inputs.scaleway_secret_key }}
+          scaleway_project_id: ${{ inputs.scaleway_project_id }}
+          age: ${{ github.event.inputs.age_hours || '6' }}
+
+      - name: Display stacks to cleanup
+        run: |
+          echo "Stacks to cleanup: ${{ steps.list.outputs.stacks_list }}"
+          echo "Number of stacks: $(echo '${{ steps.list.outputs.stacks_list }}' | jq 'length')"
+
+  destroy-stacks:
+    needs: fetch-stacks
+    if: ${{ needs.fetch-stacks.outputs.stacks != '[]' }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ${{ fromJSON(needs.fetch-stacks.outputs.stacks) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Destroy stack ${{ matrix.stack }}
+        uses: ./
+        continue-on-error: true
+        with:
+          action: destroy
+          aws_access_key_id: ${{ inputs.aws_access_key_id }}
+          aws_secret_key: ${{ inputs.aws_secret_key }}
+          aws_region: ${{ inputs.aws_region }}
+          scaleway_access_key: ${{ inputs.scaleway_access_key }}
+          scaleway_secret_key: ${{ inputs.scaleway_secret_key }}
+          scaleway_project_id: ${{ inputs.scaleway_project_id }}
+          stack_name: ${{ matrix.stack }}
