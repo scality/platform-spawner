@@ -177,9 +177,7 @@ def main():
             "users": [
                 {
                     "name": "artesca-os",
-                    "sudo": "ALL=(ALL) NOPASSWD:ALL",
-                    "groups": "wheel",
-                    "shell": "/bin/bash",
+                    "lock_passwd": False,
                     "ssh_authorized_keys": ssh_keys_for_cloud_init
                 }
             ]
