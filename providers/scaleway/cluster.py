@@ -72,7 +72,7 @@ class ScalewayCluster(ClusterInterface):
         Creates:
         - VPC and Private Network
         - Public Gateway with SSH bastion, NAT and DHCP
-        - Security Group for internal nodes
+        - Security Groups (first-node with restricted outbound, internal for others)
         - N Instance Nodes (private only, accessed via gateway bastion)
 
         Returns:
@@ -87,7 +87,12 @@ class ScalewayCluster(ClusterInterface):
         # Create network infrastructure (includes gateway with bastion)
         network_output = self.network.create_full_network()
 
-        # Create security group for internal nodes
+        # Create security groups
+        # First node gets restricted outbound (for application updates from specific IPs)
+        sg_first_node = self.compute.create_first_node_security_group(
+            private_subnet=self.config.network.private_subnet
+        )
+        # Other nodes get standard internal security group (permissive outbound)
         sg_internal = self.compute.create_internal_security_group(
             private_subnet=self.config.network.private_subnet
         )
@@ -121,11 +126,15 @@ class ScalewayCluster(ClusterInterface):
         if "node" in nodes_by_role:
             # Get the actual private network name (includes product prefix)
             private_network_name = f"{self.config.product}-internal" if self.config.product else "internal"
-            for node_config in nodes_by_role["node"]:
+            for idx, node_config in enumerate(nodes_by_role["node"]):
+                # First node (idx=0) gets restricted outbound security group
+                # Other nodes get standard internal security group
+                security_group = sg_first_node if idx == 0 else sg_internal
+                
                 node = self._deploy_internal_node(
                     node_config=node_config,
                     image_id=instance_image,
-                    security_group=sg_internal,
+                    security_group=security_group,
                 )
 
                 # Generate SSH jump command for accessing the node via bastion

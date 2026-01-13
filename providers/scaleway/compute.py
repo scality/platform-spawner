@@ -12,6 +12,11 @@ from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
 
 
+# TODO: Replace with actual IP addresses/CIDR blocks for application update servers
+# Format: List of CIDR blocks (use /32 for single IPs, e.g., "203.0.113.10/32")
+UPDATE_SERVER_IPS: List[str] = []
+
+
 class ScalewayCompute(ComputeInterface):
     """
     Scaleway-specific implementation of compute provisioning.
@@ -391,6 +396,75 @@ class ScalewayCompute(ComputeInterface):
             inbound_default_policy="drop",
             outbound_default_policy="accept",
         )
+    
+    def create_first_node_security_group(
+        self,
+        private_subnet: str = "192.168.10.0/24"
+    ) -> scaleway.instance.SecurityGroup:
+        """
+        Create a security group for the first node with restricted outbound traffic.
+        
+        This security group is designed for the first deployed node (node-01) which
+        needs to fetch application updates from specific external IP addresses.
+        
+        - Inbound: Allows all traffic from private subnet (same as internal nodes)
+        - Outbound: Drops by default, only allows traffic to:
+          - Private subnet (for internal cluster communication)
+          - UPDATE_SERVER_IPS (for fetching application updates)
+        
+        Args:
+            private_subnet: CIDR block of the private network
+            
+        Returns:
+            SecurityGroup resource for the first node
+        """
+        sg_name = f"{self.config.product}-first-node" if self.config.product else "first-node"
+        
+        # Build outbound rules
+        outbound_rules = [
+            # Allow outbound traffic to private subnet for internal communication
+            scaleway.instance.SecurityGroupOutboundRuleArgs(
+                action="accept",
+                protocol="ANY",
+                ip_range=private_subnet,
+            ),
+        ]
+        
+        # Add rules for each update server IP
+        for ip_range in UPDATE_SERVER_IPS:
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="TCP",
+                    ip_range=ip_range,
+                    port=443,  # HTTPS for application updates
+                )
+            )
+        
+        # Build inbound rules (same as internal security group)
+        inbound_rules = [
+            scaleway.instance.SecurityGroupInboundRuleArgs(
+                action="accept",
+                protocol="ANY",
+                ip_range=private_subnet,
+            ),
+        ]
+        
+        sg = scaleway.instance.SecurityGroup(
+            f"sg-{sg_name}",
+            name=sg_name,
+            description="First node - restricted outbound for application updates",
+            inbound_default_policy="drop",
+            outbound_default_policy="drop",  # Restrictive: drop all outbound by default
+            inbound_rules=inbound_rules,
+            outbound_rules=outbound_rules,
+            stateful=True,  # Critical: allow return traffic automatically
+            project_id=self.config.project_id,
+            zone=self.config.zone,
+        )
+        
+        self._security_groups[sg_name] = sg
+        return sg
     
     def create_single_node_security_group(self) -> scaleway.instance.SecurityGroup:
         """
