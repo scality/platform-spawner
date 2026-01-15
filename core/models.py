@@ -58,6 +58,7 @@ class NodeConfig:
         user_data: Cloud-init or startup script
         tags: List of tags for resource management
         storage_size_gb: Optional additional storage in GB
+        root_volume_size_gb: Root disk size in GB
     """
     name: str
     role: str
@@ -67,6 +68,7 @@ class NodeConfig:
     user_data: Optional[str] = None
     tags: List[str] = field(default_factory=list)
     storage_size_gb: Optional[int] = None
+    root_volume_size_gb: Optional[int] = None
 
 
 @dataclass

@@ -195,13 +195,22 @@ class ScalewayCompute(ComputeInterface):
                 zone=self.config.zone,
                 project_id=self.config.project_id,
             )
+            # Create volume from snapshot, optionally with a larger size
+            # If root_volume_size_gb is specified and larger than snapshot, use it
+            volume_args = {
+                "name": f"{name}-boot",
+                "snapshot_id": snapshot.id,
+                "iops": 5000,
+                "zone": self.config.zone,
+                "project_id": self.config.project_id,
+            }
+            # Add size_in_gb if specified (allows resizing boot volume)
+            if kwargs.get("root_volume_size_gb"):
+                volume_args["size_in_gb"] = kwargs.get("root_volume_size_gb")
+            
             from_snapshot = scaleway.block.Volume(
                 f"vol-{name}",  # Unique name per instance
-                name=f"{name}-boot",
-                snapshot_id=snapshot.id,
-                iops=5000,
-                zone=self.config.zone,
-                project_id=self.config.project_id,
+                **volume_args,
             )
             root_volume = scaleway.instance.ServerRootVolumeArgs(
                 volume_id=from_snapshot.id,

@@ -235,6 +235,7 @@ class ScalewayCluster(ClusterInterface):
             user_data=node_config.user_data,
             create_public_ip=False,  # Private only, no public IP
             additional_volume_ids=volume_ids if volume_ids else None,
+            root_volume_size_gb=node_config.root_volume_size_gb,
         )
 
         # Attach to private network

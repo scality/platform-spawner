@@ -230,6 +230,10 @@ def main():
             else:
                 node.user_data = ssh_user_data
     
+    # Set root volume size on all nodes
+    for node in cluster_topology["nodes"]:
+        node.root_volume_size_gb = instance_root_disk_size
+    
     # Create cluster configuration
     cluster_config = ClusterConfig(
         # Required fields
