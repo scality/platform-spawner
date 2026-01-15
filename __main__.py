@@ -167,7 +167,8 @@ def main():
     if ssh_private_key_create:
         pulumi.log.info("Generating new SSH key pair...")
         stack_name = pulumi.get_stack()
-        key_name = f"platform-spawner-{stack_name}"
+        # Include product name in key name for better identification
+        key_name = f"{product}-{stack_name}" if product and product != "unknown" else f"platform-spawner-{stack_name}"
         
         # Generate in .ssh directory under project root
         project_root = os.path.abspath(os.path.dirname(__file__))

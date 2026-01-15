@@ -53,11 +53,14 @@ class ScalewayCluster(ClusterInterface):
             return []
 
         key_ids = []
+        # Include product name in IAM key name for better identification
+        key_prefix = self.config.product if self.config.product and self.config.product != "unknown" else "platform-spawner"
+        
         for idx, key in enumerate(ssh_keys):
             iam_key = scaleway.iam.SshKey(
                 f"ssh-key-{idx+1}",
                 public_key=key,
-                name=f"platform-spawner-key-{idx+1}",
+                name=f"{key_prefix}-key-{idx+1}",
                 project_id=self.config.project_id,
             )
             key_ids.append(iam_key.id)
