@@ -169,6 +169,14 @@ class ScalewayNetwork(NetworkInterface):
         # 3. Attach the gateway to the private network with IPAM/DHCP
         # Note: Using ipam_configs (modern approach, not deprecated dhcp_id/enable_dhcp)
         # The subnet is configured on the PrivateNetwork itself, not here
+        # 
+        # enable_masquerade controls NAT for outbound internet access:
+        # - True (default): instances can reach internet via gateway NAT
+        # - False (offline mode): instances have no internet access
+        enable_nat = not self.config.offline
+        if self.config.offline:
+            pulumi.log.info("Offline mode: NAT/masquerade disabled - instances will have no internet access")
+        
         self._gateway_network = scaleway.network.GatewayNetwork(
             "gateway-network",
             gateway_id=self._gateway.id,
@@ -178,7 +186,7 @@ class ScalewayNetwork(NetworkInterface):
                     push_default_route=False,  # Do NOT push route - breaks public SSH
                 )
             ],
-            enable_masquerade=True,  # Critical: enables NAT
+            enable_masquerade=enable_nat,  # Disabled in offline mode
             zone=self.config.zone,
         )
         
