@@ -60,6 +60,10 @@ inputs:
     description: "JSON array or comma-separated list of authorized CIDRs for bastion access (e.g., [\"203.0.113.10/32\",\"198.51.100.0/24\"] or '203.0.113.10/32,198.51.100.0/24')"
     required: false
     default: ""
+  custom_routes:
+    description: "JSON array of custom VPC routes (e.g., [{\"destination\": \"35.241.243.135/32\", \"description\": \"artifacts.scality.net\"}])"
+    required: false
+    default: ""
 
   # Artifacts credentials
   artifacts_user:
@@ -291,6 +295,10 @@ runs:
           # Use Python to properly parse and write the JSON array to the config file
           # Pass via environment variable to avoid bash quote mangling
           CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
+        fi
+        if [[ "${{ inputs.custom_routes }}" != "" ]]; then
+          # Custom routes must be a JSON array
+          ROUTES_INPUT='${{ inputs.custom_routes }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); routes_input = os.environ['ROUTES_INPUT']; config.setdefault('config', {})['platform-spawner:custom_routes'] = json.dumps(json.loads(routes_input)); yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
         fi
         
         # SSH configuration - explicitly set to avoid using previous stack values

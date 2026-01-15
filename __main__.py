@@ -9,7 +9,7 @@ import pulumi
 import json
 import yaml
 import os
-from core.models import Provider, ClusterConfig, VolumeConfig
+from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig
 from core.topology import get_cluster_config
 from core.factory import create_cluster
 from core.ssh import generate_ssh_key_pair, generate_ssh_config, extract_node_info_for_ssh_config
@@ -45,6 +45,27 @@ def main():
     if authorized_icmp is None:
         authorized_icmp = True
     authorized_cidrs = config.get_object("authorized_cidrs") or []
+    
+    # Custom routes configuration
+    # Format: JSON array like '[{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]'
+    custom_routes_str = config.get("custom_routes")
+    custom_routes = []
+    
+    if custom_routes_str:
+        try:
+            custom_routes_obj = json.loads(custom_routes_str)
+            for route_data in custom_routes_obj:
+                route_config = RouteConfig(
+                    destination=route_data["destination"],
+                    description=route_data.get("description", ""),
+                )
+                custom_routes.append(route_config)
+            pulumi.log.info(f"Custom routes configured: {len(custom_routes)} route(s)")
+            for route in custom_routes:
+                pulumi.log.info(f"  - {route.destination} ({route.description})")
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            pulumi.log.warn(f"Failed to parse custom_routes configuration: {e}")
+            custom_routes = []
     
     # Instance configuration
     instance_flavor = config.get("instance_flavor") or "medium"
@@ -195,6 +216,9 @@ def main():
     
     # Add authorized CIDRs to network configuration
     cluster_topology["network"].allowed_ips = authorized_cidrs
+    
+    # Set custom routes
+    cluster_topology["network"].custom_routes = custom_routes
     
     # Inject SSH key into all node configurations if provided
     # Only inject if explicitly configured - otherwise rely on Scaleway defaults

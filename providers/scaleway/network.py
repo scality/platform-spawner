@@ -7,9 +7,9 @@ for Scaleway infrastructure, implementing the NetworkInterface.
 
 import pulumi
 import pulumiverse_scaleway as scaleway
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 from core.interfaces import NetworkInterface
-from core.models import ClusterConfig, NetworkOutput
+from core.models import ClusterConfig, NetworkOutput, RouteConfig
 
 
 class ScalewayNetwork(NetworkInterface):
@@ -21,6 +21,7 @@ class ScalewayNetwork(NetworkInterface):
     - Private Networks (Layer 2 VLAN within region)
     - Public Gateways (NAT and DHCP services)
     - Gateway Networks (attachment of gateway to private network)
+    - Custom Routes (for routing traffic to specific destinations via gateway)
     """
     
     def __init__(self, config: ClusterConfig):
@@ -36,6 +37,7 @@ class ScalewayNetwork(NetworkInterface):
         self._gateway: Optional[scaleway.network.PublicGateway] = None
         self._gateway_ip: Optional[scaleway.network.PublicGatewayIp] = None
         self._gateway_network: Optional[scaleway.network.GatewayNetwork] = None
+        self._routes: List[scaleway.network.Route] = []
     
     def create_vpc(self, name: str, **kwargs) -> scaleway.network.Vpc:
         """
@@ -59,6 +61,8 @@ class ScalewayNetwork(NetworkInterface):
             region=self.config.region,
             project_id=self.config.project_id,
             tags=tags,
+            enable_routing=True,  # Required for custom routes
+            enable_custom_routes_propagation=True,  # Advertise routes to all PNs
         )
         
         return self._vpc
@@ -96,6 +100,7 @@ class ScalewayNetwork(NetworkInterface):
             ipv4_subnet=scaleway.network.PrivateNetworkIpv4SubnetArgs(
                 subnet=self.config.network.private_subnet,
             ),
+            enable_default_route_propagation=True,
         )
         
         return self._private_network
@@ -183,6 +188,59 @@ class ScalewayNetwork(NetworkInterface):
             "gateway_network": self._gateway_network,
         }
     
+    def create_route(
+        self,
+        name: str,
+        destination: str,
+        private_network_id: Union[str, pulumi.Output[str]],
+        description: Optional[str] = None,
+    ) -> scaleway.network.Route:
+        """
+        Create a VPC route for a specific destination via the gateway.
+        
+        This allows private-only nodes to reach specific external hosts
+        through the Public Gateway's NAT functionality.
+        
+        Args:
+            name: Unique name for the route resource
+            destination: CIDR block for the destination (e.g., "35.241.243.135/32")
+            description: Human-readable description (e.g., "artifacts.scality.net")
+            private_network_id: Optional private network ID to scope the route to.
+                              If not provided, uses the GatewayNetwork's private_network_id
+            
+        Returns:
+            Scaleway Route resource
+            
+        Raises:
+            ValueError: If VPC, private network, or gateway network are not created yet
+        """
+        if not self._vpc:
+            raise ValueError("VPC must be created before creating routes")
+        if not self._private_network:
+            raise ValueError("Private network must be created before creating routes")
+        if not self._gateway_network:
+            raise ValueError("Gateway network must be created before creating routes")
+        if not self._gateway:
+            raise ValueError("Gateway must be created before creating routes")
+
+        # For Public Gateway routes, use the GatewayNetwork ID
+        # GatewayNetwork is the connection resource (like PrivateNic for instances)
+        # This is the correct nexthop_resource_id for gateway-based routes
+        route = scaleway.network.Route(
+            f"route-{name}",
+            vpc_id=self._vpc.id,
+            destination=destination,
+            nexthop_resource_id=self._gateway_network.id,
+            nexthop_private_network_id=private_network_id,
+            description=description,
+            region=self.config.region,
+            tags=["managed-by:pulumi"],
+            opts=pulumi.ResourceOptions(depends_on=[self._gateway_network]),
+        )
+        
+        self._routes.append(route)
+        return route
+    
     def create_full_network(self) -> NetworkOutput:
         """
         Create complete network stack (VPC + Private Network + Gateway).
@@ -220,6 +278,24 @@ class ScalewayNetwork(NetworkInterface):
                 enable_bastion=True,  # Enable built-in SSH bastion feature
             )
         
+        # Create custom routes if configured (requires gateway)
+        if gateway_resources and self.config.network.custom_routes:
+            for i, route_config in enumerate(self.config.network.custom_routes):
+                # Generate a safe name from the description or use index
+                route_suffix = route_config.description.replace(".", "-").replace(" ", "-") if route_config.description else f"custom-{i}"
+                route_name = f"{self.config.product}-{route_suffix}" if self.config.product else route_suffix
+                
+                # Log the private network ID being passed
+                private_network.id.apply(lambda pn_id: pulumi.log.info(f"Creating route linked with private_network_id={pn_id}"))
+                
+                self.create_route(
+                    name=route_name,
+                    destination=route_config.destination,
+                    description=route_config.description,
+                    private_network_id=private_network.id,
+                )
+                pulumi.log.info(f"Created route for {route_config.destination} ({route_config.description})")
+        
         # Build output
         output = NetworkOutput(
             vpc_id=vpc.id,
@@ -252,4 +328,9 @@ class ScalewayNetwork(NetworkInterface):
     def gateway_ip(self) -> Optional[scaleway.network.PublicGatewayIp]:
         """Get the gateway IP resource."""
         return self._gateway_ip
+    
+    @property
+    def routes(self) -> List[scaleway.network.Route]:
+        """Get the created route resources."""
+        return self._routes
 

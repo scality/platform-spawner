@@ -25,6 +25,19 @@ class VolumeConfig:
     count: int = 1
 
 
+@dataclass
+class RouteConfig:
+    """
+    Configuration for a custom VPC route.
+
+    Attributes:
+        destination: CIDR block for the route destination (e.g., "35.241.243.135/32")
+        description: Human-readable description (e.g., "artifacts.scality.net")
+    """
+    destination: str
+    description: str = ""
+
+
 class Provider(Enum):
     """Supported cloud providers."""
     SCALEWAY = "scaleway"
@@ -67,12 +80,14 @@ class NetworkConfig:
         private_subnet: CIDR block for private network
         dns_local_name: Local DNS domain name
         allowed_ips: List of IP addresses/CIDR blocks allowed to access the gateway bastion (default: ["0.0.0.0/0"])
+        custom_routes: List of custom VPC routes to create (routes traffic through the gateway)
     """
     enable_private_network: bool = False
     enable_gateway: bool = False
     private_subnet: str = "192.168.10.0/24"
     dns_local_name: str = "cluster.local"
     allowed_ips: List[str] = field(default_factory=list)
+    custom_routes: List[RouteConfig] = field(default_factory=list)
 
 
 @dataclass
