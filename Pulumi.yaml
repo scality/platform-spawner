@@ -102,10 +102,8 @@ config:
   # Extra stuff
   # Note: The code in __main__.py handles both JSON string and native YAML array formats
   extra_volumes:
-    type: string
-    description: "Additional volumes to attach to the instances (JSON string or leave empty)"
-    default: ""
+    description: "Additional volumes to attach (JSON string or YAML array of {suffix, size, count})"
+    default: []
   extra_private_networks:
-    type: string
-    description: "Additional private networks to attach to the instances (JSON string or leave empty)"
-    default: ""
+    description: "Additional private networks (JSON string or YAML array of {suffix, subnet, count})"
+    default: []
