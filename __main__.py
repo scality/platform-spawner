@@ -131,8 +131,7 @@ def main():
     extra_volumes = []
     
     # Try string first, then fall back to object (for native YAML arrays)
-    # Note: config.get() returns None if not set, empty string if set to ""
-    if extra_volumes_str is not None and extra_volumes_str:
+    if extra_volumes_str:
         # Non-empty string - parse as JSON
         try:
             extra_volumes_obj = json.loads(extra_volumes_str)
@@ -146,8 +145,8 @@ def main():
             pulumi.log.info(f"Extra volumes for worker nodes: {len(extra_volumes)} volume configurations")
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             pulumi.log.warn(f"Failed to parse extra_volumes configuration: {e}")
-    elif extra_volumes_str is None:
-        # Not set as string - try as native YAML array
+    else:
+        # Not set, None, or empty string - try as native YAML array
         extra_volumes_obj = config.get_object("extra_volumes")
         if extra_volumes_obj and isinstance(extra_volumes_obj, list):
             try:
@@ -170,8 +169,8 @@ def main():
     extra_private_networks = []
     
     # Try string first, then fall back to object (for native YAML arrays)
-    # Note: config.get() returns None if not set, empty string if set to ""
-    if extra_private_networks_str is not None and extra_private_networks_str:
+    # Note: config.get() may return "" (default) if schema type mismatch (e.g., list instead of string)
+    if extra_private_networks_str:
         # Non-empty string - parse as JSON
         try:
             extra_private_networks_obj = json.loads(extra_private_networks_str)
@@ -187,8 +186,9 @@ def main():
                 pulumi.log.info(f"  - {net_cfg.suffix}: {net_cfg.subnet}")
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             pulumi.log.warn(f"Failed to parse extra_private_networks configuration: {e}")
-    elif extra_private_networks_str is None:
-        # Not set as string - try as native YAML array
+    else:
+        # Not set, None, or empty string - try as native YAML array
+        # This handles cases where YAML parses the value as a list (quotes stripped)
         extra_private_networks_obj = config.get_object("extra_private_networks")
         if extra_private_networks_obj and isinstance(extra_private_networks_obj, list):
             try:
