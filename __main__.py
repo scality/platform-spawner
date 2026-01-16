@@ -126,38 +126,60 @@ def main():
     
     # Optional: Extra volumes for worker nodes
     # Format: JSON string like '[{"size": 120, "count": 1}, {"size": 10, "count": 12}]'
+    # Or native YAML list (when quotes are stripped in CI environments)
     extra_volumes_str = config.get("extra_volumes")
     extra_volumes = []
     
-    if extra_volumes_str:
+    # Try string first, then fall back to object (for native YAML arrays)
+    # Note: config.get() returns None if not set, empty string if set to ""
+    if extra_volumes_str is not None and extra_volumes_str:
+        # Non-empty string - parse as JSON
         try:
             extra_volumes_obj = json.loads(extra_volumes_str)
             for vol_data in extra_volumes_obj:
                 volume_config = VolumeConfig(
-                    suffix=vol_data.get("suffix", "data"),  # Default suffix
+                    suffix=vol_data.get("suffix", "data"),
                     size=vol_data["size"],
-                    count=vol_data.get("count", 1)  # Default to 1 if not specified
+                    count=vol_data.get("count", 1)
                 )
                 extra_volumes.append(volume_config)
             pulumi.log.info(f"Extra volumes for worker nodes: {len(extra_volumes)} volume configurations")
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             pulumi.log.warn(f"Failed to parse extra_volumes configuration: {e}")
-            extra_volumes = []
+    elif extra_volumes_str is None:
+        # Not set as string - try as native YAML array
+        extra_volumes_obj = config.get_object("extra_volumes")
+        if extra_volumes_obj and isinstance(extra_volumes_obj, list):
+            try:
+                for vol_data in extra_volumes_obj:
+                    volume_config = VolumeConfig(
+                        suffix=vol_data.get("suffix", "data"),
+                        size=vol_data["size"],
+                        count=vol_data.get("count", 1)
+                    )
+                    extra_volumes.append(volume_config)
+                pulumi.log.info(f"Extra volumes for worker nodes: {len(extra_volumes)} volume configurations")
+            except (KeyError, TypeError) as e:
+                pulumi.log.warn(f"Failed to parse extra_volumes configuration: {e}")
 
     # Optional: Extra private networks for worker nodes (multi-homed instances)
     # Format: JSON string like '[{"suffix": "data", "subnet": "10.1.0.0/24"}]'
+    # Or native YAML list (when quotes are stripped in CI environments)
     # Each entry creates a separate private network and attaches a NIC to each instance
     extra_private_networks_str = config.get("extra_private_networks")
     extra_private_networks = []
     
-    if extra_private_networks_str:
+    # Try string first, then fall back to object (for native YAML arrays)
+    # Note: config.get() returns None if not set, empty string if set to ""
+    if extra_private_networks_str is not None and extra_private_networks_str:
+        # Non-empty string - parse as JSON
         try:
             extra_private_networks_obj = json.loads(extra_private_networks_str)
             for net_data in extra_private_networks_obj:
                 network_config = PrivateNetworkConfig(
-                    suffix=net_data.get("suffix", "extra"),  # Default suffix
-                    subnet=net_data["subnet"],  # Required: subnet CIDR
-                    count=net_data.get("count", 1)  # Default to 1 NIC per network
+                    suffix=net_data.get("suffix", "extra"),
+                    subnet=net_data["subnet"],
+                    count=net_data.get("count", 1)
                 )
                 extra_private_networks.append(network_config)
             pulumi.log.info(f"Extra private networks for worker nodes: {len(extra_private_networks)} network(s)")
@@ -165,7 +187,23 @@ def main():
                 pulumi.log.info(f"  - {net_cfg.suffix}: {net_cfg.subnet}")
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             pulumi.log.warn(f"Failed to parse extra_private_networks configuration: {e}")
-            extra_private_networks = []
+    elif extra_private_networks_str is None:
+        # Not set as string - try as native YAML array
+        extra_private_networks_obj = config.get_object("extra_private_networks")
+        if extra_private_networks_obj and isinstance(extra_private_networks_obj, list):
+            try:
+                for net_data in extra_private_networks_obj:
+                    network_config = PrivateNetworkConfig(
+                        suffix=net_data.get("suffix", "extra"),
+                        subnet=net_data["subnet"],
+                        count=net_data.get("count", 1)
+                    )
+                    extra_private_networks.append(network_config)
+                pulumi.log.info(f"Extra private networks for worker nodes: {len(extra_private_networks)} network(s)")
+                for net_cfg in extra_private_networks:
+                    pulumi.log.info(f"  - {net_cfg.suffix}: {net_cfg.subnet}")
+            except (KeyError, TypeError) as e:
+                pulumi.log.warn(f"Failed to parse extra_private_networks configuration: {e}")
 
     # SSH key management
     # Four options are supported:
