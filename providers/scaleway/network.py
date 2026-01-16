@@ -181,7 +181,7 @@ class ScalewayNetwork(NetworkInterface):
         Returns:
             Dictionary with gateway resources
         """
-        gateway_type = kwargs.get("gateway_type", "VPC-GW-S")
+        gateway_type = kwargs.get("gateway_type", "VPC-GW-M")
         enable_bastion = kwargs.get("enable_bastion", True)  # Default to enabled
         allowed_ips = self.config.network.allowed_ips or ["0.0.0.0/0"]
 
