@@ -209,6 +209,7 @@ class ScalewayNetwork(NetworkInterface):
             name=gateway_name,
             type=gateway_type,
             ip_id=self._gateway_ip.id,
+            type="VPC-GW-M",
             bastion_enabled=enable_bastion,  # Enable SSH bastion functionality
             bastion_port=61000,  # Non-standard SSH port for bastion
             allowed_ip_ranges=allowed_ips,  # IP-based access control for SSH bastion
