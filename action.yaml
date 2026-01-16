@@ -273,7 +273,13 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |-
-        python -c 'import yaml,sys; print(yaml.safe_dump({"config": yaml.safe_load(sys.stdin)}))' <<< "${{ inputs.configuration }}" > "$PULUMI_STACK_FILE"
+        python -c '
+        import yaml, sys
+        user_config = yaml.safe_load(sys.stdin) or {}
+        # Prefix all config keys with "platform-spawner:" for Pulumi
+        pulumi_config = {"config": {f"platform-spawner:{k}": v for k, v in user_config.items()}}
+        print(yaml.safe_dump(pulumi_config))
+        ' <<< "${{ inputs.configuration }}" > "$PULUMI_STACK_FILE"
     - name: Create stack
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
