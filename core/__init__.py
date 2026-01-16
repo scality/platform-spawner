@@ -12,13 +12,10 @@ from .models import (
     ClusterConfig,
     NodeOutput,
     NetworkOutput,
-    VolumeConfig
+    VolumeConfig,
+    PrivateNetworkConfig,
 )
-from .interfaces import (
-    NetworkInterface,
-    ComputeInterface,
-    ClusterInterface
-)
+from .interfaces import NetworkInterface, ComputeInterface, ClusterInterface
 from .topology import get_cluster_config
 from .factory import create_cluster
 
@@ -30,10 +27,10 @@ __all__ = [
     "NodeOutput",
     "NetworkOutput",
     "VolumeConfig",
+    "PrivateNetworkConfig",
     "NetworkInterface",
     "ComputeInterface",
     "ClusterInterface",
     "get_cluster_config",
     "create_cluster",
 ]
-

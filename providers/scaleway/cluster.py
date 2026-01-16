@@ -7,9 +7,11 @@ on Scaleway infrastructure with any number of worker nodes.
 The gateway provides SSH bastion functionality for accessing private worker nodes.
 """
 
+from typing import Any, Dict, List
+
 import pulumi
 import pulumiverse_scaleway as scaleway
-from typing import Dict, Any, List
+
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from .network import ScalewayNetwork
@@ -54,8 +56,11 @@ class ScalewayCluster(ClusterInterface):
 
         key_ids = []
         # Include product name in IAM key name for better identification
-        key_prefix = self.config.product if self.config.product and self.config.product != "unknown" else "platform-spawner"
-        
+        if self.config.product and self.config.product != "unknown":
+            key_prefix = self.config.product
+        else:
+            key_prefix = "platform-spawner"
+
         for idx, key in enumerate(ssh_keys):
             iam_key = scaleway.iam.SshKey(
                 f"ssh-key-{idx+1}",
@@ -100,6 +105,23 @@ class ScalewayCluster(ClusterInterface):
             private_subnet=self.config.network.private_subnet
         )
 
+        # Build extra networks info for outputs
+        extra_networks_info = {}
+        for suffix, extra_net in self.network.extra_private_networks.items():
+            # Find the subnet from config
+            net_config = next(
+                (
+                    nc
+                    for nc in self.config.extra_private_networks
+                    if nc.suffix == suffix
+                ),
+                None,
+            )
+            extra_networks_info[suffix] = {
+                "id": extra_net.id,
+                "subnet": net_config.subnet if net_config else "unknown",
+            }
+
         # Deploy nodes
         outputs = {
             "instance_count": self.config.instance_count,
@@ -108,6 +130,7 @@ class ScalewayCluster(ClusterInterface):
                 "private_network_id": network_output.private_network_id,
                 "subnet": network_output.subnet,
                 "gateway_id": network_output.gateway_id,
+                "extra_networks": extra_networks_info,
             },
             "nodes": {},
             "bastion": {},
@@ -128,12 +151,15 @@ class ScalewayCluster(ClusterInterface):
         # Deploy instance nodes (private only, accessed via gateway bastion)
         if "node" in nodes_by_role:
             # Get the actual private network name (includes product prefix)
-            private_network_name = f"{self.config.product}-internal" if self.config.product else "internal"
+            if self.config.product:
+                private_network_name = f"{self.config.product}-internal"
+            else:
+                private_network_name = "internal"
             for idx, node_config in enumerate(nodes_by_role["node"]):
                 # First node (idx=0) gets restricted outbound security group
                 # Other nodes get standard internal security group
                 security_group = sg_first_node if idx == 0 else sg_internal
-                
+
                 node = self._deploy_internal_node(
                     node_config=node_config,
                     image_id=instance_image,
@@ -143,19 +169,45 @@ class ScalewayCluster(ClusterInterface):
                 # Generate SSH jump command for accessing the node via bastion
                 # Scaleway internal DNS format: {hostname}.{private_network_name}.internal
                 ssh_command = network_output.gateway_ip.apply(
-                    lambda ip, name=node_config.name, net=private_network_name: f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                    lambda ip, name=node_config.name, net=private_network_name: (
+                        f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                    )
                 )
 
                 # Prepare volume information if volumes exist
                 volumes_info = []
                 if node.get("volumes"):
                     for vol_data in node["volumes"]:
-                        volumes_info.append({
-                            "id": vol_data["resource"].id,
-                            "urn": vol_data["resource"].urn,
-                            "name": vol_data["resource"].name,
-                            "size_gb": vol_data["size_gb"],
-                        })
+                        volumes_info.append(
+                            {
+                                "id": vol_data["resource"].id,
+                                "urn": vol_data["resource"].urn,
+                                "name": vol_data["resource"].name,
+                                "size_gb": vol_data["size_gb"],
+                            }
+                        )
+
+                # Prepare extra NICs information if extra networks were attached
+                extra_nics_info = {}
+                if node.get("extra_nics"):
+                    for suffix, extra_nic in node["extra_nics"].items():
+                        # Get the private IP from the extra NIC (filter out IPv6)
+                        extra_nics_info[suffix] = {
+                            "private_ip": extra_nic.private_ips.apply(
+                                lambda ips: (
+                                    next(
+                                        (
+                                            ip.address
+                                            for ip in ips
+                                            if ":" not in ip.address
+                                        ),
+                                        None,
+                                    )
+                                    if ips
+                                    else None
+                                )
+                            ),
+                        }
 
                 outputs["nodes"][node_config.name] = {
                     "id": node["node_output"].id,
@@ -165,6 +217,7 @@ class ScalewayCluster(ClusterInterface):
                     "ssh_command": ssh_command,
                     "urn": node["instance"].urn,
                     "volumes": volumes_info,
+                    "extra_nics": extra_nics_info,
                 }
 
         return outputs
@@ -192,7 +245,7 @@ class ScalewayCluster(ClusterInterface):
         """
         Deploy an internal node (private network only).
 
-        Creates an instance and attaches it to the private network.
+        Creates an instance and attaches it to the private network(s).
         Also creates and attaches additional volumes if configured.
 
         Args:
@@ -201,7 +254,7 @@ class ScalewayCluster(ClusterInterface):
             security_group: Security group resource
 
         Returns:
-            Dictionary with instance, volumes, and NIC resources
+            Dictionary with instance, volumes, NIC, and extra_nics resources
         """
         # Create extra volumes for instance nodes only (not bastion)
         volume_ids = []
@@ -214,7 +267,9 @@ class ScalewayCluster(ClusterInterface):
                     if vol_config.count == 1:
                         volume_name = f"{node_config.name}-{vol_config.suffix}"
                     else:
-                        volume_name = f"{node_config.name}-{vol_config.suffix}-{i+1:02d}"
+                        volume_name = (
+                            f"{node_config.name}-{vol_config.suffix}-{i+1:02d}"
+                        )
 
                     # Create the volume
                     volume = self.compute.create_volume(
@@ -222,10 +277,12 @@ class ScalewayCluster(ClusterInterface):
                         size_gb=vol_config.size,
                     )
                     # Store volume with metadata for later reference
-                    volumes.append({
-                        "resource": volume,
-                        "size_gb": vol_config.size,
-                    })
+                    volumes.append(
+                        {
+                            "resource": volume,
+                            "size_gb": vol_config.size,
+                        }
+                    )
                     volume_ids.append(volume.id)
 
         # Create instance without public IP (private only)
@@ -241,23 +298,43 @@ class ScalewayCluster(ClusterInterface):
             root_volume_size_gb=node_config.root_volume_size_gb,
         )
 
-        # Attach to private network
+        # Attach to primary private network
         nic = self.compute.attach_to_private_network(
             instance=instance_output.resource,
             network=self.network.private_network,
             instance_name=node_config.name,
         )
 
+        # Attach to extra private networks if configured (for multi-homed instances)
+        extra_nics = {}
+        if node_config.role == "node" and self.config.extra_private_networks:
+            for net_config in self.config.extra_private_networks:
+                extra_network = self.network.extra_private_networks.get(
+                    net_config.suffix
+                )
+                if extra_network:
+                    extra_nic = self.compute.attach_to_private_network(
+                        instance=instance_output.resource,
+                        network=extra_network,
+                        instance_name=f"{node_config.name}-{net_config.suffix}",
+                    )
+                    extra_nics[net_config.suffix] = extra_nic
+
         # Update node_output with private IPv4 address from NIC (filter out IPv6)
         # IPv4 addresses don't contain ':' character, IPv6 do
         instance_output.private_ip = nic.private_ips.apply(
-            lambda ips: next((ip.address for ip in ips if ':' not in ip.address), None) if ips else None
+            lambda ips: (
+                next((ip.address for ip in ips if ":" not in ip.address), None)
+                if ips
+                else None
+            )
         )
 
         return {
             "instance": instance_output.resource,
             "node_output": instance_output,
             "nic": nic,
+            "extra_nics": extra_nics,
             "volumes": volumes,
         }
 
@@ -302,7 +379,11 @@ class ScalewayCluster(ClusterInterface):
         # Update node_output with private IPv4 address from NIC (filter out IPv6)
         # IPv4 addresses don't contain ':' character, IPv6 do
         instance_output.private_ip = nic.private_ips.apply(
-            lambda ips: next((ip.address for ip in ips if ':' not in ip.address), None) if ips else None
+            lambda ips: (
+                next((ip.address for ip in ips if ":" not in ip.address), None)
+                if ips
+                else None
+            )
         )
 
         return {
@@ -310,4 +391,3 @@ class ScalewayCluster(ClusterInterface):
             "node_output": instance_output,
             "nic": nic,
         }
-

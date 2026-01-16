@@ -20,8 +20,29 @@ class VolumeConfig:
         size: Volume size in GB
         count: Number of volumes to create with this configuration (default: 1)
     """
+
     suffix: str
     size: int
+    count: int = 1
+
+
+@dataclass
+class PrivateNetworkConfig:
+    """
+    Configuration for additional private network interfaces to attach to nodes.
+
+    Each configuration creates a separate private network and attaches a NIC
+    to each instance. This allows multi-homed instances with isolated network
+    segments for different traffic types (e.g., management, data, storage).
+
+    Attributes:
+        suffix: Identifier suffix for the network (e.g., "data", "storage", "mgmt")
+        subnet: CIDR block for the private network (e.g., "10.1.0.0/24")
+        count: Number of NICs to create per instance (default: 1, typically 1)
+    """
+
+    suffix: str
+    subnet: str
     count: int = 1
 
 
@@ -34,12 +55,14 @@ class RouteConfig:
         destination: CIDR block for the route destination (e.g., "35.241.243.135/32")
         description: Human-readable description (e.g., "artifacts.scality.net")
     """
+
     destination: str
     description: str = ""
 
 
 class Provider(Enum):
     """Supported cloud providers."""
+
     SCALEWAY = "scaleway"
     AWS = "aws"
 
@@ -60,6 +83,7 @@ class NodeConfig:
         storage_size_gb: Optional additional storage in GB
         root_volume_size_gb: Root disk size in GB
     """
+
     name: str
     role: str
     instance_type: str
@@ -81,9 +105,10 @@ class NetworkConfig:
         enable_gateway: Whether to create a NAT gateway
         private_subnet: CIDR block for private network
         dns_local_name: Local DNS domain name
-        allowed_ips: List of IP addresses/CIDR blocks allowed to access the gateway bastion (default: ["0.0.0.0/0"])
-        custom_routes: List of custom VPC routes to create (routes traffic through the gateway)
+        allowed_ips: List of IPs/CIDRs allowed to access the gateway bastion
+        custom_routes: List of custom VPC routes (traffic through gateway)
     """
+
     enable_private_network: bool = False
     enable_gateway: bool = False
     private_subnet: str = "192.168.10.0/24"
@@ -135,15 +160,17 @@ class ClusterConfig:
 
         # Extra stuff
         extra_volumes: Additional volumes to attach to the instances
+        extra_private_networks: Additional private networks to attach to the instances
 
         # Internal/computed fields
         network: Network configuration
         nodes: List of node configurations
 
         # Deprecated fields (kept for backward compatibility)
-        bastion_os_name: Operating system name for bastion node (derived from bastion_image)
-        bastion_os_version: Operating system version for bastion node (derived from bastion_image)
+        bastion_os_name: Operating system name for bastion (derived from bastion_image)
+        bastion_os_version: Operating system version for bastion (derived from bastion_image)
     """
+
     # Required fields
     instance_count: int
     provider: Provider
@@ -182,6 +209,7 @@ class ClusterConfig:
 
     # Extra stuff
     extra_volumes: List[VolumeConfig] = field(default_factory=list)
+    extra_private_networks: List[PrivateNetworkConfig] = field(default_factory=list)
 
     # Internal/computed fields
     network: NetworkConfig = field(default_factory=NetworkConfig)
@@ -204,6 +232,7 @@ class NodeOutput:
         private_ip: Private IP address (if any)
         resource: Provider-specific resource object
     """
+
     id: str
     name: str
     public_ip: Optional[str] = None
@@ -223,9 +252,9 @@ class NetworkOutput:
         gateway_ip: Gateway public IP (if any)
         subnet: Private subnet CIDR
     """
+
     vpc_id: Optional[str] = None
     private_network_id: Optional[str] = None
     gateway_id: Optional[str] = None
     gateway_ip: Optional[str] = None
     subnet: Optional[str] = None
-

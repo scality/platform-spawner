@@ -9,7 +9,7 @@ import pulumi
 import json
 import yaml
 import os
-from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig
+from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig, PrivateNetworkConfig
 from core.topology import get_cluster_config
 from core.factory import create_cluster
 from core.ssh import generate_ssh_key_pair, generate_ssh_config, extract_node_info_for_ssh_config
@@ -144,6 +144,29 @@ def main():
             pulumi.log.warn(f"Failed to parse extra_volumes configuration: {e}")
             extra_volumes = []
 
+    # Optional: Extra private networks for worker nodes (multi-homed instances)
+    # Format: JSON string like '[{"suffix": "data", "subnet": "10.1.0.0/24"}]'
+    # Each entry creates a separate private network and attaches a NIC to each instance
+    extra_private_networks_str = config.get("extra_private_networks")
+    extra_private_networks = []
+    
+    if extra_private_networks_str:
+        try:
+            extra_private_networks_obj = json.loads(extra_private_networks_str)
+            for net_data in extra_private_networks_obj:
+                network_config = PrivateNetworkConfig(
+                    suffix=net_data.get("suffix", "extra"),  # Default suffix
+                    subnet=net_data["subnet"],  # Required: subnet CIDR
+                    count=net_data.get("count", 1)  # Default to 1 NIC per network
+                )
+                extra_private_networks.append(network_config)
+            pulumi.log.info(f"Extra private networks for worker nodes: {len(extra_private_networks)} network(s)")
+            for net_cfg in extra_private_networks:
+                pulumi.log.info(f"  - {net_cfg.suffix}: {net_cfg.subnet}")
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            pulumi.log.warn(f"Failed to parse extra_private_networks configuration: {e}")
+            extra_private_networks = []
+
     # SSH key management
     # Four options are supported:
     # 1. Default (no config): No cloud-init config, Scaleway provides all IAM keys to instance
@@ -276,6 +299,7 @@ def main():
         
         # Extra stuff
         extra_volumes=extra_volumes,
+        extra_private_networks=extra_private_networks,
         
         # Internal/computed fields
         nodes=cluster_topology["nodes"],
