@@ -21,6 +21,14 @@ uv pip install -r requirements.txt
 
 ## Step 3: Configure Stack
 
+If not already done, login to Pulumi:
+
+```bash
+pulumi login --local
+```
+
+Then initialize a new stack and set required configuration:
+
 ```bash
 # Initialize stack
 pulumi stack init dev
@@ -34,6 +42,12 @@ pulumi config set product dev
 # Set credentials (encrypted)
 pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
 pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
+```
+
+You need to use a specific image for the worker nodes:
+
+```bash
+pulumi config set instance_image fc979535-d07c-43b4-8c33-d8f483484d16
 ```
 
 ## Step 4: Deploy
