@@ -131,8 +131,7 @@ class ClusterConfig:
         instance_image: Image for the instances (AMI name for AWS, snapshot ID for Scaleway)
 
         # Global values
-        product: Product name for the resources
-        name_prefix: Prefix applied to all resource names (nodes, volumes, VPC, gateway, etc.)
+        product: Product name for the resources (prefix for all resource names)
 
         # Network configs
         offline: If true, the platform will not be connected to the internet
@@ -181,7 +180,6 @@ class ClusterConfig:
 
     # Global values
     product: str = "unknown"
-    name_prefix: str = ""
 
     # Network configs
     offline: bool = False

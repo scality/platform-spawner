@@ -38,6 +38,8 @@ pulumi config set --secret scaleway:secret_key YOUR_SECRET_KEY
 
 ## Step 4: Deploy
 
+**Important**: Make sure you set `product` to avoid resources being named with "unknown" prefix.
+
 ```bash
 # Preview changes
 pulumi preview
