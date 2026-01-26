@@ -27,8 +27,9 @@ pulumi stack init dev
 
 # Set required configuration
 pulumi config set project_id YOUR_PROJECT_ID
-pulumi config set worker_count 1
-pulumi config set name_prefix dev
+pulumi config set instance_count 1
+pulumi config set instance_image YOUR_SNAPSHOT_ID
+pulumi config set product dev
 
 # Set credentials (encrypted)
 pulumi config set --secret scaleway:access_key YOUR_ACCESS_KEY
@@ -52,10 +53,10 @@ pulumi stack output gateway_bastion_ip
 
 ```bash
 # Restrict to your current IP
-pulumi config set allowed_ips "$(curl -s https://api.ipify.org)/32"
+pulumi config set authorized_cidrs '["'$(curl -s https://api.ipify.org)'/32"]'
 
 # Or specify multiple IPs/ranges
-pulumi config set allowed_ips "1.2.3.4/32,5.6.7.0/24"
+pulumi config set authorized_cidrs '["1.2.3.4/32", "5.6.7.0/24"]'
 ```
 
 This automatically configures the gateway to only accept SSH connections from the specified IP addresses.
@@ -74,31 +75,31 @@ ssh -J bastion@<gateway_ip>:61000 artesca-os@dev-node-01.dev-internal.internal
 
 ### Single Node (Development)
 
-```bash
-worker_count: 1
-name_prefix: dev
-instance_type: PLAY2-MICRO
+```yaml
+instance_count: 1
+product: dev
+instance_flavor: small
 ```
 
 Resources created: `dev-node-01`, `dev-vpc`, `dev-gateway`
 
 ### 3 Workers (Staging)
 
-```bash
-worker_count: 3
-name_prefix: staging
-instance_type: PRO2-S
+```yaml
+instance_count: 3
+product: staging
+instance_flavor: medium
 ```
 
 Resources created: `staging-node-01/02/03`, `staging-vpc`, `staging-gateway`
 
 ### 6 Workers (Production)
 
-```bash
-worker_count: 6
-name_prefix: prod
-instance_type: PRO2-M
-worker_snapshot_id: YOUR_SNAPSHOT_ID
+```yaml
+instance_count: 6
+product: prod
+instance_flavor: large
+instance_image: YOUR_SNAPSHOT_ID
 ```
 
 Resources created: `prod-node-01` through `prod-node-06`, `prod-vpc`, `prod-gateway`
@@ -151,12 +152,12 @@ pulumi stack select STACK_NAME
 
 ## Next Steps
 
-- Change worker count: `pulumi config set worker_count 6`
-- Add name prefix: `pulumi config set name_prefix prod`
-- Use custom image: `pulumi config set worker_snapshot_id YOUR_ID`
-- Add volumes: `pulumi config set additional_volumes '[{"suffix":"data","size":100}]'`
-- Configure allowed IPs: `pulumi config set allowed_ips "1.2.3.4/32,5.6.7.0/24"`
-- Read full documentation: [README.md](README.md)
+- Change instance count: `pulumi config set instance_count 6`
+- Add product name: `pulumi config set product prod`
+- Use custom image: `pulumi config set instance_image YOUR_SNAPSHOT_ID`
+- Add volumes: `pulumi config set extra_volumes '[{"suffix":"data","size":100}]'`
+- Configure allowed IPs: `pulumi config set authorized_cidrs '["1.2.3.4/32"]'`
+- Read full documentation: [README.md](../README.md)
 
 ## Common Issues
 
@@ -166,34 +167,36 @@ pulumi config set --secret scaleway:access_key YOUR_KEY
 pulumi config set --secret scaleway:secret_key YOUR_SECRET
 ```
 
-**Wrong instance type:**
+**Wrong instance flavor:**
 ```bash
-# Check available types: PLAY2-MICRO, PRO2-S, PRO2-M, PRO2-L
-pulumi config set instance_type PRO2-S
+# Available flavors: tiny, small, medium, medium-plus, large, xlarge
+pulumi config set instance_flavor medium
 ```
 
 **Image not found:**
 ```bash
-# Use marketplace image
-pulumi config rm worker_snapshot_id
+# Ensure instance_image is set to a valid snapshot ID
+pulumi config set instance_image YOUR_SNAPSHOT_ID
 ```
 
 ## Production Checklist
 
 Before deploying to production:
 
-- [ ] Set worker_count appropriately
-- [ ] Use production instance type (`PRO2-S` or higher)
-- [ ] Set name_prefix for organization
-- [ ] Use custom snapshot with your software
-- [ ] **Configure allowed_ips to restrict gateway bastion access** (critical for production security)
-- [ ] Configure additional volumes if needed
+- [ ] Set `instance_count` appropriately
+- [ ] Use production flavor (`medium` or higher)
+- [ ] Set `product` for resource organization
+- [ ] Use custom snapshot with your software (`instance_image`)
+- [ ] **Configure `authorized_cidrs` to restrict gateway bastion access** (critical for production security)
+- [ ] Configure additional volumes if needed (`extra_volumes`)
 - [ ] Test in staging first
 - [ ] Set up monitoring
 - [ ] Document your configuration
 
 ## Get Help
 
-- Full documentation: [README.md](README.md)
+- Full documentation: [README.md](../README.md)
+- Configuration reference: [CONFIGURATION.md](CONFIGURATION.md)
+- GitHub Action reference: [ACTION.md](ACTION.md)
 - Pulumi docs: https://www.pulumi.com/docs/
 - Scaleway docs: https://www.scaleway.com/en/docs/
