@@ -1,0 +1,60 @@
+#cloud-config
+# Network configuration for Rocky Linux with NetworkManager
+# Disables IPv6 and prevents DNS/routing issues with multiple private networks
+
+runcmd:
+  - |
+    #!/bin/bash
+    LOG_FILE="/var/log/artesca/network-config.log"
+    exec > "$LOG_FILE" 2>&1
+    echo "Starting network configuration at $(date)"
+
+    # Define the default subnet for the primary NIC
+    PRIMARY_SUBNET="192.168.10.0/24"
+
+    # Process each connection
+    nmcli -t -f UUID,DEVICE connection show | grep -v ':$' | while IFS=: read -r uuid device; do
+      echo "Processing connection UUID: $uuid, Device: $device"
+
+      # Disable IPv6
+      echo "  Disabling IPv6..."
+      nmcli connection modify uuid "$uuid" ipv6.method ignore
+
+      # Get the IP address with CIDR for the device
+      ip_cidr=$(ip -o -f inet addr show "$device" 2>/dev/null | awk '{print $4}' | head -n 1)
+      echo "  Device $device has IP: $ip_cidr"
+
+      # Extract network address from IP/CIDR (e.g., 192.168.10.3/24 -> 192.168.10)
+      if [ -n "$ip_cidr" ]; then
+        ip_addr=$(echo "$ip_cidr" | cut -d'/' -f1)
+        network_prefix=$(echo "$ip_addr" | cut -d'.' -f1-3)
+        primary_prefix=$(echo "$PRIMARY_SUBNET" | cut -d'/' -f1 | cut -d'.' -f1-3)
+
+        echo "  Network prefix: $network_prefix, Primary prefix: $primary_prefix"
+
+        # If network prefix doesn't match primary, disable DNS and routing
+        if [ "$network_prefix" != "$primary_prefix" ]; then
+          echo "  Not primary subnet - disabling DNS and default route"
+          nmcli connection modify uuid "$uuid" ipv4.ignore-auto-dns yes
+          nmcli connection modify uuid "$uuid" ipv4.never-default yes
+        else
+          echo "  Primary subnet - keeping defaults"
+        fi
+      else
+        echo "  No IP address - keeping defaults"
+      fi
+    done
+
+    echo "Reloading connections..."
+    # Reload connections to apply changes
+    nmcli connection reload
+
+    # Restart all connections
+    nmcli -t -f UUID,DEVICE connection show | grep -v ':$' | while IFS=: read -r uuid device; do
+      echo "Restarting connection $uuid on $device"
+      nmcli connection down uuid "$uuid" || true
+      sleep 2
+      nmcli connection up uuid "$uuid" || true
+    done
+
+    echo "Network configuration completed at $(date)"
