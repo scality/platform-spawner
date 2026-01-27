@@ -49,6 +49,44 @@ You need to use a specific image for the worker nodes:
 ```bash
 pulumi config set instance_image fc979535-d07c-43b4-8c33-d8f483484d16
 ```
+**Security Note:** By default, the gateway bastion SSH is accessible from any IP. For production, restrict access:
+
+```bash
+# Restrict to your current IP (manually edit Pulumi.<stack>.yaml)
+# Or use pulumi config set with --path flag:
+pulumi config set --path 'authorized_cidrs[0]' "$(curl -s https://api.ipify.org)/32"
+
+# Or edit the stack YAML file directly to add multiple IPs:
+# platform-spawner:authorized_cidrs:
+#   - 1.2.3.4/32
+#   - 5.6.7.0/24
+```
+
+### Extra Private Networks and Custom Routes
+
+You can add also multiple extra private networks or custom routes if needed:
+
+```bash
+# Example: Add extra private network
+pulumi config set --path 'extra_private_networks[0].suffix' data
+pulumi config set --path 'extra_private_networks[0].subnet' 192.168.20.0/24
+# Example: Add custom routes
+pulumi config set --path 'custom_routes[0].destination' 35.241.243.135/32
+pulumi config set --path 'custom_routes[0].description' artifacts.scality.net
+pulumi config set --path 'custom_routes[1].destination' 217.182.187.84/32
+pulumi config set --path 'custom_routes[1].description' packages.scality.com
+```
+
+### Extra Volumes
+
+You can also add extra volumes to each node:
+
+```bash
+# Example: Add extra volume
+pulumi config set --path 'extra_volumes[0].suffix' data
+pulumi config set --path 'extra_volumes[0].size' 10
+pulumi config set --path 'extra_volumes[0].count' 12
+```
 
 ## Step 4: Deploy
 
@@ -63,16 +101,6 @@ pulumi up
 
 # View gateway IP
 pulumi stack output gateway_bastion_ip
-```
-
-**Security Note:** By default, the gateway bastion SSH is accessible from any IP. For production, restrict access:
-
-```bash
-# Restrict to your current IP
-pulumi config set authorized_cidrs '["'$(curl -s https://api.ipify.org)'/32"]'
-
-# Or specify multiple IPs/ranges
-pulumi config set authorized_cidrs '["1.2.3.4/32", "5.6.7.0/24"]'
 ```
 
 This automatically configures the gateway to only accept SSH connections from the specified IP addresses.
