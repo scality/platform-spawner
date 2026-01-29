@@ -86,6 +86,13 @@ def main():
         bastion_os_name = bastion_image
         bastion_os_version = "9"  # Default version
     
+    # Map common OS name aliases to Scaleway marketplace label names
+    os_name_map = {
+        "rocky": "rockylinux",
+        "rocky-linux": "rockylinux",
+    }
+    bastion_os_name = os_name_map.get(bastion_os_name, bastion_os_name)
+    
     # SSH information
     ssh_key_name = config.get("ssh_key_name") or ""
     ssh_public_keys = config.get_object("ssh_public_keys") or []

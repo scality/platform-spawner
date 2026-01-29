@@ -95,19 +95,19 @@ def generate_ssh_key_pair(key_name: str, output_dir: str = None) -> Dict[str, st
 
 def generate_ssh_config(
     bastion_ip: str,
-    bastion_port: int,
-    bastion_user: str,
-    nodes: Dict[str, Dict[str, Any]],
+    bastion_port: int = 22,
+    bastion_user: str = "rocky",
+    nodes: Dict[str, Dict[str, Any]] = None,
     private_key_path: Optional[str] = None,
     output_path: str = None,
 ) -> str:
     """
-    Generate an SSH config file for accessing nodes via bastion.
+    Generate an SSH config file for accessing nodes via bastion VM.
     
     Args:
-        bastion_ip: Bastion host IP address
-        bastion_port: Bastion SSH port
-        bastion_user: Bastion SSH user
+        bastion_ip: Bastion VM public IP address
+        bastion_port: Bastion SSH port (default: 22)
+        bastion_user: Bastion SSH user (default: "rocky" for Rocky Linux bastion)
         nodes: Dictionary of nodes with their connection info
         private_key_path: Path to private key (optional)
         output_path: Path to write config file (default: temp file)
@@ -119,11 +119,16 @@ def generate_ssh_config(
         {
             "node-01": {
                 "name": "node-01",
-                "private_ip": "192.168.1.10",
-                "fqdn": "node-01.internal.internal"
+                "private_ip": "192.168.10.2"
             }
         }
+        
+    Generated config allows:
+        ssh bastion           # Connect to bastion
+        ssh node-01           # Connect to node via bastion (ProxyJump)
     """
+    if nodes is None:
+        nodes = {}
     if output_path is None:
         output_dir = tempfile.gettempdir()
         output_path = os.path.join(output_dir, "ssh_config")
@@ -197,6 +202,9 @@ def extract_node_info_for_ssh_config(nodes_output: Dict[str, Any]) -> Dict[str, 
         
     Returns:
         Dictionary suitable for generate_ssh_config()
+        
+    Note:
+        SSH command format: ssh -J rocky@{bastion_ip} artesca-os@{private_ip}
     """
     ssh_nodes = {}
     
@@ -206,16 +214,18 @@ def extract_node_info_for_ssh_config(nodes_output: Dict[str, Any]) -> Dict[str, 
             "private_ip": node_data.get("private_ip"),
         }
         
-        # Extract FQDN from ssh_command if available
+        # Extract target host from ssh_command if available
         if "ssh_command" in node_data:
             ssh_cmd = node_data["ssh_command"]
-            # SSH command format: ssh -J bastion@IP:PORT user@FQDN
+            # SSH command format: ssh -J rocky@{bastion_ip} artesca-os@{target}
             if "@" in ssh_cmd:
                 parts = ssh_cmd.split("@")
                 if len(parts) >= 3:
-                    # Last part after @ is the FQDN
-                    fqdn = parts[-1].strip()
-                    ssh_nodes[node_name]["fqdn"] = fqdn
+                    # Last part after @ is the target (private IP or FQDN)
+                    target = parts[-1].strip()
+                    # Only set fqdn if it looks like a hostname (contains dots but isn't just an IP)
+                    if "." in target and not target.replace(".", "").isdigit():
+                        ssh_nodes[node_name]["fqdn"] = target
     
     return ssh_nodes
 

@@ -50,7 +50,12 @@ class ScalewayCompute(ComputeInterface):
         rather than a UUID.
 
         Returns:
-            Image label in format "os_version" (e.g., "rockylinux_9")
+            Image label in format "osname_version" (e.g., "rockylinux_9")
+            
+        Note:
+            The bastion_os_name should be the Scaleway marketplace label name,
+            e.g., "rockylinux" not "rocky". The __main__.py handles mapping
+            user-friendly names like "rocky-9" to "rockylinux_9".
         """
         # Bastion uses PLAY2-NANO which is block-storage-only
         # These instances need the marketplace label format, not UUID
@@ -179,17 +184,14 @@ class ScalewayCompute(ComputeInterface):
         # Note: The 'image' parameter should already be in the correct format
         # (either a UUID for snapshots or a marketplace label for bastion)
 
-        # Configure root volume based on instance type
-        # CRITICAL: For block-storage-only instances, do NOT specify root_volume at all
-        # Any root_volume specification attempts to create local storage, which is not supported
+        # Configure root volume based on instance type and image source
         root_volume = None
 
-        # Only create volume from snapshot for worker nodes (not bastion)
         # Check if image is a UUID (snapshot) vs marketplace label
         is_snapshot = self.config.instance_image and image == self.config.instance_image
 
         if is_snapshot and uses_block_storage_only:
-            # For block-storage instances with snapshots, create a boot volume
+            # For block-storage instances with snapshots, create a boot volume from snapshot
             snapshot = scaleway.block.get_snapshot(
                 snapshot_id=self.config.instance_image,
                 zone=self.config.zone,
@@ -216,8 +218,15 @@ class ScalewayCompute(ComputeInterface):
                 volume_id=from_snapshot.id,
                 volume_type="sbs_volume",
             )
+        elif uses_block_storage_only and kwargs.get("root_volume_size_gb"):
+            # For block-storage instances with marketplace images and custom size
+            # Specify the root volume size - Scaleway will create an SBS volume
+            root_volume = scaleway.instance.ServerRootVolumeArgs(
+                size_in_gb=kwargs.get("root_volume_size_gb"),
+                volume_type="sbs_volume",
+            )
         elif not uses_block_storage_only and kwargs.get("root_volume_size_gb"):
-            # Only for instances that support local storage (DEV1, GP1, etc.)
+            # For instances that support local storage (DEV1, GP1, etc.)
             root_volume = scaleway.instance.ServerRootVolumeArgs(
                 size_in_gb=kwargs.get("root_volume_size_gb"),
                 delete_on_termination=True,
@@ -256,13 +265,15 @@ class ScalewayCompute(ComputeInterface):
         }
 
         # Either use image OR root_volume with volume_id (mutually exclusive)
-        if root_volume and hasattr(root_volume, 'volume_id'):
+        # Check if root_volume has a volume_id set (not just the attribute existing)
+        has_volume_id = root_volume and hasattr(root_volume, 'volume_id') and root_volume.volume_id is not None
+        if has_volume_id:
             # Boot from existing volume (e.g., from snapshot)
             server_args["root_volume"] = root_volume
         else:
             # Boot from image (marketplace or custom)
             server_args["image"] = server_image
-            if root_volume:  # root_volume without volume_id (size-based)
+            if root_volume:  # root_volume without volume_id (size-based, for custom size)
                 server_args["root_volume"] = root_volume
 
         server = scaleway.instance.Server(
@@ -351,31 +362,117 @@ class ScalewayCompute(ComputeInterface):
         self._nics[instance_name] = nic
         return nic
 
-    def create_bastion_security_group(self) -> scaleway.instance.SecurityGroup:
+    def create_bastion_security_group(
+        self,
+        allowed_cidrs: Optional[List[str]] = None,
+        private_subnet: str = "192.168.10.0/24",
+        restrict_outbound: bool = True,
+    ) -> scaleway.instance.SecurityGroup:
         """
-        Create a security group for bastion/jump host.
+        Create a security group for bastion/jump host with NAT capabilities.
 
-        Allows SSH (port 22) from anywhere, drops everything else inbound.
+        The bastion serves as both SSH jump host and NAT gateway for worker nodes.
+
+        Inbound:
+            - SSH (port 22) from specified CIDRs
+            - All traffic from private subnet (for NAT responses)
+
+        Outbound (when restrict_outbound=True):
+            - Traffic to private subnet (for NAT to worker nodes)
+            - HTTPS (443) to UPDATE_SERVER_IPs (for package updates)
+            - All other outbound dropped
+
+        Outbound (when restrict_outbound=False):
+            - All outbound allowed
+
+        Args:
+            allowed_cidrs: List of CIDRs allowed to SSH to bastion.
+                          If None or empty, defaults to ["0.0.0.0/0"] (anywhere).
+            private_subnet: CIDR block of the private network.
+            restrict_outbound: If True, restrict outbound to UPDATE_SERVER_IPS only.
 
         Returns:
             SecurityGroup resource for bastion
         """
         sg_name = f"{self.config.product}-bastion" if self.config.product else "bastion"
-        return self.create_security_group(
-            name=sg_name,
-            rules=[
-                {
-                    "action": "accept",
-                    "direction": "inbound",
-                    "protocol": "TCP",
-                    "port": 22,
-                    "ip_range": "0.0.0.0/0",
-                }
-            ],
-            description="Bastion host - SSH access from internet",
-            inbound_default_policy="drop",
-            outbound_default_policy="accept",
+
+        # Default to allowing SSH from anywhere if no CIDRs specified
+        if not allowed_cidrs:
+            allowed_cidrs = ["0.0.0.0/0"]
+
+        # Build inbound rules
+        inbound_rules = [
+            # SSH from allowed CIDRs
+            scaleway.instance.SecurityGroupInboundRuleArgs(
+                action="accept",
+                protocol="TCP",
+                port=22,
+                ip_range=cidr,
+            )
+            for cidr in allowed_cidrs
+        ]
+        # Allow all traffic from private subnet (for NAT responses)
+        inbound_rules.append(
+            scaleway.instance.SecurityGroupInboundRuleArgs(
+                action="accept",
+                protocol="ANY",
+                ip_range=private_subnet,
+            )
         )
+
+        # Build outbound rules
+        outbound_rules = []
+        outbound_default = "accept"
+
+        if restrict_outbound:
+            outbound_default = "drop"
+            # Allow traffic to private subnet (for NAT to worker nodes)
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="ANY",
+                    ip_range=private_subnet,
+                )
+            )
+            # Allow HTTPS to update servers
+            for ip_range in UPDATE_SERVER_IPS:
+                outbound_rules.append(
+                    scaleway.instance.SecurityGroupOutboundRuleArgs(
+                        action="accept",
+                        protocol="TCP",
+                        ip_range=ip_range,
+                        port=443,
+                    )
+                )
+            pulumi.log.info(
+                f"Bastion outbound restricted to: {private_subnet}, {', '.join(UPDATE_SERVER_IPS)}"
+            )
+        else:
+            pulumi.log.info("Bastion outbound open to all destinations")
+
+        # Log inbound configuration
+        if allowed_cidrs != ["0.0.0.0/0"]:
+            pulumi.log.info(
+                f"Bastion SSH access restricted to CIDRs: {', '.join(allowed_cidrs)}"
+            )
+        else:
+            pulumi.log.info("Bastion SSH access open to all IPs (0.0.0.0/0)")
+
+        sg = scaleway.instance.SecurityGroup(
+            f"sg-{sg_name}",
+            name=sg_name,
+            description="Bastion host - SSH jump + NAT gateway",
+            inbound_default_policy="drop",
+            outbound_default_policy=outbound_default,
+            inbound_rules=inbound_rules,
+            outbound_rules=outbound_rules if outbound_rules else None,
+            stateful=True,
+            project_id=self.config.project_id,
+            zone=self.config.zone,
+        )
+
+        self._security_groups[sg_name] = sg
+        return sg
 
     def create_internal_security_group(
         self,

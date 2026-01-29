@@ -21,10 +21,10 @@ class ScalewayNetwork(NetworkInterface):
     Handles creation of:
     - VPC (Virtual Private Cloud)
     - Private Networks (Layer 2 VLAN within region)
-    - Public Gateways (NAT and DHCP services)
-    - Gateway Networks (attachment of gateway to private network)
-    - Custom Routes (for routing traffic to specific destinations via gateway)
     - Extra Private Networks (for multi-homed instances)
+
+    Note: Public Gateway is no longer used. NAT is handled by the bastion VM.
+    Gateway code is preserved but disabled by default.
     """
 
     def __init__(self, config: ClusterConfig):
@@ -305,10 +305,12 @@ class ScalewayNetwork(NetworkInterface):
 
     def create_full_network(self) -> NetworkOutput:
         """
-        Create complete network stack (VPC + Private Network + Gateway + Extra Networks).
+        Create complete network stack (VPC + Private Network + Extra Networks).
 
         This is a convenience method that creates all network resources
         in the correct order based on the cluster configuration.
+
+        Note: Gateway is no longer created here. NAT is handled by the bastion VM.
 
         Returns:
             NetworkOutput with all network resource information
@@ -347,44 +349,9 @@ class ScalewayNetwork(NetworkInterface):
                     tags=[f"extra-{net_config.suffix}", "managed-by:pulumi"],
                 )
 
-        # Create Gateway if needed
-        gateway_resources = None
-        if self.config.network.enable_gateway:
-            gateway_resources = self.create_gateway(
-                network_ref=private_network,
-                enable_bastion=True,  # Enable built-in SSH bastion feature
-            )
-
-        # Create custom routes if configured (requires gateway)
-        if gateway_resources and self.config.network.custom_routes:
-            for i, route_config in enumerate(self.config.network.custom_routes):
-                # Generate a safe name from the description or use index
-                if route_config.description:
-                    route_suffix = route_config.description.replace(".", "-")
-                    route_suffix = route_suffix.replace(" ", "-")
-                else:
-                    route_suffix = f"custom-{i}"
-                if self.config.product:
-                    route_name = f"{self.config.product}-{route_suffix}"
-                else:
-                    route_name = route_suffix
-
-                # Log the private network ID being passed
-                private_network.id.apply(
-                    lambda pn_id: pulumi.log.info(
-                        f"Creating route linked with private_network_id={pn_id}"
-                    )
-                )
-
-                self.create_route(
-                    name=route_name,
-                    destination=route_config.destination,
-                    description=route_config.description,
-                    private_network_id=private_network.id,
-                )
-                dest = route_config.destination
-                desc = route_config.description
-                pulumi.log.info(f"Created route for {dest} ({desc})")
+        # Note: Gateway is no longer created here.
+        # NAT functionality is provided by the bastion VM instead.
+        # The bastion VM is deployed in cluster.py with IP forwarding and iptables masquerading.
 
         # Build output
         output = NetworkOutput(
@@ -392,10 +359,6 @@ class ScalewayNetwork(NetworkInterface):
             private_network_id=private_network.id,
             subnet=self.config.network.private_subnet,
         )
-
-        if gateway_resources:
-            output.gateway_id = gateway_resources["gateway"].id
-            output.gateway_ip = gateway_resources["gateway_ip"].address
 
         return output
 

@@ -4,7 +4,8 @@ Scaleway cluster implementation.
 This module orchestrates the deployment of complete clusters
 on Scaleway infrastructure with any number of worker nodes.
 
-The gateway provides SSH bastion functionality for accessing private worker nodes.
+A bastion VM provides SSH access and NAT functionality for accessing
+and providing internet connectivity to private worker nodes.
 """
 
 from typing import Any, Dict, List
@@ -14,8 +15,33 @@ import pulumiverse_scaleway as scaleway
 
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
+from config.flavors import get_instance_type
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
+
+
+# Cloud-init configuration for bastion VM with NAT functionality
+# Enables IP forwarding and configures iptables masquerading
+BASTION_NAT_CLOUDINIT = """#cloud-config
+write_files:
+  - path: /etc/sysctl.d/99-ip-forward.conf
+    content: |
+      net.ipv4.ip_forward = 1
+    owner: root:root
+    permissions: '0644'
+
+runcmd:
+  # Enable IP forwarding immediately
+  - sysctl -p /etc/sysctl.d/99-ip-forward.conf
+  # Configure iptables NAT masquerading
+  # eth0 is the public interface, private NIC is attached later
+  - iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+  - iptables -A FORWARD -i eth0 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+  - iptables -A FORWARD -j ACCEPT
+  # Make iptables rules persistent (Rocky Linux / RHEL)
+  - dnf install -y iptables-services || yum install -y iptables-services || true
+  - service iptables save || true
+"""
 
 
 class ScalewayCluster(ClusterInterface):
@@ -24,7 +50,7 @@ class ScalewayCluster(ClusterInterface):
 
     Orchestrates network and compute resources to deploy clusters
     with any number of worker nodes. All worker nodes are on a private
-    network and accessed via a gateway with SSH bastion functionality.
+    network and accessed via a bastion VM that also provides NAT.
     """
 
     def __init__(self, config: ClusterConfig):
@@ -43,7 +69,7 @@ class ScalewayCluster(ClusterInterface):
         Register SSH public keys in Scaleway IAM.
 
         Creates IAM SSH keys that will be available for instances
-        and the gateway bastion.
+        and the bastion VM.
 
         Args:
             ssh_keys: List of SSH public key strings to register
@@ -79,9 +105,9 @@ class ScalewayCluster(ClusterInterface):
 
         Creates:
         - VPC and Private Network
-        - Public Gateway with SSH bastion, NAT and DHCP
-        - Security Groups (first-node with restricted outbound, internal for others)
-        - N Instance Nodes (private only, accessed via gateway bastion)
+        - Bastion VM (SSH jump host + NAT gateway)
+        - Security Groups (bastion, first-node, internal)
+        - N Instance Nodes (private only, accessed via bastion)
 
         Returns:
             Dictionary with deployment outputs
@@ -89,18 +115,21 @@ class ScalewayCluster(ClusterInterface):
         # Get node configurations
         nodes_by_role = self._organize_nodes_by_role()
 
-        # Get instance image
+        # Get instance images
         instance_image = self.compute.get_worker_image()
+        bastion_image = self.compute.get_bastion_os_image()
 
-        # Create network infrastructure (includes gateway with bastion)
+        # Create network infrastructure (VPC + Private Network, no gateway)
         network_output = self.network.create_full_network()
 
         # Create security groups
-        # First node gets restricted outbound (for application updates from specific IPs)
-        sg_first_node = self.compute.create_first_node_security_group(
-            private_subnet=self.config.network.private_subnet
+        # Bastion: SSH access from allowed CIDRs + restricted outbound (NAT to update servers only)
+        sg_bastion = self.compute.create_bastion_security_group(
+            allowed_cidrs=self.config.network.allowed_ips,
+            private_subnet=self.config.network.private_subnet,
+            restrict_outbound=True,  # Restrict NAT to UPDATE_SERVER_IPS only
         )
-        # Other nodes get standard internal security group (permissive outbound)
+        # All worker nodes use internal security group (private network access only)
         sg_internal = self.compute.create_internal_security_group(
             private_subnet=self.config.network.private_subnet
         )
@@ -122,55 +151,67 @@ class ScalewayCluster(ClusterInterface):
                 "subnet": net_config.subnet if net_config else "unknown",
             }
 
-        # Deploy nodes
+        # Deploy bastion VM first (provides SSH access + NAT for worker nodes)
+        bastion_name = (
+            f"{self.config.product}-bastion" if self.config.product else "bastion"
+        )
+        bastion_instance_type = get_instance_type(
+            self.config.provider, self.config.bastion_flavor
+        )
+        bastion_config = NodeConfig(
+            name=bastion_name,
+            role="bastion",
+            instance_type=bastion_instance_type,
+            tags=["bastion", "nat-gateway", "managed-by:pulumi"],
+            user_data=BASTION_NAT_CLOUDINIT,
+            root_volume_size_gb=self.config.bastion_root_disk_size,
+        )
+        bastion = self._deploy_bastion_node(
+            node_config=bastion_config,
+            image_id=bastion_image,
+            security_group=sg_bastion,
+        )
+        pulumi.log.info(f"Deployed bastion VM: {bastion_name}")
+
+        # Initialize outputs
         outputs = {
             "instance_count": self.config.instance_count,
             "network": {
                 "vpc_id": network_output.vpc_id,
                 "private_network_id": network_output.private_network_id,
                 "subnet": network_output.subnet,
-                "gateway_id": network_output.gateway_id,
                 "extra_networks": extra_networks_info,
             },
             "nodes": {},
-            "bastion": {},
+            "bastion": {
+                "type": "vm",
+                "ip": bastion["node_output"].public_ip,
+                "private_ip": bastion["node_output"].private_ip,
+                "port": 22,
+                "user": "rocky",  # Default user for Rocky Linux bastion image
+                "instance_id": bastion["node_output"].id,
+            },
         }
 
-        # Add gateway bastion info to outputs (action.yaml expects 'bastion' output)
-        if network_output.gateway_ip:
-            outputs["bastion"] = {
-                "type": "gateway",
-                "ip": network_output.gateway_ip,
-                "port": 61000,
-                "user": "bastion",
-                "gateway_id": network_output.gateway_id,
-            }
-            # Also keep gateway_bastion_ip for backward compatibility
-            outputs["gateway_bastion_ip"] = network_output.gateway_ip
-
-        # Deploy instance nodes (private only, accessed via gateway bastion)
+        # Deploy instance nodes (private only, accessed via bastion)
         if "node" in nodes_by_role:
-            # Get the actual private network name (includes product prefix)
-            if self.config.product:
-                private_network_name = f"{self.config.product}-internal"
-            else:
-                private_network_name = "internal"
-            for idx, node_config in enumerate(nodes_by_role["node"]):
-                # First node (idx=0) gets restricted outbound security group
-                # Other nodes get standard internal security group
-                security_group = sg_first_node if idx == 0 else sg_internal
-
+            for node_config in nodes_by_role["node"]:
+                # All nodes use internal security group
+                # Outbound restrictions are handled by the bastion's NAT
                 node = self._deploy_internal_node(
                     node_config=node_config,
                     image_id=instance_image,
-                    security_group=security_group,
+                    security_group=sg_internal,
                 )
 
                 # Generate SSH jump command for accessing the node via bastion
-                # Scaleway internal DNS format: {hostname}.{private_network_name}.internal
-                ssh_command = network_output.gateway_ip.apply(
-                    lambda ip, name=node_config.name, net=private_network_name: (
-                        f"ssh -J bastion@{ip}:61000 artesca-os@{name}.{net}.internal"
+                # Use bastion's public IP and private IP of the node
+                ssh_command = pulumi.Output.all(
+                    bastion["node_output"].public_ip,
+                    node["node_output"].private_ip
+                ).apply(
+                    lambda args, name=node_config.name: (
+                        f"ssh -J rocky@{args[0]} artesca-os@{args[1]}"
                     )
                 )
 
@@ -345,14 +386,19 @@ class ScalewayCluster(ClusterInterface):
         security_group: Any,
     ) -> Dict[str, Any]:
         """
-        Deploy a bastion node (public + private network).
+        Deploy a bastion node (public + private network) with NAT capabilities.
 
-        Creates an instance with public IP and attaches it to
-        the private network for accessing internal nodes.
+        Creates an instance with public IP and attaches it to the private network.
+        The bastion serves two purposes:
+        1. SSH jump host for accessing internal nodes
+        2. NAT gateway for worker nodes' outbound internet access
+
+        NAT is configured via cloud-init (BASTION_NAT_CLOUDINIT) which enables
+        IP forwarding and sets up iptables masquerading.
 
         Args:
-            node_config: Node configuration
-            image_id: OS image ID
+            node_config: Node configuration (should include user_data for NAT setup)
+            image_id: OS image ID (Scaleway marketplace label, e.g., "rockylinux_9")
             security_group: Security group resource
 
         Returns:
@@ -367,6 +413,7 @@ class ScalewayCluster(ClusterInterface):
             tags=node_config.tags,
             user_data=node_config.user_data,
             create_public_ip=True,  # Bastion needs public IP for SSH access
+            root_volume_size_gb=node_config.root_volume_size_gb,
         )
 
         # Attach to private network

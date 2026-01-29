@@ -194,8 +194,8 @@ class ClusterConfig:
 
     # Bastion host configuration
     bastion_image: str = "rocky-9"
-    bastion_flavor: str = "small"
-    bastion_root_disk_size: int = 30
+    bastion_flavor: str = "PRO2-XS"  # Direct instance type (not using flavor map)
+    bastion_root_disk_size: int = 20
 
     # SSH information
     ssh_key_name: str = ""
@@ -214,6 +214,7 @@ class ClusterConfig:
     nodes: List[NodeConfig] = field(default_factory=list)
 
     # Deprecated fields (kept for backward compatibility, derived from bastion_image)
+    # Note: Scaleway marketplace image label format is "rockylinux_9" (os name + underscore + version)
     bastion_os_name: str = "rockylinux"
     bastion_os_version: str = "9"
 
