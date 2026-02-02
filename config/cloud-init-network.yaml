@@ -57,4 +57,41 @@ runcmd:
       nmcli connection up uuid "$uuid" || true
     done
 
+    # Fix cross-network routes added by Scaleway DHCP
+    # When multiple private networks are attached, DHCP adds routes for other subnets
+    # via the gateway (169.254.169.254) on each interface, which breaks connectivity.
+    echo "Cleaning up cross-network routes..."
+    
+    # Build a map of interface -> subnet
+    declare -A iface_subnets
+    for iface in $(ls /sys/class/net/ | grep -E '^(ens|eth)'); do
+      ip_cidr=$(ip -o -f inet addr show "$iface" 2>/dev/null | awk '{print $4}' | head -n 1)
+      if [ -n "$ip_cidr" ]; then
+        # Extract subnet (e.g., 192.168.10.3/24 -> 192.168.10.0/24)
+        subnet=$(ipcalc -n "$ip_cidr" 2>/dev/null | grep Network | awk '{print $2}')
+        if [ -z "$subnet" ]; then
+          # Fallback if ipcalc not available
+          prefix=$(echo "$ip_cidr" | cut -d'.' -f1-3)
+          mask=$(echo "$ip_cidr" | cut -d'/' -f2)
+          subnet="${prefix}.0/${mask}"
+        fi
+        iface_subnets["$iface"]="$subnet"
+        echo "  Interface $iface is on subnet $subnet"
+      fi
+    done
+
+    # Remove routes that go via gateway to subnets belonging to other interfaces
+    for iface in "${!iface_subnets[@]}"; do
+      own_subnet="${iface_subnets[$iface]}"
+      # Find routes via gateway on this interface
+      ip route | grep "via 169.254.169.254 dev $iface" | while read -r route; do
+        route_subnet=$(echo "$route" | awk '{print $1}')
+        # If route is for a different subnet than this interface's own subnet, remove it
+        if [ "$route_subnet" != "$own_subnet" ]; then
+          echo "  Removing bogus route: $route"
+          ip route del $route 2>/dev/null || true
+        fi
+      done
+    done
+
     echo "Network configuration completed at $(date)"
