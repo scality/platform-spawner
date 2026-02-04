@@ -37,8 +37,10 @@ runcmd:
           echo "  Not primary subnet - disabling DNS and default route"
           nmcli connection modify uuid "$uuid" ipv4.ignore-auto-dns yes
           nmcli connection modify uuid "$uuid" ipv4.never-default yes
+          nmcli connection modify uuid "$uuid" ipv4.ignore-auto-routes yes
         else
-          echo "  Primary subnet - keeping defaults"
+          echo "  Primary subnet - disable routes obtained via DHCP"
+          nmcli connection modify uuid "$uuid" ipv4.ignore-auto-routes yes
         fi
       else
         echo "  No IP address - keeping defaults"
