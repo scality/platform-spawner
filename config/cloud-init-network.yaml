@@ -41,6 +41,8 @@ runcmd:
         else
           echo "  Primary subnet - disable routes obtained via DHCP"
           nmcli connection modify uuid "$uuid" ipv4.ignore-auto-routes yes
+          echo "  Primary subnet - Add static route to metadata service with scope link"
+          nmcli connection modify uuid "$uuid" +ipv4.routes "169.254.169.254/32 0.0.0.0 0 src=$ip_addr"
         fi
       else
         echo "  No IP address - keeping defaults"
