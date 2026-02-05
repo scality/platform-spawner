@@ -48,7 +48,8 @@ runcmd:
           echo "  Primary subnet - disable DNS obtained via DHCP"
           nmcli connection modify uuid "$uuid" ipv4.ignore-auto-dns yes
           echo "  Primary subnet - Add static route to metadata service with scope link"
-          nmcli connection modify uuid "$uuid" +ipv4.routes "169.254.169.254/32 0.0.0.0 0 src=$ip_addr"
+          echo "  Add in the main table with without gateway"
+          nmcli connection modify uuid "$uuid" +ipv4.routes "169.254.169.254/32 table=254"
           echo " Add DNS server for metadata service"
           nmcli connection modify uuid "$uuid" +ipv4.dns "169.254.169.254"
           echo "  Reloading connection to apply changes..."
