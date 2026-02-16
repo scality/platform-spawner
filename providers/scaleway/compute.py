@@ -5,9 +5,11 @@ This module handles instance creation, security groups, and network
 attachments for Scaleway infrastructure.
 """
 
+from typing import Any, Dict, List, Optional
+
 import pulumi
 import pulumiverse_scaleway as scaleway
-from typing import Any, Dict, List, Optional
+
 from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
 
@@ -51,7 +53,7 @@ class ScalewayCompute(ComputeInterface):
 
         Returns:
             Image label in format "osname_version" (e.g., "rockylinux_9")
-            
+
         Note:
             The bastion_os_name should be the Scaleway marketplace label name,
             e.g., "rockylinux" not "rocky". The __main__.py handles mapping
@@ -73,10 +75,7 @@ class ScalewayCompute(ComputeInterface):
         return self.config.instance_image
 
     def create_security_group(
-        self,
-        name: str,
-        rules: List[Dict[str, Any]],
-        **kwargs
+        self, name: str, rules: List[Dict[str, Any]], **kwargs
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a Scaleway security group with specified rules.
@@ -141,7 +140,7 @@ class ScalewayCompute(ComputeInterface):
         instance_type: str,
         security_group: scaleway.instance.SecurityGroup,
         tags: List[str],
-        **kwargs
+        **kwargs,
     ) -> NodeOutput:
         """
         Create a Scaleway instance (virtual machine).
@@ -166,16 +165,18 @@ class ScalewayCompute(ComputeInterface):
         # Prepare user_data in Scaleway format
         user_data_dict = None
         if user_data:
-            user_data_dict = {
-                "cloud-init": user_data
-            }
+            user_data_dict = {"cloud-init": user_data}
 
-        # Determine if instance type uses block-storage-only (PLAY2, STARDUST, PRO2 families)
-        # These instances MUST NOT have root_volume specified - Scaleway manages it automatically
-        # Also, they need image LABELS not UUIDs, as marketplace image UUIDs contain local volume specs
-        uses_block_storage_only = (instance_type.startswith("PLAY2-") or
-                                    instance_type.startswith("STARDUST") or
-                                    instance_type.startswith("PRO2-"))
+        # Determine if instance type uses block-storage-only
+        # (PLAY2, STARDUST, PRO2 families)
+        # These instances MUST NOT have root_volume specified - Scaleway
+        # manages it automatically. Also, they need image LABELS not UUIDs,
+        # as marketplace image UUIDs contain local volume specs
+        uses_block_storage_only = (
+            instance_type.startswith("PLAY2-")
+            or instance_type.startswith("STARDUST")
+            or instance_type.startswith("PRO2-")
+        )
 
         # For block-storage-only instances using marketplace images,
         # use image label instead of UUID (only for bastion nodes with marketplace images)
@@ -209,7 +210,7 @@ class ScalewayCompute(ComputeInterface):
             # Add size_in_gb if specified (allows resizing boot volume)
             if kwargs.get("root_volume_size_gb"):
                 volume_args["size_in_gb"] = kwargs.get("root_volume_size_gb")
-            
+
             from_snapshot = scaleway.block.Volume(
                 f"vol-{name}",  # Unique name per instance
                 **volume_args,
@@ -265,22 +266,30 @@ class ScalewayCompute(ComputeInterface):
         }
 
         # Either use image OR root_volume with volume_id (mutually exclusive)
-        # Check if root_volume has a volume_id set (not just the attribute existing)
-        has_volume_id = root_volume and hasattr(root_volume, 'volume_id') and root_volume.volume_id is not None
+        # Check if root_volume has a volume_id set
+        has_volume_id = (
+            root_volume
+            and hasattr(root_volume, "volume_id")
+            and root_volume.volume_id is not None
+        )
         if has_volume_id:
             # Boot from existing volume (e.g., from snapshot)
             server_args["root_volume"] = root_volume
         else:
             # Boot from image (marketplace or custom)
             server_args["image"] = server_image
-            if root_volume:  # root_volume without volume_id (size-based, for custom size)
+            if (
+                root_volume
+            ):  # root_volume without volume_id (size-based, for custom size)
                 server_args["root_volume"] = root_volume
 
         server = scaleway.instance.Server(
             f"instance-{name}",
             **server_args,
             opts=pulumi.ResourceOptions(
-                replace_on_changes=["user_data"],  # Force replacement when user_data changes
+                replace_on_changes=[
+                    "user_data"
+                ],  # Force replacement when user_data changes
                 depends_on=[security_group],  # Ensure SG exists before instance
             ),
         )
@@ -298,12 +307,7 @@ class ScalewayCompute(ComputeInterface):
 
         return output
 
-    def create_volume(
-        self,
-        name: str,
-        size_gb: int,
-        **kwargs
-    ) -> scaleway.block.Volume:
+    def create_volume(self, name: str, size_gb: int, **kwargs) -> scaleway.block.Volume:
         """
         Create a block storage volume.
 
@@ -330,10 +334,7 @@ class ScalewayCompute(ComputeInterface):
         return volume
 
     def attach_to_private_network(
-        self,
-        instance: scaleway.instance.Server,
-        network: Any,
-        **kwargs
+        self, instance: scaleway.instance.Server, network: Any, **kwargs
     ) -> scaleway.instance.PrivateNic:
         """
         Attach an instance to a private network.
@@ -379,7 +380,8 @@ class ScalewayCompute(ComputeInterface):
 
         Outbound (when restrict_outbound=True):
             - Traffic to private subnet (for NAT to worker nodes)
-            - HTTPS (443) to UPDATE_SERVER_IPs (for package updates)
+            - DNS (53/udp) to the internet (for name resolution)
+            - HTTPS (443/tcp) to the internet (for package updates)
             - All other outbound dropped
 
         Outbound (when restrict_outbound=False):
@@ -389,7 +391,7 @@ class ScalewayCompute(ComputeInterface):
             allowed_cidrs: List of CIDRs allowed to SSH to bastion.
                           If None or empty, defaults to ["0.0.0.0/0"] (anywhere).
             private_subnet: CIDR block of the private network.
-            restrict_outbound: If True, restrict outbound to UPDATE_SERVER_IPS only.
+            restrict_outbound: If True, restrict outbound to DNS and HTTPS only.
 
         Returns:
             SecurityGroup resource for bastion
@@ -434,18 +436,27 @@ class ScalewayCompute(ComputeInterface):
                     ip_range=private_subnet,
                 )
             )
-            # Allow HTTPS to update servers
-            for ip_range in UPDATE_SERVER_IPS:
-                outbound_rules.append(
-                    scaleway.instance.SecurityGroupOutboundRuleArgs(
-                        action="accept",
-                        protocol="TCP",
-                        ip_range=ip_range,
-                        port=443,
-                    )
+            # Allow SSH to the internet
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="UDP",
+                    ip_range="0.0.0.0/0",
+                    port=53,
                 )
+            )
+            # Allow HTTPS to the internet
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="TCP",
+                    ip_range="0.0.0.0/0",
+                    port=443,
+                )
+            )
             pulumi.log.info(
-                f"Bastion outbound restricted to: {private_subnet}, {', '.join(UPDATE_SERVER_IPS)}"
+                f"Bastion outbound allowed: private subnet "
+                f"({private_subnet}), SSH (22/tcp), HTTPS (443/tcp)"
             )
         else:
             pulumi.log.info("Bastion outbound open to all destinations")
@@ -475,8 +486,7 @@ class ScalewayCompute(ComputeInterface):
         return sg
 
     def create_internal_security_group(
-        self,
-        private_subnet: str = "192.168.10.0/24"
+        self, private_subnet: str = "192.168.10.0/24"
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a security group for internal nodes.
@@ -489,7 +499,9 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for internal nodes
         """
-        sg_name = f"{self.config.product}-internal" if self.config.product else "internal"
+        sg_name = (
+            f"{self.config.product}-internal" if self.config.product else "internal"
+        )
         return self.create_security_group(
             name=sg_name,
             rules=[
@@ -506,8 +518,7 @@ class ScalewayCompute(ComputeInterface):
         )
 
     def create_first_node_security_group(
-        self,
-        private_subnet: str = "192.168.10.0/24"
+        self, private_subnet: str = "192.168.10.0/24"
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a security group for the first node with restricted outbound traffic.
@@ -518,7 +529,8 @@ class ScalewayCompute(ComputeInterface):
         - Inbound: Allows all traffic from private subnet (same as internal nodes)
         - Outbound: Drops by default, only allows traffic to:
           - Private subnet (for internal cluster communication)
-          - UPDATE_SERVER_IPS (for fetching application updates)
+          - DNS (53/udp) to the internet (for name resolution)
+          - HTTPS (443/tcp) to the internet (for package updates)
 
         Args:
             private_subnet: CIDR block of the private network
@@ -526,7 +538,9 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for the first node
         """
-        sg_name = f"{self.config.product}-first-node" if self.config.product else "first-node"
+        sg_name = (
+            f"{self.config.product}-first-node" if self.config.product else "first-node"
+        )
 
         # Build outbound rules
         outbound_rules = [
@@ -583,7 +597,11 @@ class ScalewayCompute(ComputeInterface):
         Returns:
             SecurityGroup resource for single node
         """
-        sg_name = f"{self.config.product}-single-node" if self.config.product else "single-node"
+        sg_name = (
+            f"{self.config.product}-single-node"
+            if self.config.product
+            else "single-node"
+        )
         return self.create_security_group(
             name=sg_name,
             rules=[
@@ -600,7 +618,9 @@ class ScalewayCompute(ComputeInterface):
             outbound_default_policy="accept",
         )
 
-    def get_security_group(self, name: str) -> Optional[scaleway.instance.SecurityGroup]:
+    def get_security_group(
+        self, name: str
+    ) -> Optional[scaleway.instance.SecurityGroup]:
         """Get a created security group by name."""
         return self._security_groups.get(name)
 
@@ -611,4 +631,3 @@ class ScalewayCompute(ComputeInterface):
     def get_nic(self, name: str) -> Optional[scaleway.instance.PrivateNic]:
         """Get a created NIC by instance name."""
         return self._nics.get(name)
-

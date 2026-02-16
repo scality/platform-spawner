@@ -127,7 +127,7 @@ class ScalewayCluster(ClusterInterface):
         sg_bastion = self.compute.create_bastion_security_group(
             allowed_cidrs=self.config.network.allowed_ips,
             private_subnet=self.config.network.private_subnet,
-            restrict_outbound=True,  # Restrict NAT to UPDATE_SERVER_IPS only
+            restrict_outbound=True,  # Restrict NAT to DNS and HTTPS only
         )
         # All worker nodes use internal security group (private network access only)
         sg_internal = self.compute.create_internal_security_group(
@@ -207,8 +207,7 @@ class ScalewayCluster(ClusterInterface):
                 # Generate SSH jump command for accessing the node via bastion
                 # Use bastion's public IP and private IP of the node
                 ssh_command = pulumi.Output.all(
-                    bastion["node_output"].public_ip,
-                    node["node_output"].private_ip
+                    bastion["node_output"].public_ip, node["node_output"].private_ip
                 ).apply(
                     lambda args, name=node_config.name: (
                         f"ssh -J rocky@{args[0]} artesca-os@{args[1]}"
