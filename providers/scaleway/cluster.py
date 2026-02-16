@@ -21,7 +21,7 @@ from .compute import ScalewayCompute
 
 
 # Cloud-init configuration for bastion VM with NAT functionality
-# Enables IP forwarding and configures iptables masquerading
+# Enables IP forwarding and configures NAT using firewalld
 BASTION_NAT_CLOUDINIT = """#cloud-config
 write_files:
   - path: /etc/sysctl.d/99-ip-forward.conf
@@ -33,14 +33,24 @@ write_files:
 runcmd:
   # Enable IP forwarding immediately
   - sysctl -p /etc/sysctl.d/99-ip-forward.conf
-  # Configure iptables NAT masquerading
-  # eth0 is the public interface, private NIC is attached later
-  - iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-  - iptables -A FORWARD -i eth0 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-  - iptables -A FORWARD -j ACCEPT
-  # Make iptables rules persistent (Rocky Linux / RHEL)
-  - dnf install -y iptables-services || yum install -y iptables-services || true
-  - service iptables save || true
+  # Disable IPv6 for each interface to avoid dual-stack issues (skip loopback)
+  - |
+    nmcli -t -f UUID,DEVICE connection show | grep -v ':$' | while IFS=: read -r uuid device; do
+        [ "$device" != "lo" ] && nmcli connection modify uuid "$uuid" ipv6.method ignore || true
+    done
+  # Configure NAT using firewalld
+  - systemctl enable firewalld
+  - systemctl start firewalld
+  - sleep 2
+  # Configure external zone for eth0 with masquerading (runtime + permanent)
+  - firewall-cmd --zone=external --change-interface=eth0
+  - firewall-cmd --permanent --zone=external --change-interface=eth0
+  - firewall-cmd --zone=external --add-masquerade
+  - firewall-cmd --permanent --zone=external --add-masquerade
+  - firewall-cmd --zone=external --add-service=ssh
+  - firewall-cmd --permanent --zone=external --add-service=ssh
+  # Pre-configure internal zone for private network (permanent only, no interface yet)
+  - firewall-cmd --permanent --zone=internal --set-target=ACCEPT
 """
 
 
