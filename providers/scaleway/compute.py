@@ -454,9 +454,18 @@ class ScalewayCompute(ComputeInterface):
                     port=443,
                 )
             )
+            # Allow HTTP to the internet
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="TCP",
+                    ip_range="0.0.0.0/0",
+                    port=80,
+                )
+            )
             pulumi.log.info(
                 f"Bastion outbound allowed: private subnet "
-                f"({private_subnet}), SSH (22/tcp), HTTPS (443/tcp)"
+                f"({private_subnet}), SSH (22/tcp), HTTPS (443/tcp), HTTP (80/tcp)"
             )
         else:
             pulumi.log.info("Bastion outbound open to all destinations")
