@@ -51,8 +51,7 @@ def get_cluster_config(
                 tags=[
                     "role:node",
                     f"index:{node_index}",
-                    f"cluster:{instance_count}-nodes",
-                    "os:rocky9"
+                    f"cluster:{instance_count}-nodes"
                 ]
             )
         )
