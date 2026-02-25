@@ -57,7 +57,7 @@ class ScalewayCompute(ComputeInterface):
         Note:
             The bastion_os_name should be the Scaleway marketplace label name,
             e.g., "rockylinux" not "rocky". The __main__.py handles mapping
-            user-friendly names like "rocky-9" to "rockylinux_9".
+            user-friendly names like "rocky-8" to "rockylinux_8".
         """
         # Bastion uses PLAY2-NANO which is block-storage-only
         # These instances need the marketplace label format, not UUID

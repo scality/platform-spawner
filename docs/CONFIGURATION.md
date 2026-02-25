@@ -117,7 +117,7 @@ The Public Gateway provides SSH bastion functionality and NAT for worker instanc
 
 | Field | Type | Default | Status | Description |
 |-------|------|---------|--------|-------------|
-| `bastion_image` | string | `"rocky-9"` | Functional | Image identifier for marketplace lookup (format: `os-version`). Used internally. |
+| `bastion_image` | string | `"rocky-8"` | Functional | Image identifier for marketplace lookup (format: `os-version`). Used internally. |
 | `bastion_flavor` | string | `"small"` | **UNUSED** | Gateway uses fixed `VPC-GW-M` type. This field has no effect. |
 | `bastion_root_disk_size` | integer | `30` | **NOT IMPLEMENTED** | Gateway is managed by Scaleway. This field has no effect. |
 

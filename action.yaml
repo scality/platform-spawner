@@ -10,7 +10,7 @@ inputs:
   instance_image:
     description: "Image for the instances (e.g.: AMI name for AWS)"
     required: true
-    default: "rocky-9"
+    default: "rocky-8"
 
   # AWS credentials
   aws_access_key_id:
@@ -487,7 +487,7 @@ runs:
       # some config is missing
       run: >-
         pulumi $PULUMI_DEFAULT_ARGS config refresh ||
-          pulumi $PULUMI_DEFAULT_ARGS config set instance_image rocky-9
+          pulumi $PULUMI_DEFAULT_ARGS config set instance_image rocky-8
     - name: Destroy
       if: ${{ inputs.action == 'destroy' }}
       shell: bash

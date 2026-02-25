@@ -49,7 +49,8 @@ config:
   # Node hosts configs
   instance_image:
     type: string
-    description: "Image for the instances (e.g.: AMI name for AWS)"
+    description: "Image for the instances: marketplace label (e.g. rockylinux_8) or image UUID"
+    default: "rockylinux_8"
   instance_count:
     type: integer
     description: "Number of instances to create"
@@ -67,7 +68,7 @@ config:
   bastion_image:
     type: string
     description: "Image for the bastion host"
-    default: "rocky-9"
+    default: "rocky-8"
   bastion_flavor:
     type: string
     description: "Flavor of the bastion host"

@@ -72,11 +72,11 @@ def main():
     instance_root_disk_size = config.get_int("instance_root_disk_size") or 50
     
     # Bastion host configuration
-    bastion_image = config.get("bastion_image") or "rocky-9"
+    bastion_image = config.get("bastion_image") or "rocky-8"
     bastion_flavor = config.get("bastion_flavor") or "small"
     bastion_root_disk_size = config.get_int("bastion_root_disk_size") or 30
     
-    # Parse bastion_image (e.g., "rocky-9") into name and version
+    # Parse bastion_image (e.g., "rocky-8") into name and version
     # Format: "os-version" or "os_version"
     bastion_parts = bastion_image.replace("_", "-").split("-")
     if len(bastion_parts) >= 2:
@@ -84,7 +84,7 @@ def main():
         bastion_os_version = bastion_parts[-1]
     else:
         bastion_os_name = bastion_image
-        bastion_os_version = "9"  # Default version
+        bastion_os_version = "8"  # Default version
     
     # Map common OS name aliases to Scaleway marketplace label names
     os_name_map = {

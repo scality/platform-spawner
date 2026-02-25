@@ -145,7 +145,7 @@ class ClusterConfig:
         instance_root_disk_size: Root disk size for the instance (in GiB)
 
         # Bastion host configuration
-        bastion_image: Image for the bastion host (e.g., "rocky-9")
+        bastion_image: Image for the bastion host (e.g., "8")
         bastion_flavor: Flavor of the bastion host
         bastion_root_disk_size: Root disk size for the bastion host (in GiB)
 
@@ -193,7 +193,7 @@ class ClusterConfig:
     instance_root_disk_size: int = 50
 
     # Bastion host configuration
-    bastion_image: str = "rocky-9"
+    bastion_image: str = "rocky-8"
     bastion_flavor: str = "PRO2-XS"  # Direct instance type (not using flavor map)
     bastion_root_disk_size: int = 20
 
