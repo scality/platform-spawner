@@ -80,6 +80,32 @@ class ScalewayCompute(ComputeInterface):
             return self.config.instance_snapshot
         return self.config.instance_image
 
+    def create_placement_group(
+        self, name: str
+    ) -> scaleway.instance.PlacementGroup:
+        """
+        Create a placement group for co-locating instances.
+
+        All instances in the same deployment share this placement group
+        to ensure low-latency communication between them.
+
+        Args:
+            name: Placement group name
+
+        Returns:
+            Scaleway PlacementGroup resource
+        """
+        pg = scaleway.instance.PlacementGroup(
+            f"pg-{name}",
+            name=name,
+            policy_mode="enforced",
+            policy_type="low_latency",
+            project_id=self.config.project_id,
+            zone=self.config.zone,
+        )
+        pulumi.log.info(f"Created placement group: {name} (enforced, low_latency)")
+        return pg
+
     def create_security_group(
         self, name: str, rules: List[Dict[str, Any]], **kwargs
     ) -> scaleway.instance.SecurityGroup:
@@ -287,6 +313,11 @@ class ScalewayCompute(ComputeInterface):
                 root_volume
             ):  # root_volume without volume_id (size-based, for custom size)
                 server_args["root_volume"] = root_volume
+
+        # Attach to placement group if provided
+        placement_group_id = kwargs.get("placement_group_id")
+        if placement_group_id:
+            server_args["placement_group_id"] = placement_group_id
 
         server = scaleway.instance.Server(
             f"instance-{name}",

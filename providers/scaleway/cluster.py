@@ -144,6 +144,12 @@ class ScalewayCluster(ClusterInterface):
             private_subnet=self.config.network.private_subnet
         )
 
+        # Create placement group for co-locating all instances
+        pg_name = (
+            f"{self.config.product}-pg" if self.config.product else "placement-group"
+        )
+        placement_group = self.compute.create_placement_group(name=pg_name)
+
         # Build extra networks info for outputs
         extra_networks_info = {}
         for suffix, extra_net in self.network.extra_private_networks.items():
@@ -180,6 +186,7 @@ class ScalewayCluster(ClusterInterface):
             node_config=bastion_config,
             image_id=bastion_image,
             security_group=sg_bastion,
+            placement_group_id=placement_group.id,
         )
         pulumi.log.info(f"Deployed bastion VM: {bastion_name}")
 
@@ -212,6 +219,7 @@ class ScalewayCluster(ClusterInterface):
                     node_config=node_config,
                     image_id=instance_image,
                     security_group=sg_internal,
+                    placement_group_id=placement_group.id,
                 )
 
                 # Generate SSH jump command for accessing the node via bastion
@@ -291,6 +299,7 @@ class ScalewayCluster(ClusterInterface):
         node_config: NodeConfig,
         image_id: str,
         security_group: Any,
+        placement_group_id: Any = None,
     ) -> Dict[str, Any]:
         """
         Deploy an internal node (private network only).
@@ -346,6 +355,7 @@ class ScalewayCluster(ClusterInterface):
             create_public_ip=False,  # Private only, no public IP
             additional_volume_ids=volume_ids if volume_ids else None,
             root_volume_size_gb=node_config.root_volume_size_gb,
+            placement_group_id=placement_group_id,
         )
 
         # Attach to primary private network
@@ -393,6 +403,7 @@ class ScalewayCluster(ClusterInterface):
         node_config: NodeConfig,
         image_id: str,
         security_group: Any,
+        placement_group_id: Any = None,
     ) -> Dict[str, Any]:
         """
         Deploy a bastion node (public + private network) with NAT capabilities.
@@ -423,6 +434,7 @@ class ScalewayCluster(ClusterInterface):
             user_data=node_config.user_data,
             create_public_ip=True,  # Bastion needs public IP for SSH access
             root_volume_size_gb=node_config.root_volume_size_gb,
+            placement_group_id=placement_group_id,
         )
 
         # Attach to private network
