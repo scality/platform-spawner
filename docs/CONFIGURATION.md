@@ -77,6 +77,8 @@ These fields control worker instance sizing and behavior.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
+| `instance_image` | string | `"rockylinux_8"` | Image for worker instances. Accepts a Scaleway marketplace label (e.g., `rockylinux_9`), a user-friendly alias (e.g., `rocky-9`), or a image UUID. See [Image Resolution](#image-resolution) below. |
+| `instance_snapshot` | string | `""` | Snapshot UUID to boot worker instances from. When set, overrides `instance_image`. |
 | `instance_flavor` | string | `"medium"` | Abstract flavor name mapped to provider-specific instance type. See [Flavor Reference](#flavor-reference) below. |
 | `instance_root_disk_size` | integer | `50` | Root disk size in GiB for worker instances. |
 | `disable_auto_stop` | boolean | `false` | **NOT IMPLEMENTED** - This field is read but has no effect. |
@@ -87,6 +89,39 @@ These fields control worker instance sizing and behavior.
 pulumi config set instance_flavor "large"
 pulumi config set instance_root_disk_size 100
 ```
+
+### Image Resolution
+
+The spawner resolves instance images differently depending on the input format and instance type:
+
+| Input | Resolved As | Example |
+|-------|-------------|--------|
+| Marketplace label | Used directly for block-storage instances (PLAY2, PRO2) | `rockylinux_9` |
+| User-friendly alias | Mapped to marketplace label (`rocky` → `rockylinux`) | `rocky-9` → `rockylinux_9` |
+| Snapshot UUID | Boot volume created from snapshot | `fc979535-d07c-43b4-8c33-d8f483484d16` |
+
+**Bastion node**: Always uses the marketplace label format (e.g., `rockylinux_9`) derived from the `bastion_image` field. The bastion runs on `PLAY2-NANO` (block-storage-only), which requires marketplace labels rather than UUIDs.
+
+**Worker nodes**: Can use either marketplace labels or snapshot UUIDs. When `instance_snapshot` is set, it takes priority and the spawner creates a boot volume from the snapshot.
+
+#### OS name aliases
+
+For the `bastion_image` field, the following aliases are automatically mapped to Scaleway marketplace label names:
+
+| Alias | Marketplace Name |
+|-------|------------------|
+| `rocky` | `rockylinux` |
+| `rocky-linux` | `rockylinux` |
+
+For example, `bastion_image: rocky-8` is resolved as `rockylinux_8`.
+
+#### Dynamic image lookup
+
+The `images.py` module provides functions to look up the latest marketplace image UUID for a given OS and version. Supported OS families:
+
+- **Rocky Linux**: `rockylinux` (e.g., `rockylinux_8`, `rockylinux_9`)
+- **Ubuntu**: `ubuntu` (e.g., `ubuntu_jammy`, `ubuntu_22.04`)
+- **Debian**: `debian` (e.g., `debian_11`)
 
 ### Flavor Reference
 
@@ -109,6 +144,19 @@ You can also specify exact Scaleway instance types directly (e.g., `PRO2-XXS`).
 
 ---
 
+## Placement Group
+
+All instances in a deployment (bastion + worker nodes) are automatically placed in a shared **placement group** to ensure optimal network performance.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `policy_mode` | `enforced` | If Scaleway cannot satisfy the constraint (e.g., not enough capacity), the deployment will continue but a warning will be raised. |
+| `policy_type` | `low_latency` | All instances are co-located on the same hypervisor cluster for minimal network latency. |
+
+This is **not configurable** — every deployment creates exactly one placement group named `{product}-pg` (or `placement-group` when no product is set). The group is created automatically; no user action is required.
+
+---
+
 ## Gateway Configuration
 
 The Public Gateway provides SSH bastion functionality and NAT for worker instances.
@@ -117,7 +165,7 @@ The Public Gateway provides SSH bastion functionality and NAT for worker instanc
 
 | Field | Type | Default | Status | Description |
 |-------|------|---------|--------|-------------|
-| `bastion_image` | string | `"rocky-8"` | Functional | Image identifier for marketplace lookup (format: `os-version`). Used internally. |
+| `bastion_image` | string | `"rocky-8"` | Functional | Image identifier for marketplace lookup (format: `os-version`). Mapped to Scaleway marketplace label (see [Image Resolution](#image-resolution)). |
 | `bastion_flavor` | string | `"small"` | **UNUSED** | Gateway uses fixed `VPC-GW-M` type. This field has no effect. |
 | `bastion_root_disk_size` | integer | `30` | **NOT IMPLEMENTED** | Gateway is managed by Scaleway. This field has no effect. |
 

@@ -9,9 +9,10 @@ This project deploys clusters with flexible configuration, including but not lim
 - **Any number of worker nodes**: 1, 3, 6, 12, 50, or any positive integer
 - **Resource naming prefixes**: Organize resources with custom prefixes (dev, staging, prod, etc.)
 - **Private network architecture**: All workers on private network with gateway bastion for SSH access
-- **Custom or marketplace images**: Use pre-configured snapshots or fresh marketplace images
+- **Custom or marketplace images**: Use pre-configured snapshots or fresh marketplace images (with automatic name resolution, e.g., `rocky-8` → `rockylinux_8`)
 - **Additional volumes**: Attach multiple volumes per worker node with flexible sizing
 - **Extra private networks**: Attach multiple network interfaces for multi-homed instances
+- **Placement group**: All instances are co-located with enforced low-latency policy
 
 The architecture is designed for multi-cloud support with clean abstractions, starting with Scaleway.
 
@@ -106,6 +107,7 @@ graph TD
 - **Private-only workers**: No direct internet exposure
 - **NAT**: Outbound internet access via gateway
 - **Security groups**: Network isolation and firewall rules
+- **Placement group**: All instances are co-located in an enforced low-latency placement group for optimal network performance
 
 ---
 
@@ -144,6 +146,23 @@ extra_private_networks:
 ```
 
 See [Configuration Reference](docs/CONFIGURATION.md#extra-resources) for details.
+
+### Instance Image Resolution
+
+The spawner intelligently resolves image references:
+
+- **Marketplace labels**: e.g., `rockylinux_9` — used directly
+- **User-friendly aliases**: e.g., `rocky-9` → mapped to `rockylinux_9`
+- **Snapshot UUIDs**: boot volume created from snapshot
+- **Dynamic lookup**: `images.py` resolves the latest image UUID for Rocky Linux, Ubuntu, and Debian
+
+The bastion always uses the marketplace label format. See [Configuration Reference](docs/CONFIGURATION.md#image-resolution) for full details.
+
+### Placement Group
+
+All instances in a deployment share an **enforced low-latency placement group**. This ensures Scaleway co-locates them on the same hypervisor cluster for minimal network latency. The placement group is created automatically — no configuration needed.
+
+> **Note**: If Scaleway cannot satisfy the low-latency constraint (capacity limits), the deployment will fail. Try a different availability zone or reduce `instance_count`.
 
 ---
 

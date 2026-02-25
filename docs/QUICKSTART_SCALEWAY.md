@@ -49,6 +49,9 @@ You need to use a specific image for the worker nodes:
 ```bash
 pulumi config set instance_image fc979535-d07c-43b4-8c33-d8f483484d16
 ```
+
+> **Image resolution**: The `instance_image` field accepts a Scaleway marketplace label (e.g., `rockylinux_9`), a user-friendly alias (e.g., `rocky-9`), or a snapshot UUID. For the bastion, the `bastion_image` field (default `rocky-8`) is automatically mapped to the marketplace label `rockylinux_8`. See the [Configuration Reference](CONFIGURATION.md#image-resolution) for details.
+
 **Security Note:** By default, the gateway bastion SSH is accessible from any IP. For production, restrict access:
 
 ```bash
@@ -91,6 +94,8 @@ pulumi config set --path 'extra_volumes[0].count' 12
 ## Step 4: Deploy
 
 **Important**: Make sure you set `product` to avoid resources being named with "unknown" prefix.
+
+> **Placement group**: All instances (bastion + workers) are automatically placed in an **enforced low-latency placement group**, ensuring they are co-located for optimal network performance. If Scaleway cannot satisfy the constraint (e.g., not enough capacity), the deployment will continue but a warning will be raised.
 
 ```bash
 # Preview changes
@@ -230,9 +235,10 @@ Before deploying to production:
 - [ ] Set `instance_count` appropriately
 - [ ] Use production flavor (`medium` or higher)
 - [ ] Set `product` for resource organization
-- [ ] Use custom snapshot with your software (`instance_image`)
+- [ ] Use custom snapshot with your software (`instance_image` or `instance_snapshot`)
 - [ ] **Configure `authorized_cidrs` to restrict gateway bastion access** (critical for production security)
 - [ ] Configure additional volumes if needed (`extra_volumes`)
+- [ ] Understand that **placement group** enforces low-latency co-location (may limit capacity)
 - [ ] Test in staging first
 - [ ] Set up monitoring
 - [ ] Document your configuration
