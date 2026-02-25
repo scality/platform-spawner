@@ -28,7 +28,8 @@ def main():
     # Required configuration
     instance_count = config.require_int("instance_count")
     project_id = config.require("project_id")
-    instance_image = config.require("instance_image")
+    instance_image = config.get("instance_image") or "rockylinux_8"
+    instance_snapshot = config.get("instance_snapshot") or ""
     
     # Validate instance count
     if instance_count < 1:
@@ -335,6 +336,7 @@ def main():
         zone=zone,
         project_id=project_id,
         instance_image=instance_image,
+        instance_snapshot=instance_snapshot,
         
         # Global values
         product=product,
@@ -379,7 +381,10 @@ def main():
     pulumi.log.info(f"Product: {product}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
     pulumi.log.info("Using Gateway SSH bastion feature (no bastion VM)")
-    pulumi.log.info(f"Instance image: {instance_image}")
+    if instance_snapshot:
+        pulumi.log.info(f"Instance snapshot: {instance_snapshot} (overrides image)")
+    else:
+        pulumi.log.info(f"Instance image: {instance_image}")
     pulumi.log.info(f"Instance type: {instance_type} (flavor: {instance_flavor})")
     pulumi.log.info(f"Instance root disk size: {instance_root_disk_size} GiB")
     pulumi.log.info(f"Number of instances: {instance_count}")
@@ -462,6 +467,7 @@ def main():
         "region": region,
         "zone": zone,
         "instance_image": instance_image,
+        "instance_snapshot": instance_snapshot,
         "instance_flavor": instance_flavor,
         "instance_type": instance_type,
         "instance_root_disk_size": instance_root_disk_size,

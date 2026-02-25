@@ -65,13 +65,19 @@ class ScalewayCompute(ComputeInterface):
 
     def get_worker_image(self) -> str:
         """
-        Get the snapshot/image ID for worker nodes.
+        Get the image for worker nodes.
 
-        Uses the instance_image from configuration.
+        If instance_snapshot is set, returns a sentinel value;
+        the actual snapshot handling is done in create_instance.
+        Otherwise, returns instance_image (marketplace label or image UUID).
 
         Returns:
-            Snapshot/Image ID (UUID) or marketplace image label
+            Image label/UUID or snapshot indicator
         """
+        if self.config.instance_snapshot:
+            # Snapshot mode: return the snapshot ID as image placeholder.
+            # create_instance will detect this and create a boot volume from snapshot.
+            return self.config.instance_snapshot
         return self.config.instance_image
 
     def create_security_group(
@@ -182,24 +188,20 @@ class ScalewayCompute(ComputeInterface):
         # use image label instead of UUID (only for bastion nodes with marketplace images)
         # Worker nodes should use the snapshot UUID directly
         server_image = image
-        # Note: The 'image' parameter should already be in the correct format
-        # (either a UUID for snapshots or a marketplace label for bastion)
+        # Determine if this is a snapshot-based deployment
+        # instance_snapshot overrides instance_image for worker nodes
+        is_snapshot = bool(self.config.instance_snapshot) and image == self.config.instance_snapshot
 
         # Configure root volume based on instance type and image source
         root_volume = None
 
-        # Check if image is a UUID (snapshot) vs marketplace label
-        is_snapshot = self.config.instance_image and image == self.config.instance_image
-
         if is_snapshot and uses_block_storage_only:
             # For block-storage instances with snapshots, create a boot volume from snapshot
             snapshot = scaleway.block.get_snapshot(
-                snapshot_id=self.config.instance_image,
+                snapshot_id=self.config.instance_snapshot,
                 zone=self.config.zone,
                 project_id=self.config.project_id,
             )
-            # Create volume from snapshot, optionally with a larger size
-            # If root_volume_size_gb is specified and larger than snapshot, use it
             volume_args = {
                 "name": f"{name}-boot",
                 "snapshot_id": snapshot.id,
@@ -215,6 +217,9 @@ class ScalewayCompute(ComputeInterface):
                 f"vol-{name}",  # Unique name per instance
                 **volume_args,
             )
+            # When booting from a snapshot volume, clear the image so Scaleway
+            # uses the volume content directly
+            server_image = None
             root_volume = scaleway.instance.ServerRootVolumeArgs(
                 volume_id=from_snapshot.id,
                 volume_type="sbs_volume",

@@ -47,6 +47,10 @@ config:
       - __my_ip__ # placeholder replaced automatically with current IP
 
   # Node hosts configs
+  instance_snapshot:
+    type: string
+    description: "Block snapshot UUID to use as root volume (overrides instance_image when set)"
+    default: ""
   instance_image:
     type: string
     description: "Image for the instances: marketplace label (e.g. rockylinux_8) or image UUID"

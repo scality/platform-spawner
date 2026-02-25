@@ -128,7 +128,8 @@ class ClusterConfig:
         region: Provider region
         zone: Provider availability zone
         project_id: Provider project/account ID
-        instance_image: Image for the instances (AMI name for AWS, snapshot ID for Scaleway)
+        instance_image: Image for the instances (marketplace label or image UUID)
+        instance_snapshot: Block snapshot UUID to boot from (overrides instance_image)
 
         # Global values
         product: Product name for the resources (prefix for all resource names)
@@ -177,6 +178,7 @@ class ClusterConfig:
     zone: str
     project_id: str
     instance_image: str
+    instance_snapshot: str = ""
 
     # Global values
     product: str = "unknown"
