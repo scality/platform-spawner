@@ -280,18 +280,7 @@ def main():
         pulumi.log.info(f"SSH keys ({len(ssh_keys_for_cloud_init)}) will be injected via cloud-init for user 'artesca-os'")
     else:
         pulumi.log.info("No SSH key specified - using default Scaleway IAM SSH keys (all keys registered in project)")
-    
-    # Load network configuration cloud-init if extra private networks are configured
-    network_config_user_data = None
-    if extra_private_networks:
-        network_config_path = os.path.join(os.path.dirname(__file__), "config", "cloud-init-network.yaml")
-        if os.path.exists(network_config_path):
-            with open(network_config_path, 'r') as f:
-                network_config_user_data = f.read()
-            pulumi.log.info("Loaded network configuration from config/cloud-init-network.yaml")
-        else:
-            pulumi.log.warn(f"Network config file not found: {network_config_path}")
-    
+
     # Generate cluster node and network configuration based on instance count
     cluster_topology = get_cluster_config(instance_count, instance_type, product)
     
@@ -310,18 +299,6 @@ def main():
                 node.user_data = node.user_data + "\n" + ssh_user_data
             else:
                 node.user_data = ssh_user_data
-    
-    # Inject network configuration for nodes with extra private networks
-    if network_config_user_data:
-        for node in cluster_topology["nodes"]:
-            # Only apply to worker nodes, not bastion
-            if node.role == "node":
-                if node.user_data:
-                    node.user_data = node.user_data + "\n" + network_config_user_data
-                else:
-                    node.user_data = network_config_user_data
-        
-        pulumi.log.info("Network configuration applied to worker nodes")
     
     # Set root volume size on all nodes
     for node in cluster_topology["nodes"]:
