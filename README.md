@@ -23,6 +23,7 @@ The architecture is designed for multi-cloud support with clean abstractions, st
 | **[Quick Start Guide](docs/QUICKSTART.md)** | Deploy your first cluster in 5 minutes |
 | **[Configuration Reference](docs/CONFIGURATION.md)** | All configurable fields, types, defaults, flavors, and examples |
 | **[GitHub Action Reference](docs/ACTION.md)** | Action inputs, outputs, workflow examples, and troubleshooting |
+| **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Import a CI stack from S3 and re-run locally |
 
 ---
 
