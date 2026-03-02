@@ -95,7 +95,7 @@ pulumi config set --path 'extra_volumes[0].count' 12
 
 **Important**: Make sure you set `product` to avoid resources being named with "unknown" prefix.
 
-> **Placement group**: All instances (bastion + workers) are automatically placed in an **enforced low-latency placement group**, ensuring they are co-located for optimal network performance. If Scaleway cannot satisfy the constraint (e.g., not enough capacity), the deployment will continue but a warning will be raised.
+> **Placement group**: All instances (bastion + workers) are automatically placed in a **low-latency placement group**. By default, the policy mode is `"optional"`, which means the deployment will succeed even if Scaleway cannot co-locate all instances (e.g., due to capacity constraints). You can change this to `"enforced"` if strict co-location is required: `pulumi config set placement_group_policy_mode "enforced"`
 
 ```bash
 # Preview changes
@@ -238,7 +238,7 @@ Before deploying to production:
 - [ ] Use custom snapshot with your software (`instance_image` or `instance_snapshot`)
 - [ ] **Configure `authorized_cidrs` to restrict gateway bastion access** (critical for production security)
 - [ ] Configure additional volumes if needed (`extra_volumes`)
-- [ ] Understand that **placement group** enforces low-latency co-location (may limit capacity)
+- [ ] Consider **placement group** policy mode: use `"optional"` (default) for flexible deployments, or `"enforced"` for strict co-location (may limit capacity)
 - [ ] Test in staging first
 - [ ] Set up monitoring
 - [ ] Document your configuration

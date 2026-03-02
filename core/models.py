@@ -158,6 +158,9 @@ class ClusterConfig:
         # Lifecycle
         disable_auto_stop: If true, the instance will not be automatically stopped
 
+        # Placement group
+        placement_group_policy_mode: Placement group policy mode ("optional" or "enforced")
+
         # Extra stuff
         extra_volumes: Additional volumes to attach to the instances
         extra_private_networks: Additional private networks to attach to the instances
@@ -206,6 +209,9 @@ class ClusterConfig:
 
     # Lifecycle
     disable_auto_stop: bool = False
+
+    # Placement group
+    placement_group_policy_mode: str = "optional"
 
     # Extra stuff
     extra_volumes: List[VolumeConfig] = field(default_factory=list)

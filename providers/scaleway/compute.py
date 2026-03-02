@@ -81,7 +81,7 @@ class ScalewayCompute(ComputeInterface):
         return self.config.instance_image
 
     def create_placement_group(
-        self, name: str
+        self, name: str, policy_mode: str = "optional"
     ) -> scaleway.instance.PlacementGroup:
         """
         Create a placement group for co-locating instances.
@@ -91,6 +91,7 @@ class ScalewayCompute(ComputeInterface):
 
         Args:
             name: Placement group name
+            policy_mode: Policy mode - "optional" or "enforced" (default: "optional")
 
         Returns:
             Scaleway PlacementGroup resource
@@ -98,12 +99,12 @@ class ScalewayCompute(ComputeInterface):
         pg = scaleway.instance.PlacementGroup(
             f"pg-{name}",
             name=name,
-            policy_mode="enforced",
+            policy_mode=policy_mode,
             policy_type="low_latency",
             project_id=self.config.project_id,
             zone=self.config.zone,
         )
-        pulumi.log.info(f"Created placement group: {name} (enforced, low_latency)")
+        pulumi.log.info(f"Created placement group: {name} ({policy_mode}, low_latency)")
         return pg
 
     def create_security_group(

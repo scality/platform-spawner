@@ -146,14 +146,32 @@ You can also specify exact Scaleway instance types directly (e.g., `PRO2-XXS`).
 
 ## Placement Group
 
-All instances in a deployment (bastion + worker nodes) are automatically placed in a shared **placement group** to ensure optimal network performance.
+All instances in a deployment (bastion + worker nodes) can be placed in a shared **placement group** to ensure optimal network performance.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `policy_mode` | `enforced` | If Scaleway cannot satisfy the constraint (e.g., not enough capacity), the deployment will continue but a warning will be raised. |
-| `policy_type` | `low_latency` | All instances are co-located on the same hypervisor cluster for minimal network latency. |
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `placement_group_policy_mode` | string | `"optional"` | Placement group policy mode. Options: `"optional"` (recommended) or `"enforced"`. When set to `"optional"`, instances will use the placement group if capacity allows, but deployment will succeed even if the constraint cannot be satisfied. When set to `"enforced"`, deployment may fail if Scaleway cannot co-locate all instances. |
 
-This is **not configurable** — every deployment creates exactly one placement group named `{product}-pg` (or `placement-group` when no product is set). The group is created automatically; no user action is required.
+**Policy Type**: All placement groups use `low_latency` policy type, which co-locates instances on the same hypervisor cluster for minimal network latency.
+
+**Naming**: Every deployment creates exactly one placement group named `{product}-pg` (or `placement-group` when no product is set). The group is created automatically; no user action is required.
+
+### CLI Example
+
+```bash
+# Use optional mode (default, recommended)
+pulumi config set placement_group_policy_mode "optional"
+
+# Use enforced mode (may block deployment if capacity is insufficient)
+pulumi config set placement_group_policy_mode "enforced"
+```
+
+### GitHub Action Example
+
+```yaml
+configuration: |
+  placement_group_policy_mode: optional
+```
 
 ---
 

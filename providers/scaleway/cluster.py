@@ -148,7 +148,9 @@ class ScalewayCluster(ClusterInterface):
         pg_name = (
             f"{self.config.product}-pg" if self.config.product else "placement-group"
         )
-        placement_group = self.compute.create_placement_group(name=pg_name)
+        placement_group = self.compute.create_placement_group(
+            name=pg_name, policy_mode=self.config.placement_group_policy_mode
+        )
 
         # Build extra networks info for outputs
         extra_networks_info = {}

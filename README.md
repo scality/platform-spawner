@@ -12,7 +12,7 @@ This project deploys clusters with flexible configuration, including but not lim
 - **Custom or marketplace images**: Use pre-configured snapshots or fresh marketplace images (with automatic name resolution, e.g., `rocky-8` → `rockylinux_8`)
 - **Additional volumes**: Attach multiple volumes per worker node with flexible sizing
 - **Extra private networks**: Attach multiple network interfaces for multi-homed instances
-- **Placement group**: All instances are co-located with enforced low-latency policy
+- **Placement group**: All instances are co-located with configurable low-latency policy (optional by default)
 
 The architecture is designed for multi-cloud support with clean abstractions, starting with Scaleway.
 
@@ -108,7 +108,7 @@ graph TD
 - **Private-only workers**: No direct internet exposure
 - **NAT**: Outbound internet access via gateway
 - **Security groups**: Network isolation and firewall rules
-- **Placement group**: All instances are co-located in an enforced low-latency placement group for optimal network performance
+- **Placement group**: All instances can be co-located in a low-latency placement group for optimal network performance (configurable: optional or enforced)
 
 ---
 
@@ -161,9 +161,19 @@ The bastion always uses the marketplace label format. See [Configuration Referen
 
 ### Placement Group
 
-All instances in a deployment share an **enforced low-latency placement group**. This ensures Scaleway co-locates them on the same hypervisor cluster for minimal network latency. The placement group is created automatically — no configuration needed.
+All instances in a deployment can optionally share a **low-latency placement group**. By default, the policy mode is set to `"optional"`, which means Scaleway will try to co-locate instances on the same hypervisor cluster for minimal network latency, but the deployment will succeed even if the constraint cannot be satisfied.
 
-> **Note**: If Scaleway cannot satisfy the low-latency constraint (capacity limits), the deployment will fail. Try a different availability zone or reduce `instance_count`.
+You can configure the placement group policy mode:
+
+```bash
+# Optional mode (default, recommended) - deployment succeeds even if co-location fails
+pulumi config set placement_group_policy_mode "optional"
+
+# Enforced mode - deployment fails if Scaleway cannot co-locate all instances
+pulumi config set placement_group_policy_mode "enforced"
+```
+
+> **Note**: With enforced mode, if Scaleway cannot satisfy the low-latency constraint (capacity limits), the deployment will fail. Consider using optional mode or trying a different availability zone.
 
 ---
 

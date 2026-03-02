@@ -9,6 +9,7 @@ import pulumi
 import json
 import yaml
 import os
+import re
 from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig, PrivateNetworkConfig
 from core.topology import get_cluster_config
 from core.factory import create_cluster
@@ -101,6 +102,9 @@ def main():
     
     # Lifecycle
     disable_auto_stop = config.get_bool("disable_auto_stop") or False
+    
+    # Placement group
+    placement_group_policy_mode = config.get("placement_group_policy_mode") or "optional"
     
     # Optional configuration with defaults
     provider_str = config.get("provider") or "scaleway"
@@ -343,6 +347,9 @@ def main():
         
         # Lifecycle
         disable_auto_stop=disable_auto_stop,
+        
+        # Placement group
+        placement_group_policy_mode=placement_group_policy_mode,
         
         # Extra stuff
         extra_volumes=extra_volumes,
