@@ -355,11 +355,19 @@ runs:
         aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
         aws configure set default.region "$SCW_DEFAULT_REGION"
 
-        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
-        pulumi $PULUMI_DEFAULT_ARGS stack output --json > stack.json
-        aws s3 cp stack.json "s3://$S3_KEY" \
+        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}"
+
+        pulumi $PULUMI_DEFAULT_ARGS stack export --file stack_export.json
+        aws s3 cp stack_export.json "s3://$S3_KEY/stack_export.json" \
           --endpoint-url "$SCW_S3_ENDPOINT_URL" \
           --metadata "project=${{ github.event.repository.name }},type=stack,build=${{ github.run_number }},from=${{ github.workflow }},commit=${{ github.sha }},branch=${{ github.ref_name }},build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ),workflow-run=${{ github.run_id }}"
+        rm -f stack_export.json
+
+        pulumi $PULUMI_DEFAULT_ARGS stack output --json > stack_output.json
+        aws s3 cp stack_output.json "s3://$S3_KEY/stack_output.json" \
+          --endpoint-url "$SCW_S3_ENDPOINT_URL" \
+          --metadata "project=${{ github.event.repository.name }},type=stack,build=${{ github.run_number }},from=${{ github.workflow }},commit=${{ github.sha }},branch=${{ github.ref_name }},build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ),workflow-run=${{ github.run_id }}"
+        rm -f stack_output.json
 
     # Add symlink to ssh_config to workspace
     - name: Copy SSH config
