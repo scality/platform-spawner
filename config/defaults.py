@@ -39,3 +39,44 @@ DEFAULT_PRIVATE_SUBNET = "192.168.10.0/24"
 # Default DNS local name for private network
 DEFAULT_DNS_LOCAL_NAME = "cluster.local"
 
+# Default bastion OS (user-friendly alias + major version, resolved via OS_NAME_ALIASES)
+DEFAULT_BASTION_OS_NAME = "rocky"
+DEFAULT_BASTION_OS_MAJOR_VERSION = "9"
+
+# Default instance image for worker nodes (Scaleway marketplace label format)
+# "rocky" maps to "rockylinux" on Scaleway (see OS_NAME_ALIASES below)
+DEFAULT_INSTANCE_IMAGE = f"rockylinux_{DEFAULT_BASTION_OS_MAJOR_VERSION}"
+
+
+
+# Default bastion flavor (abstract flavor name, resolved via FLAVOR_MAP in config/flavors.py)
+DEFAULT_BASTION_FLAVOR = "small"
+
+# OS name alias map per provider.
+# Maps user-friendly OS family names to provider-specific marketplace label names.
+# Used to normalise inputs like "rocky-8" → family "rockylinux", version "8".
+OS_NAME_ALIASES: Dict[str, Dict[str, str]] = {
+    "scaleway": {
+        "rocky": "rockylinux",
+        "rocky-linux": "rockylinux",
+        "ubuntu": "ubuntu",
+        "debian": "debian",
+    },
+    "aws": {
+        "rocky": "rockylinux",
+        "rocky-linux": "rockylinux",
+        "ubuntu": "ubuntu",
+        "debian": "debian",
+    },
+}
+
+# Default SSH user per OS family name.
+# Maps the user-friendly bastion_os_name to the default SSH username for that OS.
+DEFAULT_BASTION_USERS: Dict[str, str] = {
+    "rocky": "rocky",
+    "rocky-linux": "rocky",
+    "rockylinux": "rocky",
+    "ubuntu": "ubuntu",
+    "debian": "admin",
+}
+

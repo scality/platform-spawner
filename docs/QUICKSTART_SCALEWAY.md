@@ -50,7 +50,14 @@ You need to use a specific image for the worker nodes:
 pulumi config set instance_image fc979535-d07c-43b4-8c33-d8f483484d16
 ```
 
-> **Image resolution**: The `instance_image` field accepts a Scaleway marketplace label (e.g., `rockylinux_9`), a user-friendly alias (e.g., `rocky-9`), or a snapshot UUID. For the bastion, the `bastion_image` field (default `rocky-8`) is automatically mapped to the marketplace label `rockylinux_8`. See the [Configuration Reference](CONFIGURATION.md#image-resolution) for details.
+> **Image resolution**: The `instance_image` field accepts a Scaleway marketplace label (e.g., `rockylinux_9`), a user-friendly alias (e.g., `rocky-9`), or a snapshot UUID. The bastion OS is controlled separately via `bastion_os_name` (default `rocky`) and `bastion_os_major_version` (default `9`), which resolve to a marketplace label (e.g., `rockylinux_9`). See the [Configuration Reference](CONFIGURATION.md#bastion-configuration) for details.
+
+If you want a bastion running a specific OS, set the `bastion_os_name` and `bastion_os_major_version` configuration values. By default, the bastion uses Rocky Linux 9:
+
+```bash
+pulumi config set bastion_os_name rocky
+pulumi config set bastion_os_major_version 9
+```
 
 **Security Note:** By default, the gateway bastion SSH is accessible from any IP. For production, restrict access:
 

@@ -130,7 +130,9 @@ pulumi config set instance_snapshot <SNAPSHOT_UUID>
 pulumi config set instance_root_disk_size <SIZE>
 
 # Bastion config
-pulumi config set bastion_flavor <FLAVOR>
+pulumi config set bastion_os_name rocky
+pulumi config set bastion_os_major_version 9
+pulumi config set bastion_flavor small
 
 # Region
 pulumi config set region fr-par

@@ -53,8 +53,8 @@ config:
     default: ""
   instance_image:
     type: string
-    description: "Image for the instances: marketplace label (e.g. rockylinux_8) or image UUID"
-    default: "rockylinux_8"
+    description: "Image for the instances: marketplace label (e.g. rockylinux_9) or image UUID"
+    default: "rockylinux_9"
   instance_count:
     type: integer
     description: "Number of instances to create"

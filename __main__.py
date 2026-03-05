@@ -14,6 +14,7 @@ from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig, Priv
 from core.topology import get_cluster_config
 from core.factory import create_cluster
 from core.ssh import generate_ssh_key_pair, generate_ssh_config, extract_node_info_for_ssh_config
+from config.defaults import DEFAULT_BASTION_OS_NAME, DEFAULT_BASTION_OS_MAJOR_VERSION, DEFAULT_BASTION_FLAVOR, DEFAULT_INSTANCE_IMAGE
 
 
 def main():
@@ -29,7 +30,7 @@ def main():
     # Required configuration
     instance_count = config.require_int("instance_count")
     project_id = config.require("project_id")
-    instance_image = config.get("instance_image") or "rockylinux_8"
+    instance_image = config.get("instance_image") or DEFAULT_INSTANCE_IMAGE
     instance_snapshot = config.get("instance_snapshot") or ""
     
     # Validate instance count
@@ -73,28 +74,17 @@ def main():
     instance_flavor = config.get("instance_flavor") or "medium"
     instance_root_disk_size = config.get_int("instance_root_disk_size") or 50
     
+    # Provider / region (needed early for OS alias resolution)
+    provider_str = config.get("provider") or "scaleway"
+    region = config.get("region") or "fr-par"
+    zone = config.get("zone") or "fr-par-1"
+
     # Bastion host configuration
-    bastion_image = config.get("bastion_image") or "rocky-8"
-    bastion_flavor = config.get("bastion_flavor") or "small"
+    bastion_os_name = config.get("bastion_os_name") or DEFAULT_BASTION_OS_NAME
+    bastion_os_major_version = config.get("bastion_os_major_version") or DEFAULT_BASTION_OS_MAJOR_VERSION
+    bastion_flavor = config.get("bastion_flavor") or DEFAULT_BASTION_FLAVOR
     bastion_root_disk_size = config.get_int("bastion_root_disk_size") or 30
-    
-    # Parse bastion_image (e.g., "rocky-8") into name and version
-    # Format: "os-version" or "os_version"
-    bastion_parts = bastion_image.replace("_", "-").split("-")
-    if len(bastion_parts) >= 2:
-        bastion_os_name = "-".join(bastion_parts[:-1])
-        bastion_os_version = bastion_parts[-1]
-    else:
-        bastion_os_name = bastion_image
-        bastion_os_version = "8"  # Default version
-    
-    # Map common OS name aliases to Scaleway marketplace label names
-    os_name_map = {
-        "rocky": "rockylinux",
-        "rocky-linux": "rockylinux",
-    }
-    bastion_os_name = os_name_map.get(bastion_os_name, bastion_os_name)
-    
+
     # SSH information
     ssh_key_name = config.get("ssh_key_name") or ""
     ssh_public_keys = config.get_object("ssh_public_keys") or []
@@ -105,11 +95,6 @@ def main():
     
     # Placement group
     placement_group_policy_mode = config.get("placement_group_policy_mode") or "optional"
-    
-    # Optional configuration with defaults
-    provider_str = config.get("provider") or "scaleway"
-    region = config.get("region") or "fr-par"
-    zone = config.get("zone") or "fr-par-1"
     
     # Parse and validate provider
     try:
@@ -134,7 +119,7 @@ def main():
         authorized_cidrs = ["0.0.0.0/0"]
         pulumi.log.warn("No authorized_cidrs specified. Using 0.0.0.0/0 (open to all). Set 'authorized_cidrs' config to restrict access for production.")
     else:
-        pulumi.log.info(f"Gateway bastion restricted to CIDRs: {', '.join(authorized_cidrs)}")
+        pulumi.log.info(f"Bastion SSH access restricted to CIDRs: {', '.join(authorized_cidrs)}")
     
     # Optional: Extra volumes for worker nodes
     # Format: JSON string like '[{"size": 120, "count": 1}, {"size": 10, "count": 12}]'
@@ -334,11 +319,10 @@ def main():
         instance_root_disk_size=instance_root_disk_size,
         
         # Bastion host configuration
-        bastion_image=bastion_image,
+        bastion_os_name=bastion_os_name,
+        bastion_os_major_version=bastion_os_major_version,
         bastion_flavor=bastion_flavor,
         bastion_root_disk_size=bastion_root_disk_size,
-        bastion_os_name=bastion_os_name,
-        bastion_os_version=bastion_os_version,
         
         # SSH information
         ssh_key_name=ssh_key_name,
@@ -364,7 +348,8 @@ def main():
     pulumi.log.info(f"Deploying {instance_count}-node cluster on {provider.value}")
     pulumi.log.info(f"Product: {product}")
     pulumi.log.info(f"Region: {region}, Zone: {zone}")
-    pulumi.log.info("Using Gateway SSH bastion feature (no bastion VM)")
+    pulumi.log.info("Using bastion VM for SSH access and NAT gateway")
+    pulumi.log.info(f"Bastion OS: {bastion_os_name} {bastion_os_major_version} ({bastion_instance_type})")
     if instance_snapshot:
         pulumi.log.info(f"Instance snapshot: {instance_snapshot} (overrides image)")
     else:
@@ -455,6 +440,8 @@ def main():
         "instance_flavor": instance_flavor,
         "instance_type": instance_type,
         "instance_root_disk_size": instance_root_disk_size,
+        "bastion_os_name": bastion_os_name,
+        "bastion_os_major_version": bastion_os_major_version,
         "bastion_flavor": bastion_flavor,
         "bastion_instance_type": bastion_instance_type,
         "offline": offline,

@@ -16,6 +16,7 @@ import pulumiverse_scaleway as scaleway
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from config.flavors import get_instance_type
+from config.defaults import DEFAULT_BASTION_USERS
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
@@ -207,8 +208,23 @@ class ScalewayCluster(ClusterInterface):
                 "ip": bastion["node_output"].public_ip,
                 "private_ip": bastion["node_output"].private_ip,
                 "port": 22,
-                "user": "rocky",  # Default user for Rocky Linux bastion image
+                "user": DEFAULT_BASTION_USERS.get(self.config.bastion_os_name, "rocky"),
                 "instance_id": bastion["node_output"].id,
+                "extra_nics": {
+                    suffix: {
+                        "private_ip": extra_nic.private_ips.apply(
+                            lambda ips: (
+                                next(
+                                    (ip.address for ip in ips if ":" not in ip.address),
+                                    None,
+                                )
+                                if ips
+                                else None
+                            )
+                        ),
+                    }
+                    for suffix, extra_nic in bastion["extra_nics"].items()
+                },
             },
         }
 
@@ -446,6 +462,21 @@ class ScalewayCluster(ClusterInterface):
             instance_name=node_config.name,
         )
 
+        # Attach to extra private networks if configured (bastion is multi-homed like workers)
+        extra_nics = {}
+        if self.config.extra_private_networks:
+            for net_config in self.config.extra_private_networks:
+                extra_network = self.network.extra_private_networks.get(
+                    net_config.suffix
+                )
+                if extra_network:
+                    extra_nic = self.compute.attach_to_private_network(
+                        instance=instance_output.resource,
+                        network=extra_network,
+                        instance_name=f"{node_config.name}-{net_config.suffix}",
+                    )
+                    extra_nics[net_config.suffix] = extra_nic
+
         # Update node_output with private IPv4 address from NIC (filter out IPv6)
         # IPv4 addresses don't contain ':' character, IPv6 do
         instance_output.private_ip = nic.private_ips.apply(
@@ -460,4 +491,5 @@ class ScalewayCluster(ClusterInterface):
             "instance": instance_output.resource,
             "node_output": instance_output,
             "nic": nic,
+            "extra_nics": extra_nics,
         }

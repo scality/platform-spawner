@@ -52,6 +52,16 @@ inputs:
     required: false
     default: "[]"
 
+  # Bastion host OS configuration
+  bastion_os_name:
+    description: "OS family name for the bastion host (e.g., 'rocky', 'ubuntu', 'debian')"
+    required: false
+    default: "rocky"
+  bastion_os_major_version:
+    description: "Major OS version for the bastion host (e.g., '9', '22')"
+    required: false
+    default: "9"
+
   product:
     description: "The product name"
     required: false
@@ -297,6 +307,8 @@ runs:
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
         fi
+        pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_name "${{ inputs.bastion_os_name }}"
+        pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_major_version "${{ inputs.bastion_os_major_version }}"
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
           # Use Python to properly parse and write the JSON array to the config file
           # Pass via environment variable to avoid bash quote mangling
@@ -495,7 +507,7 @@ runs:
       # some config is missing
       run: >-
         pulumi $PULUMI_DEFAULT_ARGS config refresh ||
-          pulumi $PULUMI_DEFAULT_ARGS config set instance_image rocky-8
+          pulumi $PULUMI_DEFAULT_ARGS config set instance_image rockylinux_9
     - name: Destroy
       if: ${{ inputs.action == 'destroy' }}
       shell: bash

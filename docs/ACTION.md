@@ -132,6 +132,13 @@ ssh_private_key_create: "true"
 # The generated private key will be available in the action outputs
 ```
 
+### Bastion Configuration
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `bastion_os_name` | No | `"rocky"` | OS family name for the bastion host (e.g., `rocky`, `ubuntu`, `debian`). |
+| `bastion_os_major_version` | No | `"9"` | Major OS version for the bastion host (e.g., `9`, `22`). |
+
 ### Security Configuration
 
 | Input | Required | Default | Description |
@@ -206,14 +213,28 @@ custom_routes: |
 
 ### Bastion Output Format
 
+The bastion is a VM with a public IP that acts as SSH jump host and NAT gateway:
+
 ```json
 {
-  "type": "gateway",
+  "type": "vm",
   "ip": "51.159.x.x",
-  "port": 61000,
-  "user": "bastion",
-  "gateway_id": "..."
+  "port": 22,
+  "user": "rocky",
+  "private_ip": "192.168.10.1",
+  "instance_id": "fr-par-1/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "extra_nics": {
+    "storage": {
+      "private_ip": "10.1.0.1"
+    }
+  }
 }
+```
+
+SSH to a worker node via the bastion:
+
+```bash
+ssh -J rocky@<bastion_ip> artesca-os@<node_private_ip>
 ```
 
 ### Nodes Output Format
@@ -326,7 +347,7 @@ extra_private_networks:
 
 Each network creates:
 - A new Scaleway Private Network in the VPC
-- A NIC attached to each instance with an IP from that subnet
+- A NIC attached to **each instance** (both worker nodes and the bastion VM) with an IP from that subnet
 
 **Note:** The primary internal network (`192.168.10.0/24` by default) is always created. Extra networks are in addition to this.
 

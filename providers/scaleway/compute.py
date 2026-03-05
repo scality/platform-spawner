@@ -12,6 +12,7 @@ import pulumiverse_scaleway as scaleway
 
 from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
+from config.defaults import OS_NAME_ALIASES
 
 
 # TODO: Replace with actual IP addresses/CIDR blocks for application update servers
@@ -53,15 +54,10 @@ class ScalewayCompute(ComputeInterface):
 
         Returns:
             Image label in format "osname_version" (e.g., "rockylinux_9")
-
-        Note:
-            The bastion_os_name should be the Scaleway marketplace label name,
-            e.g., "rockylinux" not "rocky". The __main__.py handles mapping
-            user-friendly names like "rocky-8" to "rockylinux_8".
         """
-        # Bastion uses PLAY2-NANO which is block-storage-only
-        # These instances need the marketplace label format, not UUID
-        return f"{self.config.bastion_os_name}_{self.config.bastion_os_version}"
+        os_aliases = OS_NAME_ALIASES.get("scaleway", {})
+        os_name = os_aliases.get(self.config.bastion_os_name, self.config.bastion_os_name)
+        return f"{os_name}_{self.config.bastion_os_major_version}"
 
     def get_worker_image(self) -> str:
         """
