@@ -405,6 +405,7 @@ class ScalewayCompute(ComputeInterface):
         allowed_cidrs: Optional[List[str]] = None,
         private_subnet: str = "192.168.10.0/24",
         restrict_outbound: bool = True,
+        extra_subnets: Optional[List[str]] = None,
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a security group for bastion/jump host with NAT capabilities.
@@ -429,6 +430,7 @@ class ScalewayCompute(ComputeInterface):
                           If None or empty, defaults to ["0.0.0.0/0"] (anywhere).
             private_subnet: CIDR block of the private network.
             restrict_outbound: If True, restrict outbound to DNS and HTTPS only.
+            extra_subnets: Additional private network subnets to allow traffic to/from.
 
         Returns:
             SecurityGroup resource for bastion
@@ -458,6 +460,15 @@ class ScalewayCompute(ComputeInterface):
                 ip_range=private_subnet,
             )
         )
+        # Allow all traffic from extra private network subnets
+        for subnet in extra_subnets or []:
+            inbound_rules.append(
+                scaleway.instance.SecurityGroupInboundRuleArgs(
+                    action="accept",
+                    protocol="ANY",
+                    ip_range=subnet,
+                )
+            )
 
         # Build outbound rules
         outbound_rules = []
@@ -473,6 +484,15 @@ class ScalewayCompute(ComputeInterface):
                     ip_range=private_subnet,
                 )
             )
+            # Allow traffic to extra private network subnets
+            for subnet in extra_subnets or []:
+                outbound_rules.append(
+                    scaleway.instance.SecurityGroupOutboundRuleArgs(
+                        action="accept",
+                        protocol="ANY",
+                        ip_range=subnet,
+                    )
+                )
             # Allow SSH to the internet
             outbound_rules.append(
                 scaleway.instance.SecurityGroupOutboundRuleArgs(
@@ -532,7 +552,9 @@ class ScalewayCompute(ComputeInterface):
         return sg
 
     def create_internal_security_group(
-        self, private_subnet: str = "192.168.10.0/24"
+        self,
+        private_subnet: str = "192.168.10.0/24",
+        extra_subnets: Optional[List[str]] = None,
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a security group for internal nodes.
@@ -548,16 +570,27 @@ class ScalewayCompute(ComputeInterface):
         sg_name = (
             f"{self.config.product}-internal" if self.config.product else "internal"
         )
-        return self.create_security_group(
-            name=sg_name,
-            rules=[
+        rules = [
+            {
+                "action": "accept",
+                "direction": "inbound",
+                "protocol": "ANY",
+                "ip_range": private_subnet,
+            }
+        ]
+        # Allow inbound traffic from extra private network subnets
+        for subnet in extra_subnets or []:
+            rules.append(
                 {
                     "action": "accept",
                     "direction": "inbound",
                     "protocol": "ANY",
-                    "ip_range": private_subnet,
+                    "ip_range": subnet,
                 }
-            ],
+            )
+        return self.create_security_group(
+            name=sg_name,
+            rules=rules,
             description="Internal nodes - only accessible from private network",
             inbound_default_policy="drop",
             outbound_default_policy="accept",

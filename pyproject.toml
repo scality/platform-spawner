@@ -14,7 +14,7 @@ dependencies = [
 max-attributes = 30
 # Orchestration methods (deploy_cluster, create_instance) need more locals
 # to track infrastructure resources without obscuring their relationships.
-max-locals = 25
+max-locals = 26
 # create_instance has 6 explicit params; the rest go through **kwargs.
 max-args = 7
 max-positional-arguments = 6

@@ -20,7 +20,6 @@ from config.defaults import DEFAULT_BASTION_USERS
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
-
 # Cloud-init configuration for bastion VM with NAT functionality
 # Enables IP forwarding and configures NAT using firewalld
 BASTION_NAT_CLOUDINIT = """#cloud-config
@@ -133,16 +132,21 @@ class ScalewayCluster(ClusterInterface):
         # Create network infrastructure (VPC + Private Network, no gateway)
         network_output = self.network.create_full_network()
 
+        # Collect extra private network subnets for security group rules
+        extra_subnets = [nc.subnet for nc in self.config.extra_private_networks]
+
         # Create security groups
         # Bastion: SSH access from allowed CIDRs + restricted outbound (NAT to update servers only)
         sg_bastion = self.compute.create_bastion_security_group(
             allowed_cidrs=self.config.network.allowed_ips,
             private_subnet=self.config.network.private_subnet,
             restrict_outbound=True,  # Restrict NAT to DNS and HTTPS only
+            extra_subnets=extra_subnets,
         )
         # All worker nodes use internal security group (private network access only)
         sg_internal = self.compute.create_internal_security_group(
-            private_subnet=self.config.network.private_subnet
+            private_subnet=self.config.network.private_subnet,
+            extra_subnets=extra_subnets,
         )
 
         # Create placement group for co-locating all instances
