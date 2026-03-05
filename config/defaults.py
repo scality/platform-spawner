@@ -48,7 +48,6 @@ DEFAULT_BASTION_OS_MAJOR_VERSION = "9"
 DEFAULT_INSTANCE_IMAGE = f"rockylinux_{DEFAULT_BASTION_OS_MAJOR_VERSION}"
 
 
-
 # Default bastion flavor (abstract flavor name, resolved via FLAVOR_MAP in config/flavors.py)
 DEFAULT_BASTION_FLAVOR = "small"
 
@@ -79,4 +78,3 @@ DEFAULT_BASTION_USERS: Dict[str, str] = {
     "ubuntu": "ubuntu",
     "debian": "admin",
 }
-

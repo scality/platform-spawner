@@ -224,7 +224,6 @@ class ClusterConfig:
     nodes: List[NodeConfig] = field(default_factory=list)
 
 
-
 @dataclass
 class NodeOutput:
     """

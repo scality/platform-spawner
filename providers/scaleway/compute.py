@@ -14,8 +14,7 @@ from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
 from config.defaults import OS_NAME_ALIASES
 
-
-# TODO: Replace with actual IP addresses/CIDR blocks for application update servers
+# NOTE: Update these IPs if the Scality CDN/package servers change.
 # Format: List of CIDR blocks (use /32 for single IPs, e.g., "203.0.113.10/32")
 # 35.241.243.135  artifacts.scality.net
 # 217.182.187.84  packages.scality.com
@@ -56,7 +55,9 @@ class ScalewayCompute(ComputeInterface):
             Image label in format "osname_version" (e.g., "rockylinux_9")
         """
         os_aliases = OS_NAME_ALIASES.get("scaleway", {})
-        os_name = os_aliases.get(self.config.bastion_os_name, self.config.bastion_os_name)
+        os_name = os_aliases.get(
+            self.config.bastion_os_name, self.config.bastion_os_name
+        )
         return f"{os_name}_{self.config.bastion_os_major_version}"
 
     def get_worker_image(self) -> str:
@@ -213,7 +214,10 @@ class ScalewayCompute(ComputeInterface):
         server_image = image
         # Determine if this is a snapshot-based deployment
         # instance_snapshot overrides instance_image for worker nodes
-        is_snapshot = bool(self.config.instance_snapshot) and image == self.config.instance_snapshot
+        is_snapshot = (
+            bool(self.config.instance_snapshot)
+            and image == self.config.instance_snapshot
+        )
 
         # Configure root volume based on instance type and image source
         root_volume = None

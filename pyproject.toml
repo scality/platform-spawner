@@ -7,3 +7,14 @@ dependencies = [
     "pulumi>=3.0.0,<4.0.0",
     "pulumiverse-scaleway>=1.38.0",
 ]
+
+[tool.pylint.design]
+# Infrastructure / dataclass code legitimately exceeds pylint defaults.
+# Dataclasses aggregate many config fields by design.
+max-attributes = 30
+# Orchestration methods (deploy_cluster, create_instance) need more locals
+# to track infrastructure resources without obscuring their relationships.
+max-locals = 25
+# create_instance has 6 explicit params; the rest go through **kwargs.
+max-args = 7
+max-positional-arguments = 6
