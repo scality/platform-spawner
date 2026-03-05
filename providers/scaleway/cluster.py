@@ -10,6 +10,7 @@ and providing internet connectivity to private worker nodes.
 
 from typing import Any, Dict, List
 
+import yaml
 import pulumi
 import pulumiverse_scaleway as scaleway
 
@@ -20,38 +21,265 @@ from config.defaults import DEFAULT_BASTION_USERS
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
-# Cloud-init configuration for bastion VM with NAT functionality
-# Enables IP forwarding and configures NAT using firewalld
-BASTION_NAT_CLOUDINIT = """#cloud-config
-write_files:
-  - path: /etc/sysctl.d/99-ip-forward.conf
-    content: |
-      net.ipv4.ip_forward = 1
-    owner: root:root
-    permissions: '0644'
+# ---------------------------------------------------------------------------
+# Cloud-init helpers
+# ---------------------------------------------------------------------------
 
-runcmd:
-  # Enable IP forwarding immediately
-  - sysctl -p /etc/sysctl.d/99-ip-forward.conf
-  # Disable IPv6 for each interface to avoid dual-stack issues (skip loopback)
-  - |
-    nmcli -t -f UUID,DEVICE connection show | grep -v ':$' | while IFS=: read -r uuid device; do
-        [ "$device" != "lo" ] && nmcli connection modify uuid "$uuid" ipv6.method ignore || true
-    done
-  # Configure NAT using firewalld
-  - systemctl enable firewalld
-  - systemctl start firewalld
-  - sleep 2
-  # Configure external zone for eth0 with masquerading (runtime + permanent)
-  - firewall-cmd --zone=external --change-interface=eth0
-  - firewall-cmd --permanent --zone=external --change-interface=eth0
-  - firewall-cmd --zone=external --add-masquerade
-  - firewall-cmd --permanent --zone=external --add-masquerade
-  - firewall-cmd --zone=external --add-service=ssh
-  - firewall-cmd --permanent --zone=external --add-service=ssh
-  # Pre-configure internal zone for private network (permanent only, no interface yet)
-  - firewall-cmd --permanent --zone=internal --set-target=ACCEPT
+
+class _LiteralScalar(str):
+    """String subclass that serialises as a YAML literal block scalar (|)."""
+
+
+class _CloudConfigDumper(yaml.SafeDumper):
+    """YAML dumper that renders _LiteralScalar instances with | style."""
+
+
+_CloudConfigDumper.add_representer(
+    _LiteralScalar,
+    lambda dumper, data: dumper.represent_scalar(
+        "tag:yaml.org,2002:str", data, style="|"
+    ),
+)
+
+
+def _to_cloud_config(data: dict) -> str:
+    """Serialize *data* to a ``#cloud-config`` YAML string."""
+    return "#cloud-config\n" + yaml.dump(
+        data, Dumper=_CloudConfigDumper, default_flow_style=False, sort_keys=False
+    )
+
+
+# ---------------------------------------------------------------------------
+# Scaleway VPC route-fix — defense in depth
+# ---------------------------------------------------------------------------
+# Problem: Scaleway DHCP pushes classless static routes (option 121) for
+# every private network in the VPC to every interface.  Because the DHCP
+# cross-routes can have LOWER metrics than the kernel directly-connected
+# routes, traffic takes wrong paths:
+#
+#   192.168.30.0/24 via 169.254.169.254 dev eth1 proto dhcp metric 50  ← WRONG
+#   192.168.30.0/24 dev eth2 proto kernel metric 102                   ← correct
+#
+# Strategy (defense in depth):
+#   Layer 0 — Disable scw-net-reconfig: Stop Scaleway's hot-reconfig agent
+#   Layer 1 — NM conf.d:   Aspirational — ignored by current NM versions
+#   Layer 2 — NM dispatcher: Clean routes on private iface up/DHCP change
+#   Layer 3 — Retroactive runcmd: Fix already-active private connections
+#
+# The Scaleway VM agent (scaleway-vmagent) + scw-net-reconfig.path/.service
+# continuously re-apply DHCP configuration on private interfaces, undoing
+# our fixes.  Layer 0 masks the reconfig service to prevent interference.
+# See: scaleway.com/en/docs/instances/reference-content/
+#      understanding-automatic-network-hot-reconfiguration/
+#
+# IMPORTANT: eth0 is the public interface (Scaleway uses net.ifnames=0).
+# ipv4.ignore-auto-routes suppresses ALL DHCP routes INCLUDING the default
+# gateway (option 3), so it MUST NOT be applied to eth0 or the instance
+# loses internet connectivity and SSH access.
+# ---------------------------------------------------------------------------
+
+# Layer 1 — NetworkManager connection defaults (aspirational)
+# NM only supports a limited set of properties as [connection] defaults:
+# route-metric, may-fail, link-local, etc.  ipv4.ignore-auto-routes is
+# NOT in the supported set, so this has NO real effect today.  We keep
+# it as documentation and for forward-compatibility if NM adds support.
+_VPC_NM_CONF = """\
+# Aspirational: suppress DHCP classless static routes (option 121).
+# Currently ignored by NM (not a supported [connection] default).
+# The NM dispatcher (Layer 2) is the actual enforcement mechanism.
+[connection]
+ipv4.ignore-auto-routes=1
+ipv6.ignore-auto-routes=1
 """
+
+_VPC_NM_CONF_WRITE_FILE = {
+    "path": "/etc/NetworkManager/conf.d/90-scaleway-vpc.conf",
+    "content": _LiteralScalar(_VPC_NM_CONF),
+    "owner": "root:root",
+    "permissions": "0644",
+}
+
+# Layer 2 — NetworkManager dispatcher script (primary defense)
+# Fires on every up/dhcp4-change event for PRIVATE interfaces only.
+# eth0 is skipped — its DHCP routes include the default gateway which we
+# must not suppress (ignore-auto-routes kills ALL DHCP routes including
+# the default gw from option 3, not just classless statics from option 121).
+#
+# nmcli connection modify changes the on-disk profile.
+# device reapply is NOT sufficient for ipv4.ignore-auto-routes — a full
+# connection down/up cycle is required so NM re-reads the profile and
+# does not install DHCP routes.  An idempotency guard prevents the
+# down/up from triggering an infinite dispatcher loop.
+_VPC_ROUTE_FIX_DISPATCHER = """\
+#!/bin/bash
+# /etc/NetworkManager/dispatcher.d/10-scaleway-vpc-routes
+# Installed by platform-spawner cloud-init.
+# Suppresses DHCP cross-network routes on private interfaces only.
+
+case "$2" in
+    up|dhcp4-change) ;;
+    *) exit 0 ;;
+esac
+
+IFACE="$1"
+[ "$IFACE" = "lo" ] && exit 0
+[ "$IFACE" = "eth0" ] && exit 0   # Public interface — keep its default route
+[ -z "$CONNECTION_UUID" ] && exit 0
+
+# Idempotency guard: skip if already configured (prevents down/up loop).
+current=$(nmcli -g ipv4.ignore-auto-routes connection show "$CONNECTION_UUID" 2>/dev/null)
+[ "$current" = "yes" ] && exit 0
+
+# Suppress DHCP routes and IPv6 on this private interface.
+nmcli connection modify "$CONNECTION_UUID" \\
+    ipv4.ignore-auto-routes yes \\
+    ipv4.ignore-auto-dns yes \\
+    ipv6.ignore-auto-routes yes \\
+    ipv6.ignore-auto-dns yes \\
+    ipv6.method disabled 2>/dev/null || true
+
+# Full reconnect: device reapply is not sufficient for ignore-auto-routes.
+# The down/up cycle makes NM re-read the profile and honour the setting
+# from the start of DHCP negotiation, so cross-routes are never installed.
+nmcli connection down "$CONNECTION_UUID" 2>/dev/null || true
+nmcli connection up "$CONNECTION_UUID" 2>/dev/null || true
+
+# Restore Scaleway metadata route (killed by ignore-auto-routes).
+# 169.254.42.42 is the Scaleway metadata API used by cloud-init datasource.
+ip route replace 169.254.42.42/32 dev "$IFACE" scope link 2>/dev/null || true
+"""
+
+_VPC_ROUTE_FIX_WRITE_FILE = {
+    "path": "/etc/NetworkManager/dispatcher.d/10-scaleway-vpc-routes",
+    "permissions": "0755",
+    "owner": "root:root",
+    "content": _LiteralScalar(_VPC_ROUTE_FIX_DISPATCHER),
+}
+
+# Layer 0 — Disable Scaleway automatic network hot-reconfiguration
+# The scw-net-reconfig.path watches for network config changes and
+# scw-net-reconfig.service re-applies DHCP routes (including cross-
+# network routes), undoing our ignore-auto-routes=yes fix.
+# Masking prevents any unit from starting these services again.
+_DISABLE_SCW_NET_RECONFIG = """\
+# Disable Scaleway network hot-reconfiguration agent.
+# It conflicts with our NM dispatcher by re-applying DHCP cross-routes.
+systemctl stop scw-net-reconfig.path scw-net-reconfig.service 2>/dev/null || true
+systemctl mask scw-net-reconfig.path scw-net-reconfig.service 2>/dev/null || true
+"""
+
+# Layer 3 — Retroactive fix for private connections active at cloud-init time
+# Scaleway may hot-plug NICs before or after cloud-init runs.  A full NM
+# restart ensures our dispatcher script is loaded and fires on every
+# connection that comes up.  The loop afterwards is belt-and-suspenders
+# for any connection the dispatcher might have missed.
+_VPC_ROUTE_FIX_RETROACTIVE = """\
+# Full restart so NM picks up our dispatcher + conf.d (reload is not enough).
+systemctl restart NetworkManager 2>/dev/null || true
+sleep 10  # wait for NM to re-establish connections
+
+for uuid in $(nmcli -t -f UUID connection show --active 2>/dev/null); do
+    device=$(nmcli -g GENERAL.DEVICE connection show "$uuid" 2>/dev/null)
+    [ -z "$device" ] || [ "$device" = "lo" ] && continue
+    [ "$device" = "eth0" ] && continue   # Public interface — keep its routes
+    current=$(nmcli -g ipv4.ignore-auto-routes connection show "$uuid" 2>/dev/null)
+    [ "$current" = "yes" ] && continue   # Already fixed by dispatcher
+    nmcli connection modify "$uuid" \\
+        ipv4.ignore-auto-routes yes \\
+        ipv4.ignore-auto-dns yes \\
+        ipv6.ignore-auto-routes yes \\
+        ipv6.ignore-auto-dns yes \\
+        ipv6.method disabled 2>/dev/null || true
+    nmcli connection down "$uuid" 2>/dev/null || true
+    nmcli connection up "$uuid" 2>/dev/null || true
+    ip route replace 169.254.42.42/32 dev "$device" scope link 2>/dev/null || true
+done
+"""
+
+# ---------------------------------------------------------------------------
+# Bastion NAT configuration
+# ---------------------------------------------------------------------------
+# Rocky 9 marketplace image has neither iptables nor firewalld pre-installed.
+# Install iptables first, then configure NAT, then persist rules for reboots.
+_BASTION_NAT_SETUP = """\
+# Install iptables if not present (Rocky 9 ships without it)
+if ! command -v iptables &>/dev/null; then
+    dnf install -y iptables-nft 2>/dev/null || \\
+    yum install -y iptables-nft 2>/dev/null || \\
+    apt-get install -y iptables 2>/dev/null || true
+fi
+
+# Configure NAT masquerading
+iptables -t nat -C POSTROUTING -o eth0 -j MASQUERADE 2>/dev/null || \\
+    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -P FORWARD ACCEPT
+
+# Persist iptables rules across reboots (RHEL/Rocky or Debian/Ubuntu)
+if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+    dnf install -y iptables-services 2>/dev/null || yum install -y iptables-services 2>/dev/null || true
+    systemctl enable iptables 2>/dev/null || true
+    service iptables save 2>/dev/null || true
+elif command -v apt-get &>/dev/null; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent 2>/dev/null || true
+    netfilter-persistent save 2>/dev/null || true
+fi
+"""
+
+# ---------------------------------------------------------------------------
+# Cloud-init configurations (dicts serialised at point of use)
+# ---------------------------------------------------------------------------
+
+# VPC route fix data (for worker nodes — merged with SSH user_data)
+_SCALEWAY_VPC_FIX_DATA: Dict[str, Any] = {
+    "write_files": [_VPC_NM_CONF_WRITE_FILE, _VPC_ROUTE_FIX_WRITE_FILE],
+    "runcmd": [
+        _LiteralScalar(_DISABLE_SCW_NET_RECONFIG),
+        _LiteralScalar(_VPC_ROUTE_FIX_RETROACTIVE),
+    ],
+}
+
+# Bastion: IP forwarding + NAT + VPC route fix
+BASTION_NAT_CLOUDINIT = _to_cloud_config(
+    {
+        "write_files": [
+            {
+                "path": "/etc/sysctl.d/99-ip-forward.conf",
+                "content": _LiteralScalar("net.ipv4.ip_forward = 1\n"),
+                "owner": "root:root",
+                "permissions": "0644",
+            },
+            _VPC_NM_CONF_WRITE_FILE,
+            _VPC_ROUTE_FIX_WRITE_FILE,
+        ],
+        "runcmd": [
+            "sysctl -p /etc/sysctl.d/99-ip-forward.conf",
+            _LiteralScalar(_DISABLE_SCW_NET_RECONFIG),
+            _LiteralScalar(_VPC_ROUTE_FIX_RETROACTIVE),
+            _LiteralScalar(_BASTION_NAT_SETUP),
+        ],
+    }
+)
+
+
+def _merge_cloud_config(base: dict, extra_user_data: str | None = None) -> str:
+    """Merge *base* cloud-config dict with an optional YAML user-data string.
+
+    List-valued keys (``write_files``, ``runcmd``, ...) are concatenated;
+    everything else is taken from *extra_user_data* when present.
+    """
+    if not extra_user_data:
+        return _to_cloud_config(base)
+    text = extra_user_data
+    if text.startswith("#cloud-config"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+    extra = yaml.safe_load(text) or {}
+    merged = dict(base)
+    for key, value in extra.items():
+        if key in merged and isinstance(merged[key], list) and isinstance(value, list):
+            merged[key] = list(merged[key]) + value
+        else:
+            merged[key] = value
+    return _to_cloud_config(merged)
 
 
 class ScalewayCluster(ClusterInterface):
@@ -196,6 +424,10 @@ class ScalewayCluster(ClusterInterface):
             placement_group_id=placement_group.id,
         )
         pulumi.log.info(f"Deployed bastion VM: {bastion_name}")
+        pulumi.log.info(
+            "VPC route fix: NM dispatcher will be deployed via cloud-init "
+            "on all instances to prevent DHCP cross-network route conflicts"
+        )
 
         # Initialize outputs
         outputs = {
@@ -235,6 +467,12 @@ class ScalewayCluster(ClusterInterface):
         # Deploy instance nodes (private only, accessed via bastion)
         if "node" in nodes_by_role:
             for node_config in nodes_by_role["node"]:
+                # Inject VPC route fix into worker cloud-init to prevent
+                # cross-network DHCP route conflicts on multi-homed nodes.
+                node_config.user_data = _merge_cloud_config(
+                    _SCALEWAY_VPC_FIX_DATA, node_config.user_data
+                )
+
                 # All nodes use internal security group
                 # Outbound restrictions are handled by the bastion's NAT
                 node = self._deploy_internal_node(
