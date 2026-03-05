@@ -1,3 +1,5 @@
 pulumi>=3.0.0,<4.0.0
 pulumiverse-scaleway>=1.43.0
 PyYAML>=6.0
+black>=26.1.0,<27.0.0
+pylint>=4.0.5,<5.0.0
