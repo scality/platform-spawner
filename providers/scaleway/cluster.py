@@ -17,7 +17,7 @@ import pulumiverse_scaleway as scaleway
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from config.flavors import get_instance_type
-from config.defaults import DEFAULT_BASTION_USERS
+from config.defaults import DEFAULT_BASTION_USERS ### TODO move it to main
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
@@ -199,7 +199,6 @@ done
 # ---------------------------------------------------------------------------
 # Bastion NAT configuration
 # ---------------------------------------------------------------------------
-# Rocky 9 marketplace image has neither iptables nor firewalld pre-installed.
 # Install iptables first, then configure NAT, then persist rules for reboots.
 _BASTION_NAT_SETUP = """\
 # Install iptables if not present (Rocky 9 ships without it)

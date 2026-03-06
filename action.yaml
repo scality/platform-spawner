@@ -507,7 +507,7 @@ runs:
       # some config is missing
       run: >-
         pulumi $PULUMI_DEFAULT_ARGS config refresh ||
-          pulumi $PULUMI_DEFAULT_ARGS config set instance_image rockylinux_9
+        pulumi $PULUMI_DEFAULT_ARGS config set instance_image rockylinux_9
     - name: Destroy
       if: ${{ inputs.action == 'destroy' }}
       shell: bash
