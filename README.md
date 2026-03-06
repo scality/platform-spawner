@@ -81,7 +81,7 @@ See [GitHub Action Reference](docs/ACTION.md) for complete examples.
 ```mermaid
 graph TD
     Internet([Internet])
-    Gateway[Public Gateway<br/>- SSH Bastion<br/>- NAT for outbound<br/>- DHCP]
+    Gateway[Public Gateway<br/>- SSH Bastion<br/>- NAT for outbound<br/>- NTP server chrony<br/>- DNS resolver dnsmasq]
     PrivateNet[Private Network<br/>192.168.10.0/24]
     ExtraNet[Extra Network<br/>10.1.0.0/24<br/>optional]
     Node1[node-01<br/>PRO2-S]
@@ -103,10 +103,12 @@ graph TD
 
 ### Security Model
 
-- **Gateway bastion**: Single SSH entry point (port 61000)
+- **Gateway bastion**: Single SSH entry point with NAT, NTP, and DNS services
 - **IP-based access control**: Restrict gateway bastion access to specific IPs via `authorized_cidrs`
 - **Private-only workers**: No direct internet exposure
 - **NAT**: Outbound internet access via gateway
+- **NTP**: Bastion runs chrony as a local NTP server; workers sync time from the bastion
+- **DNS**: Bastion runs dnsmasq as a caching DNS resolver; workers resolve names through the bastion
 - **Security groups**: Network isolation and firewall rules
 - **Placement group**: All instances can be co-located in a low-latency placement group for optimal network performance (configurable: optional or enforced)
 

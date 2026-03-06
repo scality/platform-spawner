@@ -188,6 +188,23 @@ The bastion is a small VM with a public IP that acts as an SSH jump host and NAT
 | `bastion_flavor` | string | `"small"` | Abstract flavor name for the bastion instance. Mapped via `FLAVOR_MAP` (e.g., `small` → `PLAY2-NANO`). |
 | `bastion_root_disk_size` | integer | `30` | Root disk size in GiB for the bastion host. |
 
+### Bastion Services
+
+The bastion VM is automatically configured at boot (via cloud-init) to provide the following services to the cluster:
+
+| Service | Software | Description |
+|---------|----------|-------------|
+| **NAT Gateway** | iptables | Masquerades outbound traffic from private worker nodes through the bastion's public interface. |
+| **NTP Server** | chrony | Serves time to all worker nodes. Syncs upstream from `pool.ntp.org`, then acts as a local stratum 10 NTP source for the `192.168.0.0/16` range. |
+| **DNS Resolver** | dnsmasq | Provides DNS resolution to all worker nodes. Captures upstream resolvers at boot, caches queries locally (1000 entries), and prevents `resolv.conf` from being overwritten by NetworkManager. |
+
+Worker nodes are automatically configured to use the bastion's private IP for both DNS and NTP:
+
+- `/etc/resolv.conf` → `nameserver <bastion_private_ip>`
+- `/etc/chrony.conf` → `server <bastion_private_ip> iburst`
+
+This eliminates the need for post-deployment SSH steps to configure DNS and NTP — everything runs automatically at instance creation.
+
 ### CLI Example
 
 ```bash

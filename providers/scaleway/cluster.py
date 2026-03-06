@@ -17,7 +17,7 @@ import pulumiverse_scaleway as scaleway
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from config.flavors import get_instance_type
-from config.defaults import DEFAULT_BASTION_USERS ### TODO move it to main
+from config.defaults import DEFAULT_BASTION_USERS  ### TODO move it to main
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
@@ -225,6 +225,87 @@ fi
 """
 
 # ---------------------------------------------------------------------------
+# Bastion NTP server (chrony)
+# ---------------------------------------------------------------------------
+# The bastion acts as the NTP server for all worker nodes.
+# Workers point their chrony to the bastion's private IP.
+_BASTION_CHRONY_CONF = """\
+pool pool.ntp.org iburst
+local stratum 10
+allow 192.168.0.0/16
+makestep 1.0 3
+rtcsync
+leapsectz right/UTC
+driftfile /var/lib/chrony/drift
+keyfile /etc/chrony.keys
+logdir /var/log/chrony
+"""
+
+_BASTION_NTP_SETUP = """\
+command -v chronyd &>/dev/null || dnf install -y chrony
+
+if systemctl is-active firewalld &>/dev/null; then
+  firewall-cmd --permanent --add-service=ntp || true
+  firewall-cmd --reload || true
+fi
+
+systemctl enable --now chronyd
+systemctl restart chronyd
+
+for i in $(seq 1 10); do
+  chronyc waitsync 1 0.1 0 0 -t 10 &>/dev/null && { chronyc sources; break; }
+  [ "$i" -eq 10 ] && { chronyc burst 1/1; sleep 5; chronyc makestep; chronyc sources; } || sleep 5
+done
+echo "cloud-init: bastion NTP server configured"
+"""
+
+# ---------------------------------------------------------------------------
+# Bastion DNS resolver (dnsmasq)
+# ---------------------------------------------------------------------------
+# The bastion runs dnsmasq to provide DNS resolution for all worker nodes.
+# It captures upstream DNS servers before overwriting resolv.conf.
+_BASTION_DNS_SETUP = """\
+command -v dnsmasq &>/dev/null || dnf install -y dnsmasq bind-utils
+
+# Capture upstream DNS before we overwrite resolv.conf
+UPSTREAM=$(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}' | grep -v '127.0.0.1' | head -3)
+[ -z "$UPSTREAM" ] && UPSTREAM="1.1.1.1 8.8.8.8"
+
+cat > /etc/dnsmasq.conf <<CONF
+bind-dynamic
+no-resolv
+no-hosts
+cache-size=1000
+domain-needed
+bogus-priv
+CONF
+
+for dns in $UPSTREAM; do echo "server=$dns" >> /etc/dnsmasq.conf; done
+
+if systemctl is-active firewalld &>/dev/null; then
+  firewall-cmd --permanent --add-service=dns || true
+  firewall-cmd --reload || true
+fi
+
+systemctl enable --now dnsmasq
+systemctl restart dnsmasq
+
+# Prevent NetworkManager from overwriting resolv.conf
+if systemctl is-active NetworkManager &>/dev/null; then
+  mkdir -p /etc/NetworkManager/conf.d
+  printf '[main]\ndns=none\n' > /etc/NetworkManager/conf.d/90-dns-none.conf
+  systemctl reload NetworkManager
+fi
+
+# Point bastion itself to local dnsmasq
+printf 'nameserver 127.0.0.1\n' > /etc/resolv.conf
+
+dig @127.0.0.1 pool.ntp.org +short +timeout=5 &>/dev/null \\
+  && echo "cloud-init: dnsmasq working" \\
+  || echo "cloud-init: DNS test failed (may succeed later)"
+"""
+
+# ---------------------------------------------------------------------------
 # Cloud-init configurations (dicts serialised at point of use)
 # ---------------------------------------------------------------------------
 
@@ -237,13 +318,19 @@ _SCALEWAY_VPC_FIX_DATA: Dict[str, Any] = {
     ],
 }
 
-# Bastion: IP forwarding + NAT + VPC route fix
+# Bastion: IP forwarding + NAT + VPC route fix + NTP server + DNS resolver
 BASTION_NAT_CLOUDINIT = _to_cloud_config(
     {
         "write_files": [
             {
                 "path": "/etc/sysctl.d/99-ip-forward.conf",
                 "content": _LiteralScalar("net.ipv4.ip_forward = 1\n"),
+                "owner": "root:root",
+                "permissions": "0644",
+            },
+            {
+                "path": "/etc/chrony.conf",
+                "content": _LiteralScalar(_BASTION_CHRONY_CONF),
                 "owner": "root:root",
                 "permissions": "0644",
             },
@@ -255,9 +342,70 @@ BASTION_NAT_CLOUDINIT = _to_cloud_config(
             _LiteralScalar(_DISABLE_SCW_NET_RECONFIG),
             _LiteralScalar(_VPC_ROUTE_FIX_RETROACTIVE),
             _LiteralScalar(_BASTION_NAT_SETUP),
+            _LiteralScalar(_BASTION_NTP_SETUP),
+            _LiteralScalar(_BASTION_DNS_SETUP),
         ],
     }
 )
+
+
+def _node_ntp_dns_cloud_config(bastion_ip: str) -> dict:
+    """Return a cloud-config *dict* that configures a worker node to use
+    the bastion as its NTP server (chrony) and DNS resolver.
+
+    Args:
+        bastion_ip: The bastion's private IPv4 address.
+    """
+    chrony_conf = f"""\
+server {bastion_ip} iburst
+makestep 1.0 3
+maxdistance 16.0
+rtcsync
+leapsectz right/UTC
+driftfile /var/lib/chrony/drift
+keyfile /etc/chrony.keys
+logdir /var/log/chrony
+"""
+
+    dns_and_ntp_setup = f"""\
+# --- DNS: point to bastion ---
+if systemctl is-active NetworkManager &>/dev/null; then
+  mkdir -p /etc/NetworkManager/conf.d
+  printf '[main]\\ndns=none\\n' > /etc/NetworkManager/conf.d/90-dns-none.conf
+  systemctl reload NetworkManager
+fi
+printf 'nameserver {bastion_ip}\\n' > /etc/resolv.conf
+
+for i in $(seq 1 5); do
+  dig @{bastion_ip} pool.ntp.org +short +timeout=5 &>/dev/null \
+    && {{ echo "cloud-init: DNS OK"; break; }}
+  [ "$i" -eq 5 ] && echo "cloud-init: DNS test failed" || sleep 3
+done
+
+# --- NTP: point to bastion ---
+command -v chronyd &>/dev/null || dnf install -y chrony
+systemctl enable --now chronyd
+systemctl restart chronyd
+
+for i in $(seq 1 10); do
+  chronyc waitsync 1 0.1 0 0 -t 10 &>/dev/null && {{ chronyc sources; break; }}
+  [ "$i" -eq 10 ] && {{ chronyc burst 1/1; sleep 5; chronyc makestep; chronyc sources; }} || sleep 5
+done
+"""
+
+    return {
+        "write_files": [
+            {
+                "path": "/etc/chrony.conf",
+                "content": _LiteralScalar(chrony_conf),
+                "owner": "root:root",
+                "permissions": "0644",
+            },
+        ],
+        "runcmd": [
+            _LiteralScalar(dns_and_ntp_setup),
+        ],
+    }
 
 
 def _merge_cloud_config(base: dict, extra_user_data: str | None = None) -> str:
@@ -464,12 +612,21 @@ class ScalewayCluster(ClusterInterface):
         }
 
         # Deploy instance nodes (private only, accessed via bastion)
+        bastion_private_ip = bastion["node_output"].private_ip
         if "node" in nodes_by_role:
             for node_config in nodes_by_role["node"]:
                 # Inject VPC route fix into worker cloud-init to prevent
                 # cross-network DHCP route conflicts on multi-homed nodes.
-                node_config.user_data = _merge_cloud_config(
+                base_user_data = _merge_cloud_config(
                     _SCALEWAY_VPC_FIX_DATA, node_config.user_data
+                )
+
+                # Build final user_data as a Pulumi Output that includes
+                # DNS + NTP configuration pointing to the bastion.
+                node_config.user_data = bastion_private_ip.apply(
+                    lambda ip, _base=base_user_data: _merge_cloud_config(
+                        _node_ntp_dns_cloud_config(ip), _base
+                    )
                 )
 
                 # All nodes use internal security group
