@@ -420,6 +420,7 @@ class ScalewayCompute(ComputeInterface):
             - Traffic to private subnet (for NAT to worker nodes)
             - DNS (53/udp) to the internet (for name resolution)
             - HTTPS (443/tcp) to the internet (for package updates)
+            - NTP (123/udp) to the internet (for time synchronization)
             - All other outbound dropped
 
         Outbound (when restrict_outbound=False):
@@ -520,9 +521,18 @@ class ScalewayCompute(ComputeInterface):
                     port=80,
                 )
             )
+            # Allow NTP to the internet
+            outbound_rules.append(
+                scaleway.instance.SecurityGroupOutboundRuleArgs(
+                    action="accept",
+                    protocol="UDP",
+                    ip_range="0.0.0.0/0",
+                    port=123,
+                )
+            )
             pulumi.log.info(
                 f"Bastion outbound allowed: private subnet "
-                f"({private_subnet}), SSH (22/tcp), HTTPS (443/tcp), HTTP (80/tcp)"
+                f"({private_subnet}), SSH (22/tcp), HTTPS (443/tcp), HTTP (80/tcp), NTP (123/udp)"
             )
         else:
             pulumi.log.info("Bastion outbound open to all destinations")
