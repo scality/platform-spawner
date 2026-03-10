@@ -93,6 +93,7 @@ class NodeConfig:
     tags: List[str] = field(default_factory=list)
     storage_size_gb: Optional[int] = None
     root_volume_size_gb: Optional[int] = None
+    hostname: Optional[str] = None
 
 
 @dataclass
@@ -208,6 +209,7 @@ class ClusterConfig:
     ssh_key_name: str = ""
     ssh_private_key_create: bool = False
     ssh_public_keys: List[str] = field(default_factory=list)
+    ssh_private_key_path: str = ""
 
     # Lifecycle
     disable_auto_stop: bool = False

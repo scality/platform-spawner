@@ -328,6 +328,7 @@ def main():
         ssh_key_name=ssh_key_name,
         ssh_private_key_create=ssh_private_key_create,
         ssh_public_keys=ssh_keys_to_register,
+        ssh_private_key_path=ssh_key_info["private_key_path"] if ssh_key_info else "",
         
         # Lifecycle
         disable_auto_stop=disable_auto_stop,

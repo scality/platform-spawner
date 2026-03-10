@@ -8,10 +8,12 @@ A bastion VM provides SSH access and NAT functionality for accessing
 and providing internet connectivity to private worker nodes.
 """
 
+import os
 from typing import Any, Dict, List
 
 import yaml
 import pulumi
+import pulumi_command as command  # pylint: disable=import-error
 import pulumiverse_scaleway as scaleway
 
 from core.interfaces import ClusterInterface
@@ -275,10 +277,14 @@ cat > /etc/dnsmasq.conf <<CONF
 bind-dynamic
 no-resolv
 no-hosts
+addn-hosts=/etc/dnsmasq-nodes.conf
 cache-size=1000
 domain-needed
 bogus-priv
 CONF
+
+# Create empty nodes hosts file (populated by Pulumi after nodes are provisioned)
+touch /etc/dnsmasq-nodes.conf
 
 for dns in $UPSTREAM; do echo "server=$dns" >> /etc/dnsmasq.conf; done
 
@@ -613,13 +619,24 @@ class ScalewayCluster(ClusterInterface):
 
         # Deploy instance nodes (private only, accessed via bastion)
         bastion_private_ip = bastion["node_output"].private_ip
+        node_resources = []  # collected for pulumi_command depends_on
+        node_ip_hostname_pairs = []  # (private_ip Output, hostname str) pairs
         if "node" in nodes_by_role:
             for node_config in nodes_by_role["node"]:
-                # Inject VPC route fix into worker cloud-init to prevent
-                # cross-network DHCP route conflicts on multi-homed nodes.
-                base_user_data = _merge_cloud_config(
-                    _SCALEWAY_VPC_FIX_DATA, node_config.user_data
-                )
+                # Inject VPC route fix into worker cloud-init. Also set the
+                # hostname when one is defined on the node config.
+                node_base: Dict[str, Any] = {**_SCALEWAY_VPC_FIX_DATA}
+                if node_config.hostname:
+                    # Set hostname via cloud-init native directives.
+                    # prefer_fqdn_over_hostname: false ensures the short name wins.
+                    # manage_etc_hosts: localhost rewrites only the 127.x localhost
+                    # lines (mapping the new hostname to 127.0.1.1) without touching
+                    # any other entries — cross-node resolution is handled by the
+                    # bastion's dnsmasq (populated after all nodes are provisioned).
+                    node_base["hostname"] = node_config.hostname
+                    node_base["prefer_fqdn_over_hostname"] = False
+                    node_base["manage_etc_hosts"] = "localhost"
+                base_user_data = _merge_cloud_config(node_base, node_config.user_data)
 
                 # Build final user_data as a Pulumi Output that includes
                 # DNS + NTP configuration pointing to the bastion.
@@ -694,7 +711,62 @@ class ScalewayCluster(ClusterInterface):
                     "extra_nics": extra_nics_info,
                 }
 
+                node_resources.append(node["instance"])
+                if node_config.hostname:
+                    node_ip_hostname_pairs.append(
+                        pulumi.Output.all(
+                            node["node_output"].private_ip,
+                            node_config.hostname,
+                        )
+                    )
+
+        self._push_dnsmasq_nodes(bastion, node_resources, node_ip_hostname_pairs)
+
         return outputs
+
+    def _push_dnsmasq_nodes(
+        self,
+        bastion: Dict[str, Any],
+        node_resources: List[Any],
+        node_ip_hostname_pairs: List[Any],
+    ) -> None:
+        """Push node hostname→IP entries to the bastion's dnsmasq addn-hosts file.
+
+        Runs after ALL nodes are provisioned so their IPs are resolved.
+        No-op if ssh_private_key_path is unset or the key file is missing.
+        """
+        if not (self.config.ssh_private_key_path and node_ip_hostname_pairs):
+            return
+        key_path = self.config.ssh_private_key_path
+        if not os.path.exists(key_path):
+            pulumi.log.warn(
+                f"SSH private key not found at {key_path}; "
+                "skipping dnsmasq node registration on bastion"
+            )
+            return
+
+        with open(key_path, "r", encoding="utf-8") as f:
+            private_key = f.read()
+
+        nodes_hosts_content = pulumi.Output.all(*node_ip_hostname_pairs).apply(
+            lambda pairs: "".join(
+                f"{ip} {hostname}\n" for ip, hostname in pairs if ip and hostname
+            )
+        )
+
+        bastion_user = DEFAULT_BASTION_USERS.get(self.config.bastion_os_name, "rocky")
+        command.remote.Command(
+            "bastion-dnsmasq-nodes",
+            connection=command.remote.ConnectionArgs(
+                host=bastion["node_output"].public_ip,
+                user=bastion_user,
+                private_key=private_key,
+            ),
+            create="sudo tee /etc/dnsmasq-nodes.conf && sudo systemctl restart dnsmasq",
+            stdin=nodes_hosts_content,
+            triggers=[nodes_hosts_content],
+            opts=pulumi.ResourceOptions(depends_on=node_resources),
+        )
 
     def _organize_nodes_by_role(self) -> Dict[str, List[NodeConfig]]:
         """
