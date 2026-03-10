@@ -19,7 +19,6 @@ import pulumiverse_scaleway as scaleway
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from config.flavors import get_instance_type
-from config.defaults import DEFAULT_BASTION_USERS  ### TODO move it to main
 from .network import ScalewayNetwork
 from .compute import ScalewayCompute
 
@@ -597,7 +596,7 @@ class ScalewayCluster(ClusterInterface):
                 "ip": bastion["node_output"].public_ip,
                 "private_ip": bastion["node_output"].private_ip,
                 "port": 22,
-                "user": DEFAULT_BASTION_USERS.get(self.config.bastion_os_name, "rocky"),
+                "user": self.config.bastion_user,
                 "instance_id": bastion["node_output"].id,
                 "extra_nics": {
                     suffix: {
@@ -754,7 +753,7 @@ class ScalewayCluster(ClusterInterface):
             )
         )
 
-        bastion_user = DEFAULT_BASTION_USERS.get(self.config.bastion_os_name, "rocky")
+        bastion_user = self.config.bastion_user
         command.remote.Command(
             "bastion-dnsmasq-nodes",
             connection=command.remote.ConnectionArgs(

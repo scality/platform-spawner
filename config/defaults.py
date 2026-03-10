@@ -34,7 +34,7 @@ DEFAULT_ZONES: Dict[str, str] = {
 DEFAULT_SSH_PORT = 22
 
 # Default private network CIDR
-DEFAULT_PRIVATE_SUBNET = "192.168.10.0/24" ##### TODO call this value from everywhere instead of hardcoding it in the codebase
+DEFAULT_PRIVATE_SUBNET = "192.168.10.0/24"
 
 # Default DNS local name for private network
 DEFAULT_DNS_LOCAL_NAME = "cluster.local"

@@ -61,8 +61,6 @@ def get_cluster_config(
         "network": NetworkConfig(
             enable_private_network=True,
             enable_gateway=True,  # Gateway provides SSH bastion + NAT
-            private_subnet="192.168.10.0/24",
-            dns_local_name="cluster.local",
         ),
     }
 

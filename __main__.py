@@ -14,7 +14,7 @@ from core.models import Provider, ClusterConfig, VolumeConfig, RouteConfig, Priv
 from core.topology import get_cluster_config
 from core.factory import create_cluster
 from core.ssh import generate_ssh_key_pair, generate_ssh_config, extract_node_info_for_ssh_config
-from config.defaults import DEFAULT_BASTION_OS_NAME, DEFAULT_BASTION_OS_MAJOR_VERSION, DEFAULT_BASTION_FLAVOR, DEFAULT_INSTANCE_IMAGE
+from config.defaults import DEFAULT_BASTION_OS_NAME, DEFAULT_BASTION_OS_MAJOR_VERSION, DEFAULT_BASTION_FLAVOR, DEFAULT_INSTANCE_IMAGE, DEFAULT_BASTION_USERS
 
 
 def main():
@@ -84,6 +84,7 @@ def main():
     bastion_os_major_version = config.get("bastion_os_major_version") or DEFAULT_BASTION_OS_MAJOR_VERSION
     bastion_flavor = config.get("bastion_flavor") or DEFAULT_BASTION_FLAVOR
     bastion_root_disk_size = config.get_int("bastion_root_disk_size") or 30
+    bastion_user = DEFAULT_BASTION_USERS.get(bastion_os_name, "rocky")
 
     # SSH information
     ssh_key_name = config.get("ssh_key_name") or ""
@@ -323,6 +324,7 @@ def main():
         bastion_os_major_version=bastion_os_major_version,
         bastion_flavor=bastion_flavor,
         bastion_root_disk_size=bastion_root_disk_size,
+        bastion_user=bastion_user,
         
         # SSH information
         ssh_key_name=ssh_key_name,

@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Any
 from enum import Enum
 
+from config.defaults import DEFAULT_PRIVATE_SUBNET, DEFAULT_DNS_LOCAL_NAME
+
 
 @dataclass
 class VolumeConfig:
@@ -112,8 +114,8 @@ class NetworkConfig:
 
     enable_private_network: bool = False
     enable_gateway: bool = False
-    private_subnet: str = "192.168.10.0/24"
-    dns_local_name: str = "cluster.local"
+    private_subnet: str = DEFAULT_PRIVATE_SUBNET
+    dns_local_name: str = DEFAULT_DNS_LOCAL_NAME
     allowed_ips: List[str] = field(default_factory=list)
     custom_routes: List[RouteConfig] = field(default_factory=list)
 
@@ -204,6 +206,7 @@ class ClusterConfig:
     bastion_os_major_version: str = "9"
     bastion_flavor: str = "small"
     bastion_root_disk_size: int = 20
+    bastion_user: str = "rocky"
 
     # SSH information
     ssh_key_name: str = ""

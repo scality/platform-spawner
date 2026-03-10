@@ -402,8 +402,8 @@ class ScalewayCompute(ComputeInterface):
 
     def create_bastion_security_group(
         self,
+        private_subnet: str,
         allowed_cidrs: Optional[List[str]] = None,
-        private_subnet: str = "192.168.10.0/24",
         restrict_outbound: bool = True,
         extra_subnets: Optional[List[str]] = None,
     ) -> scaleway.instance.SecurityGroup:
@@ -563,7 +563,7 @@ class ScalewayCompute(ComputeInterface):
 
     def create_internal_security_group(
         self,
-        private_subnet: str = "192.168.10.0/24",
+        private_subnet: str,
         extra_subnets: Optional[List[str]] = None,
     ) -> scaleway.instance.SecurityGroup:
         """
@@ -607,7 +607,7 @@ class ScalewayCompute(ComputeInterface):
         )
 
     def create_first_node_security_group(
-        self, private_subnet: str = "192.168.10.0/24"
+        self, private_subnet: str
     ) -> scaleway.instance.SecurityGroup:
         """
         Create a security group for the first node with restricted outbound traffic.
