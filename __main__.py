@@ -431,8 +431,9 @@ def main():
             "generated": True,
         })
     
-    # Additional helpful exports
+    # Additional helpful exports — all config keys for stack recovery
     pulumi.export("config", {
+        "project_id": project_id,
         "product": product,
         "instance_count": instance_count,
         "provider": provider.value,
@@ -447,8 +448,20 @@ def main():
         "bastion_os_major_version": bastion_os_major_version,
         "bastion_flavor": bastion_flavor,
         "bastion_instance_type": bastion_instance_type,
+        "bastion_root_disk_size": bastion_root_disk_size,
         "offline": offline,
         "disable_auto_stop": disable_auto_stop,
+        "authorized_cidrs": authorized_cidrs,
+        "authorized_tcp_ports": authorized_tcp_ports,
+        "authorized_udp_ports": authorized_udp_ports,
+        "authorized_icmp": authorized_icmp,
+        "custom_routes": [{"destination": r.destination, "description": r.description} for r in custom_routes],
+        "extra_volumes": [{"suffix": v.suffix, "size": v.size, "count": v.count} for v in extra_volumes],
+        "extra_private_networks": [{"suffix": n.suffix, "subnet": n.subnet, "count": n.count} for n in extra_private_networks],
+        "ssh_key_name": ssh_key_name,
+        "ssh_public_keys": ssh_public_keys,
+        "ssh_private_key_create": ssh_private_key_create,
+        "placement_group_policy_mode": placement_group_policy_mode,
     })
 
 
