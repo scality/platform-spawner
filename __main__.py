@@ -48,6 +48,30 @@ def main():
     if authorized_icmp is None:
         authorized_icmp = True
     authorized_cidrs = config.get_object("authorized_cidrs") or []
+
+    # Sanitize CIDRs: flatten nested lists and strip stray brackets
+    # (handles YAML flow sequences embedded as string elements or nested arrays)
+    if isinstance(authorized_cidrs, list):
+        flat_cidrs = []
+        for item in authorized_cidrs:
+            if isinstance(item, list):
+                flat_cidrs.extend(str(x) for x in item)
+            elif isinstance(item, str):
+                item = item.strip()
+                # Handle a stringified array like "[cidr1, cidr2, ...]"
+                if item.startswith("[") and item.endswith("]"):
+                    flat_cidrs.extend(
+                        c.strip() for c in item[1:-1].split(",") if c.strip()
+                    )
+                elif item.startswith("[") or item.endswith("]"):
+                    flat_cidrs.append(item.strip("[]").strip())
+                else:
+                    flat_cidrs.append(item)
+        authorized_cidrs = [c for c in flat_cidrs if c]
+    elif isinstance(authorized_cidrs, str):
+        authorized_cidrs = [
+            c.strip() for c in authorized_cidrs.strip("[]").split(",") if c.strip()
+        ]
     
     # Custom routes configuration
     # Format: JSON array like '[{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]'

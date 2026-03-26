@@ -310,9 +310,10 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_name "${{ inputs.bastion_os_name }}"
         pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_major_version "${{ inputs.bastion_os_major_version }}"
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
-          # Use Python to properly parse and write the JSON array to the config file
+          # Use Python to properly parse and write the JSON/YAML array to the config file
           # Pass via environment variable to avoid bash quote mangling
-          CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,json,sys,os; config = yaml.safe_load(open('$PULUMI_STACK_FILE')); cidrs_input = os.environ['CIDRS_INPUT']; config.setdefault('config', {})['platform-spawner:authorized_cidrs'] = json.loads(cidrs_input) if cidrs_input.strip().startswith('[') else [x.strip() for x in cidrs_input.split(',')]; yaml.safe_dump(config, open('$PULUMI_STACK_FILE', 'w'))"
+          # yaml.safe_load handles both JSON arrays and YAML flow sequences (unquoted CIDRs)
+          CIDRS_INPUT='${{ inputs.authorized_cidrs }}' python -c "import yaml,os;sf=os.environ['PULUMI_STACK_FILE'];config=yaml.safe_load(open(sf));p=yaml.safe_load(os.environ['CIDRS_INPUT']);cidrs=[y for x in p for y in (([str(z) for z in x] if isinstance(x,list) else [str(x)]))] if isinstance(p,list) else [x.strip() for x in str(p).split(',') if x.strip()];config.setdefault('config',{})['platform-spawner:authorized_cidrs']=cidrs;yaml.safe_dump(config,open(sf,'w'))"
         fi
         if [[ "${{ inputs.custom_routes }}" != "" ]]; then
           # Custom routes must be a JSON array
