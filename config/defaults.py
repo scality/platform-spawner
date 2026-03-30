@@ -26,7 +26,7 @@ DEFAULT_REGIONS: Dict[str, str] = {
 
 # Default zones per provider
 DEFAULT_ZONES: Dict[str, str] = {
-    "scaleway": "fr-par-1",
+    "scaleway": "fr-par-2",
     "aws": "us-east-1a",
 }
 

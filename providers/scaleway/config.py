@@ -14,6 +14,10 @@ SCALEWAY_INSTANCE_TYPES = [
     "PLAY2-MICRO",
     "PLAY2-PICO",
     
+    #Default instances
+    "BASIC3-X8C-32G",
+    "BASIC3-X16C-64G",
+    
     # Production instances
     "PRO2-XXS",
     "PRO2-XS",

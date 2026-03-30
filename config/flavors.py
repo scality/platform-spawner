@@ -5,7 +5,7 @@ This module provides mappings from abstract flavor names (small, medium, large)
 to provider-specific instance types, enabling consistent sizing across clouds.
 """
 
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 from core.models import Provider
 
 
@@ -17,8 +17,8 @@ FLAVOR_MAP: Dict[str, Dict[str, str]] = {
         "tiny": "PLAY2-PICO",
         
         # Medium instances - suitable for general workloads
-        "medium": "PRO2-S",
-        "medium-plus": "PRO2-M",
+        "medium": "BASIC3-X8C-32G",
+        "medium-plus": "BASIC3-X16C-64G",
         
         # Large instances - suitable for production workloads
         "large": "PRO2-L",
@@ -50,6 +50,52 @@ FLAVOR_MAP: Dict[str, Dict[str, str]] = {
         "gp-xlarge": "m5.4xlarge",
     },
 }
+
+
+# ---------------------------------------------------------------------------
+# Scaleway multizone fallback chains
+# ---------------------------------------------------------------------------
+# For flavors whose preferred instance type may not be available in every
+# zone, define an ordered list of (instance_type, zone) pairs.  The
+# availability resolver walks the list and picks the first entry that the
+# Scaleway API reports as "available" or "scarce".
+#
+# DEFAULT_ZONE / SPARE_ZONE are kept here rather than imported from
+# config.defaults to avoid circular imports and because they are
+# Scaleway-flavor-specific constants.
+# ---------------------------------------------------------------------------
+
+SCALEWAY_DEFAULT_ZONE = "fr-par-2"
+SCALEWAY_SPARE_ZONE = "fr-par-1"
+
+SCALEWAY_FLAVOR_FALLBACKS: Dict[str, List[Tuple[str, str]]] = {
+    "medium": [
+        ("BASIC3-X8C-32G", SCALEWAY_DEFAULT_ZONE),
+        ("PRO2-S", SCALEWAY_DEFAULT_ZONE),
+        ("PRO2-S", SCALEWAY_SPARE_ZONE),
+    ],
+    "medium-plus": [
+        ("BASIC3-X16C-64G", SCALEWAY_DEFAULT_ZONE),
+        ("PRO2-M", SCALEWAY_DEFAULT_ZONE),
+        ("PRO2-M", SCALEWAY_SPARE_ZONE),
+    ],
+}
+
+
+def get_scaleway_fallback_chain(
+    flavor: str,
+) -> Optional[List[Tuple[str, str]]]:
+    """
+    Return the multizone fallback chain for a Scaleway abstract flavor.
+
+    Args:
+        flavor: Abstract flavor name (e.g., "medium", "medium-plus")
+
+    Returns:
+        Ordered list of ``(instance_type, zone)`` pairs, or ``None``
+        if the flavor has no fallback chain (use the simple mapping).
+    """
+    return SCALEWAY_FLAVOR_FALLBACKS.get(flavor)
 
 
 def get_instance_type(provider: Provider, flavor: str) -> str:

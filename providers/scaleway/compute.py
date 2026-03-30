@@ -206,6 +206,7 @@ class ScalewayCompute(ComputeInterface):
             instance_type.startswith("PLAY2-")
             or instance_type.startswith("STARDUST")
             or instance_type.startswith("PRO2-")
+            or instance_type.startswith("BASIC3-")
         )
 
         # For block-storage-only instances using marketplace images,

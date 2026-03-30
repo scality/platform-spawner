@@ -101,7 +101,7 @@ def main():
     # Provider / region (needed early for OS alias resolution)
     provider_str = config.get("provider") or "scaleway"
     region = config.get("region") or "fr-par"
-    zone = config.get("zone") or "fr-par-1"
+    zone = config.get("zone") or "fr-par-2"
 
     # Bastion host configuration
     bastion_os_name = config.get("bastion_os_name") or DEFAULT_BASTION_OS_NAME
@@ -132,9 +132,35 @@ def main():
         )
     
     # Map abstract flavors to provider-specific instance types
-    from config.flavors import get_instance_type
+    from config.flavors import get_instance_type, get_scaleway_fallback_chain
     instance_type = get_instance_type(provider, instance_flavor)
     bastion_instance_type = get_instance_type(provider, bastion_flavor)
+    
+    # Scaleway multizone fallback: if the preferred instance type is not
+    # available in the default zone, walk the fallback chain to find an
+    # alternative (instance_type, zone) pair.  The resolved zone applies
+    # to the entire deployment (bastion, workers, networking).
+    if provider == Provider.SCALEWAY:
+        fallback_chain = get_scaleway_fallback_chain(instance_flavor)
+        if fallback_chain:
+            from providers.scaleway.availability import resolve_flavors
+            result = resolve_flavors(fallback_chain)
+            if result:
+                resolved_type, resolved_zone = result
+                if resolved_type != instance_type or resolved_zone != zone:
+                    pulumi.log.info(
+                        f"Availability fallback: {instance_type}@{zone} → "
+                        f"{resolved_type}@{resolved_zone}"
+                    )
+                instance_type = resolved_type
+                zone = resolved_zone
+                # Keep region consistent with the resolved zone
+                region = "-".join(zone.split("-")[:2])
+            else:
+                pulumi.log.warn(
+                    f"Could not resolve availability for flavor '{instance_flavor}', "
+                    f"using default {instance_type}@{zone}"
+                )
     
     pulumi.log.info(f"Instance flavor '{instance_flavor}' mapped to {instance_type}")
     pulumi.log.info(f"Bastion flavor '{bastion_flavor}' mapped to {bastion_instance_type}")
