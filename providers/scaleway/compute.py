@@ -77,6 +77,56 @@ class ScalewayCompute(ComputeInterface):
             return self.config.instance_snapshot
         return self.config.instance_image
 
+    @staticmethod
+    def _is_uuid(value: str) -> bool:
+        """Return True if *value* looks like a UUID."""
+        import re
+        return bool(
+            re.match(
+                r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                value,
+                re.IGNORECASE,
+            )
+        )
+
+    def _resolve_custom_image(self, image: str) -> str:
+        """
+        Resolve an image name to its UUID when it is a custom (non-marketplace) image.
+
+        Marketplace labels use underscores (e.g. ``rockylinux_9``).  The
+        Scaleway Pulumi provider normalises hyphens to underscores before
+        looking up the marketplace, which breaks custom image names like
+        ``artesca-os-20928``.
+
+        This method detects such names (containing hyphens) and resolves
+        them via the ``get_instance_image`` data-source so the Server
+        resource receives a UUID it can use directly.
+
+        If the lookup fails the original value is returned unchanged,
+        allowing the provider to attempt its own resolution.
+        """
+        if "-" not in image:
+            # No hyphens → standard marketplace label, let the provider handle it
+            return image
+
+        try:
+            img = scaleway.get_instance_image(
+                name=image,
+                zone=self.config.zone,
+                project_id=self.config.project_id,
+                latest=True,
+            )
+            pulumi.log.info(
+                f"Resolved custom image '{image}' → {img.image_id}"
+            )
+            return img.image_id
+        except Exception as exc:
+            pulumi.log.warn(
+                f"Could not resolve custom image '{image}' by name: {exc}. "
+                f"Falling back to raw value."
+            )
+            return image
+
     def create_placement_group(
         self, name: str, policy_mode: str = "optional"
     ) -> scaleway.instance.PlacementGroup:
@@ -219,6 +269,14 @@ class ScalewayCompute(ComputeInterface):
             bool(self.config.instance_snapshot)
             and image == self.config.instance_snapshot
         )
+
+        # Resolve custom image names to UUIDs.
+        # The Scaleway Pulumi provider treats non-UUID image strings as marketplace
+        # labels and normalises them (hyphens → underscores).  Custom images such as
+        # "artesca-os-20928" must be resolved to their UUID before being passed to
+        # the Server resource.
+        if not is_snapshot and server_image and not self._is_uuid(server_image):
+            server_image = self._resolve_custom_image(server_image)
 
         # Configure root volume based on instance type and image source
         root_volume = None
