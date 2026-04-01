@@ -2,6 +2,43 @@
 
 When a CI pipeline fails mid-deploy or you need to troubleshoot a running stack, you can import its state from S3 and operate on it locally.
 
+> **IMPORTANT:** All `pulumi` commands must be run from the **project root**
+> (the directory containing `Pulumi.yaml`). The local backend uses `file://./`
+> which stores state relative to your working directory. Running commands from
+> a subdirectory creates a separate, disconnected `.pulumi/` directory there.
+
+## TL;DR — Quick Import
+
+```bash
+cd /path/to/platform-spawner       # MUST be the project root
+export PULUMI_CONFIG_PASSPHRASE=''
+
+STACK=hardware-appliance-single-node-3587   # change this
+DEST=bucket/artesca/$STACK
+mkdir -p "$DEST"
+
+# 1. Download
+S3_KEY="artesca-stacks/artesca/$STACK"
+aws s3 cp "s3://$S3_KEY/stack_export.json"  "$DEST/stack_export.json"
+aws s3 cp "s3://$S3_KEY/stack_output.json"  "$DEST/stack_output.json"
+aws s3 cp "s3://$S3_KEY/stack_config.yaml"  "$DEST/stack_config.yaml" 2>/dev/null || true
+
+# 2. Import
+pulumi stack init $STACK
+pulumi stack import --file $DEST/stack_export.json
+
+# 3. Restore config
+python3 scripts/restore_config.py $DEST
+
+# 4. Set credentials & verify
+export SCW_ACCESS_KEY='...'
+export SCW_SECRET_KEY='...'
+export SCW_DEFAULT_PROJECT_ID='...'
+pulumi config
+pulumi refresh
+pulumi preview
+```
+
 ## Prerequisites
 
 - Pulumi CLI installed
@@ -85,118 +122,71 @@ Example output:
 2026-02-27 10:25:06       5672 single-node-20438.json
 ```
 
-## Step 3: Download the Full Pulumi State
+## Step 3: Download Stack Files from S3
 
-Download all state files to your local Pulumi backend:
-
-```bash
-aws s3 cp --recursive \
-    s3://artesca-stacks/artesca/ ~/bucket/
-```
-
-Or download only a specific stack:
+Download the three files for the stack you want to import:
 
 ```bash
 STACK=<STACK_NAME>
-S3_KEY="artesca-stacks/artesca/$STACK"
+DEST=bucket/artesca/$STACK       # local dir to store downloaded files
+mkdir -p "$DEST"
 
-aws s3 cp "s3://$S3_KEY/stack_export.json" stack_export.json
-aws s3 cp "s3://$S3_KEY/stack_output.json" stack_output.json
-aws s3 cp "s3://$S3_KEY/stack_config.yaml" stack_config.yaml
+S3_KEY="artesca-stacks/artesca/$STACK"
+aws s3 cp "s3://$S3_KEY/stack_export.json"  "$DEST/stack_export.json"
+aws s3 cp "s3://$S3_KEY/stack_output.json"  "$DEST/stack_output.json"
+aws s3 cp "s3://$S3_KEY/stack_config.yaml"  "$DEST/stack_config.yaml" 2>/dev/null || true
 ```
 
 The three files:
 - **stack_export.json** — full Pulumi resource state (used by `pulumi stack import`)
 - **stack_output.json** — stack outputs (network info, SSH config, etc.)
-- **stack_config.yaml** — the `Pulumi.<stack>.yaml` config file from CI
-
-Generate a stack with the same name:
-
-```bash
-pulumi stack init <STACK_NAME>
-```
-
-Verify the stacks are visible:
-
-```bash
-pulumi stack ls
-```
+- **stack_config.yaml** — the `Pulumi.<stack>.yaml` config file from CI (may not exist for older stacks)
 
 ## Step 4: Import State and Restore Config
 
-> **Important: `pulumi stack import` only imports resource state — it does NOT
-> restore stack configuration.** The config that was used to create the stack
-> (project_id, instance_count, flavors, etc.) lives in `Pulumi.<STACK>.yaml`,
-> which is a completely separate file. After import you must restore it.
+> **All commands below must run from the project root (where `Pulumi.yaml` is).**
+
+```bash
+cd /path/to/platform-spawner      # project root
+export PULUMI_CONFIG_PASSPHRASE=''   # CI uses an empty passphrase
+```
 
 ### 4a. Create the stack and import state
 
 ```bash
-export PULUMI_CONFIG_PASSPHRASE=''   # CI uses an empty passphrase
-
-pulumi stack init <STACK_NAME>
-pulumi stack import --file stack_export.json
+pulumi stack init $STACK
+pulumi stack import --file $DEST/stack_export.json
 ```
 
 Validate the import:
 
 ```bash
-# Should match
-jq '.deployment.resources | length' stack_export.json
+# Resource counts should match
+jq '.deployment.resources | length' $DEST/stack_export.json
 pulumi stack export --show-secrets | jq '.deployment.resources | length'
 ```
 
 ### 4b. Restore config
 
-The helper script `restore_config.py` restores config trying three sources in order:
-
-1. **From `stack_config.yaml`** (best) — if you downloaded it from S3,
-   the script copies it to `Pulumi.<STACK>.yaml`. This is the exact config
-   file CI used and contains ALL settings.
-
-2. **From `stack_output.json`** (good) — always uploaded by CI. The script
-   reads the `config` dict from stack outputs plus `network.extra_networks`
-   for extra private networks, and runs `pulumi config set` for each key.
-
-3. **From imported state** (last resort) — extracts config from the stack
-   resource outputs inside the imported state. Same data as `stack_output.json`
-   but requires a successful import first.
+The helper script `scripts/restore_config.py` restores the stack config
+(`Pulumi.<STACK>.yaml`). Pass the download directory as an argument:
 
 ```bash
-# Run from the directory containing the downloaded files
-PULUMI_CONFIG_PASSPHRASE='' python3 restore_config.py
+python3 scripts/restore_config.py $DEST
 ```
 
-> **Note:** For stacks created before the `stack_config.yaml` export was added,
-> only sources 2 and 3 are available. After the full config export is deployed,
-> all keys are included (authorized_cidrs, extra_private_networks, extra_volumes,
-> ssh_public_keys, etc.).
+The script tries three sources in order:
 
-### 4c. Fix `__my_ip__` placeholder
+1. **`stack_config.yaml`** (best) — copies it directly to `Pulumi.<STACK>.yaml`
+   in the project root. This is the exact config file CI used.
 
-The default `authorized_cidrs` in `Pulumi.yaml` contains `__my_ip__` which is
-only replaced in CI. Remove it and set concrete CIDRs:
+2. **`stack_output.json`** (good) — reads the `config` dict from stack outputs,
+   supplements missing keys from `network.extra_networks` and node volume data.
 
-```bash
-pulumi config rm authorized_cidrs 2>/dev/null || true
-MY_IP=$(curl -s https://ifconfig.me)/32
-pulumi config set --path 'authorized_cidrs[0]' "$MY_IP"
-```
+3. **Imported state** (last resort) — extracts config from the stack resource
+   outputs in the imported state.
 
-Or to keep the office CIDRs:
-
-```bash
-pulumi config rm authorized_cidrs 2>/dev/null || true
-pulumi config set --path 'authorized_cidrs[0]' "$(curl -s https://ifconfig.me)/32"
-pulumi config set --path 'authorized_cidrs[1]' 84.14.13.200/29
-pulumi config set --path 'authorized_cidrs[2]' 193.248.60.56/32
-pulumi config set --path 'authorized_cidrs[3]' 38.142.74.18/32
-```
-
-### 4d. Set Scaleway credentials
-
-The program invokes Scaleway APIs during preview (e.g. snapshot lookups),
-so credentials must be in environment:
+### 4c. Set Scaleway credentials
 
 ```bash
 export SCW_ACCESS_KEY='<ACCESS_KEY>'
@@ -204,14 +194,15 @@ export SCW_SECRET_KEY='<SECRET_KEY>'
 export SCW_DEFAULT_PROJECT_ID='<PROJECT_ID>'
 ```
 
-### 4e. Verify config
+### 4d. Verify config
 
 ```bash
 pulumi config
 ```
 
-You should see all required keys populated. At minimum: `project_id`,
-`instance_count`, `product`, and `instance_flavor`.
+You should see all required keys populated — including `project_id`,
+`instance_count`, `product`, `instance_flavor`, `extra_private_networks`,
+and `extra_volumes`.
 
 ## Step 5: Refresh State Against Cloud
 
