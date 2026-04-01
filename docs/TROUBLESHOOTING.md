@@ -6,12 +6,12 @@ When a CI pipeline fails mid-deploy or you need to troubleshoot a running stack,
 
 - Pulumi CLI installed
 - AWS CLI configured with Scaleway Object Storage credentials
-- Access to the `artesca-stacks` S3 bucket
+- Access to the Pulumi state S3 bucket
 - Scaleway API credentials (access key + secret key)
 
 ## Step 1: Configure AWS CLI for Scaleway S3
 
-The Pulumi state is stored in a Scaleway Object Storage bucket. Your `~/.aws/config` may point to a bucket-specific endpoint, but you need the **general** Scaleway S3 endpoint to access `artesca-stacks`.
+The Pulumi state is stored in a Scaleway Object Storage bucket. Your `~/.aws/config` may point to a bucket-specific endpoint, but you need the **general** Scaleway S3 endpoint to access the state bucket.
 
 Ensure your `~/.aws/config` contains all required configuration:
 
@@ -42,47 +42,20 @@ s3api =
 Test access:
 
 ```bash
-aws s3 ls s3://artesca-stacks/
+aws s3 ls s3://<BUCKET>/
 ```
 
 You should see:
 
 ```
 PRE .pulumi/
-PRE artesca/
+PRE <project>/
 ```
 
 ## Step 2: List Available Stacks
 
 ```bash
-aws s3 ls artesca-stacks/artesca/
-```
-
-Example output:
-
-```
-                           PRE 3-nodes-install-3518/
-                           PRE 3-nodes-install-3524/
-                           PRE 6-nodes-install-3518/
-                           PRE 6-nodes-install-3524/
-                           PRE artesca-plus-install-ctera-none-3524/
-                           PRE artesca-plus-install-veeam-vsa-3518/
-                           PRE artesca-plus-install-veeam-vsa-3524/
-                           PRE artesca-plus-install-veeam-windows-3518/
-                           PRE artesca-plus-install-veeam-windows-3524/
-                           PRE dev-upgrade-3518/
-                           PRE dev-upgrade-3524/
-                           PRE hardware-appliance-single-node-3518/
-                           PRE hardware-appliance-single-node-3524/
-                           PRE hardware-appliance-three-nodes-3518/
-                           PRE hardware-appliance-three-nodes-3524/
-                           PRE single-node-20540/
-                           PRE single-node-20639/
-2026-03-02 14:30:26       6476 artesca-plus-install-veeam-vsa-3512.json
-2026-02-18 15:28:32       5582 dev-upgrade-3478.json
-2026-02-18 15:34:46       5584 dev-upgrade-3479.json
-2026-02-18 15:53:26       5586 dev-upgrade-3480.json
-2026-02-27 10:25:06       5672 single-node-20438.json
+aws s3 ls <BUCKET>/<project>/
 ```
 
 ## Step 3: Download the Full Pulumi State
@@ -91,14 +64,14 @@ Download all state files to your local Pulumi backend:
 
 ```bash
 aws s3 cp --recursive \
-    s3://artesca-stacks/artesca/ ~/bucket/
+    s3://<BUCKET>/<project>/ ~/bucket/
 ```
 
 Or download only a specific stack:
 
 ```bash
 STACK=<STACK_NAME>
-S3_KEY="artesca-stacks/artesca/$STACK"
+S3_KEY="<BUCKET>/<project>/$STACK"
 
 aws s3 cp "s3://$S3_KEY/stack_export.json" stack_export.json
 aws s3 cp "s3://$S3_KEY/stack_output.json" stack_output.json
@@ -183,14 +156,12 @@ MY_IP=$(curl -s https://ifconfig.me)/32
 pulumi config set --path 'authorized_cidrs[0]' "$MY_IP"
 ```
 
-Or to keep the office CIDRs:
+Or to add multiple CIDRs:
 
 ```bash
 pulumi config rm authorized_cidrs 2>/dev/null || true
 pulumi config set --path 'authorized_cidrs[0]' "$(curl -s https://ifconfig.me)/32"
-pulumi config set --path 'authorized_cidrs[1]' 84.14.13.200/29
-pulumi config set --path 'authorized_cidrs[2]' 193.248.60.56/32
-pulumi config set --path 'authorized_cidrs[3]' 38.142.74.18/32
+pulumi config set --path 'authorized_cidrs[1]' "<additional_cidr>"
 ```
 
 ### 4d. Set Scaleway credentials
@@ -306,8 +277,8 @@ pulumi stack import --file my-stack-converted.json
 
 | Task | Command |
 |------|---------|
-| List S3 stacks | `aws s3 ls s3://artesca-stacks/.pulumi/stacks/platform-spawner/ --endpoint-url https://s3.fr-par.scw.cloud` |
-| Download all state | `aws s3 cp --recursive s3://artesca-stacks/.pulumi/ ~/.pulumi/ --endpoint-url https://s3.fr-par.scw.cloud` |
+| List S3 stacks | `aws s3 ls s3://<BUCKET>/.pulumi/stacks/platform-spawner/ --endpoint-url https://s3.fr-par.scw.cloud` |
+| Download all state | `aws s3 cp --recursive s3://<BUCKET>/.pulumi/ ~/.pulumi/ --endpoint-url https://s3.fr-par.scw.cloud` |
 | List local stacks | `pulumi stack ls` |
 | Sync with cloud | `pulumi refresh --yes` |
 | Remove stale resource | `pulumi state delete --yes '<URN>'` |

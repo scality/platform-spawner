@@ -54,8 +54,8 @@ class RouteConfig:
     Configuration for a custom VPC route.
 
     Attributes:
-        destination: CIDR block for the route destination (e.g., "35.241.243.135/32")
-        description: Human-readable description (e.g., "artifacts.scality.net")
+        destination: CIDR block for the route destination (e.g., "203.0.113.10/32")
+        description: Human-readable description (e.g., "my-package-server")
     """
 
     destination: str
@@ -155,6 +155,7 @@ class ClusterConfig:
         bastion_root_disk_size: Root disk size for the bastion host (in GiB)
 
         # SSH information
+        node_user: OS username created on nodes via cloud-init for SSH access
         ssh_key_name: Name of an existing SSH key in the cloud provider to use (option 2)
         ssh_private_key_create: If true, generate a new SSH keypair and register in IAM (option 3)
         ssh_public_keys: List of SSH public keys to register in the cloud provider (option 3 & 4)
@@ -209,6 +210,7 @@ class ClusterConfig:
     bastion_user: str = "rocky"
 
     # SSH information
+    node_user: str = "spawner"
     ssh_key_name: str = ""
     ssh_private_key_create: bool = False
     ssh_public_keys: List[str] = field(default_factory=list)

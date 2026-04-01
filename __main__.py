@@ -74,7 +74,7 @@ def main():
         ]
     
     # Custom routes configuration
-    # Format: JSON array like '[{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]'
+    # Format: JSON array like '[{"destination": "1.2.3.4/32", "description": "my-server"}]'
     custom_routes_str = config.get("custom_routes")
     custom_routes = []
     
@@ -111,6 +111,7 @@ def main():
     bastion_user = DEFAULT_BASTION_USERS.get(bastion_os_name, "rocky")
 
     # SSH information
+    node_user = config.get("node_user") or "spawner"
     ssh_key_name = config.get("ssh_key_name") or ""
     ssh_public_keys = config.get_object("ssh_public_keys") or []
     ssh_private_key_create = config.get_bool("ssh_private_key_create") or False
@@ -260,7 +261,7 @@ def main():
     # 3. ssh_private_key_create: Generate a new SSH keypair (registered in IAM + cloud-init)
     # 4. ssh_public_key: Provide an SSH public key to add (registered in IAM + cloud-init)
     # 
-    # Options 3 and 4 will register the key in IAM AND inject via cloud-init for artesca-os user
+    # Options 3 and 4 will register the key in IAM AND inject via cloud-init for node_user
     # Options 1 and 2 rely on Scaleway's automatic SSH key injection (no cloud-init override)
     
     ssh_key_info = None
@@ -307,7 +308,7 @@ def main():
         cloud_config = {
             "users": [
                 {
-                    "name": "artesca-os",
+                    "name": node_user,
                     "lock_passwd": False,
                     "ssh_authorized_keys": ssh_keys_for_cloud_init
                 }
@@ -317,7 +318,7 @@ def main():
         # Ensure the output starts with #cloud-config
         ssh_user_data = "#cloud-config\n" + yaml.dump(cloud_config)
 
-        pulumi.log.info(f"SSH keys ({len(ssh_keys_for_cloud_init)}) will be injected via cloud-init for user 'artesca-os'")
+        pulumi.log.info(f"SSH keys ({len(ssh_keys_for_cloud_init)}) will be injected via cloud-init for user '{node_user}'")
     else:
         pulumi.log.info("No SSH key specified - using default Scaleway IAM SSH keys (all keys registered in project)")
 
@@ -377,6 +378,7 @@ def main():
         bastion_user=bastion_user,
         
         # SSH information
+        node_user=node_user,
         ssh_key_name=ssh_key_name,
         ssh_private_key_create=ssh_private_key_create,
         ssh_public_keys=ssh_keys_to_register,
@@ -450,6 +452,7 @@ def main():
                 bastion_ip=bastion_ip,
                 bastion_port=bastion_port,
                 bastion_user=bastion_user,
+                node_user=node_user,
                 nodes=ssh_nodes,
                 private_key_path=private_key,
                 output_path=output_path,
@@ -508,6 +511,7 @@ def main():
         "custom_routes": [{"destination": r.destination, "description": r.description} for r in custom_routes],
         "extra_volumes": [{"suffix": v.suffix, "size": v.size, "count": v.count} for v in extra_volumes],
         "extra_private_networks": [{"suffix": n.suffix, "subnet": n.subnet, "count": n.count} for n in extra_private_networks],
+        "node_user": node_user,
         "ssh_key_name": ssh_key_name,
         "ssh_public_keys": ssh_public_keys,
         "ssh_private_key_create": ssh_private_key_create,

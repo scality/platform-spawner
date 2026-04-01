@@ -105,6 +105,7 @@ def generate_ssh_config(
     bastion_ip: str,
     bastion_port: int = 22,
     bastion_user: str = "rocky",
+    node_user: str = "spawner",
     nodes: Dict[str, Dict[str, Any]] = None,
     private_key_path: Optional[str] = None,
     output_path: str = None,
@@ -116,6 +117,7 @@ def generate_ssh_config(
         bastion_ip: Bastion VM public IP address
         bastion_port: Bastion SSH port (default: 22)
         bastion_user: Bastion SSH user (default: "rocky" for Rocky Linux bastion)
+        node_user: SSH user for worker nodes (default: "spawner")
         nodes: Dictionary of nodes with their connection info
         private_key_path: Path to private key (optional)
         output_path: Path to write config file (default: temp file)
@@ -184,7 +186,7 @@ def generate_ssh_config(
                 "",
                 f"Host {node_name}",
                 f"  HostName {hostname}",
-                "  User artesca-os",
+                f"  User {node_user}",
                 "  ProxyJump bastion",
                 "  StrictHostKeyChecking no",
                 "  UserKnownHostsFile /dev/null",
@@ -229,7 +231,7 @@ def extract_node_info_for_ssh_config(
         Dictionary suitable for generate_ssh_config()
 
     Note:
-        SSH command format: ssh -J rocky@{bastion_ip} artesca-os@{private_ip}
+        SSH command format: ssh -J {bastion_user}@{bastion_ip} {node_user}@{private_ip}
     """
     ssh_nodes = {}
 
@@ -242,7 +244,7 @@ def extract_node_info_for_ssh_config(
         # Extract target host from ssh_command if available
         if "ssh_command" in node_data:
             ssh_cmd = node_data["ssh_command"]
-            # SSH command format: ssh -J rocky@{bastion_ip} artesca-os@{target}
+            # SSH command format: ssh -J {bastion_user}@{bastion_ip} {node_user}@{target}
             if "@" in ssh_cmd:
                 parts = ssh_cmd.split("@")
                 if len(parts) >= 3:

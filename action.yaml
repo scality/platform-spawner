@@ -52,6 +52,12 @@ inputs:
     required: false
     default: "[]"
 
+  # Node user configuration
+  node_user:
+    description: "OS username created on nodes via cloud-init for SSH access"
+    required: false
+    default: "spawner"
+
   # Bastion host OS configuration
   bastion_os_name:
     description: "OS family name for the bastion host (e.g., 'rocky', 'ubuntu', 'debian')"
@@ -71,17 +77,13 @@ inputs:
     required: false
     default: ""
   custom_routes:
-    description: "JSON array of custom VPC routes (e.g., [{\"destination\": \"35.241.243.135/32\", \"description\": \"artifacts.scality.net\"}])"
+    description: "JSON array of custom VPC routes (e.g., [{\"destination\": \"1.2.3.4/32\", \"description\": \"my-server\"}])"
     required: false
     default: ""
 
-  # Artifacts credentials
-  artifacts_user:
-    description: "The artifacts user (only for spawn action)"
-    required: false
-    default: ""
-  artifacts_password:
-    description: "The artifacts password (only for spawn action)"
+  # Pulumi backend
+  pulumi_backend_bucket:
+    description: "S3 bucket name for the Pulumi state backend (required when store_to_s3 is true)"
     required: false
     default: ""
 
@@ -259,7 +261,7 @@ runs:
         echo "AWS_REGION=$SCW_DEFAULT_REGION" >> "$GITHUB_ENV"
         echo "AWS_ENDPOINT_URL=$SCW_S3_ENDPOINT_URL" >> "$GITHUB_ENV"
         
-        pulumi $PULUMI_DEFAULT_ARGS login "s3://artesca-stacks?endpoint=${{ env.SCW_S3_ENDPOINT_URL }}"
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://${{ inputs.pulumi_backend_bucket }}?endpoint=${{ env.SCW_S3_ENDPOINT_URL }}"
 
     # List {{{
     - name: List stacks
@@ -307,6 +309,7 @@ runs:
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set product "${{ inputs.product || github.event.repository.name }}"
         fi
+        pulumi $PULUMI_DEFAULT_ARGS config set node_user "${{ inputs.node_user }}"
         pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_name "${{ inputs.bastion_os_name }}"
         pulumi $PULUMI_DEFAULT_ARGS config set bastion_os_major_version "${{ inputs.bastion_os_major_version }}"
         if [[ "${{ inputs.authorized_cidrs }}" != "" ]]; then
@@ -368,7 +371,7 @@ runs:
         aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
         aws configure set default.region "$SCW_DEFAULT_REGION"
 
-        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}"
+        S3_KEY="${{ inputs.pulumi_backend_bucket }}/${{ github.event.repository.name }}/${{ env.STACK_NAME }}"
 
         pulumi $PULUMI_DEFAULT_ARGS stack export --file stack_export.json
         aws s3 cp stack_export.json "s3://$S3_KEY/stack_export.json" \
@@ -397,34 +400,6 @@ runs:
         if [ ! -e "$TARGET" ]; then
           ln -s "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$TARGET"
         fi
-
-    # # Save stack
-    # - name: Prepare artifacts
-    #   if: ${{ inputs.action == 'spawn' && always() }}
-    #   shell: bash
-    #   working-directory: ${{ github.action_path }}
-    #   env:
-    #     OUT_DIR: "${{ github.workspace }}/_platform_artifacts/.platform_spawner/${{ env.STACK_NAME }}"
-    #   run: |-
-    #     mkdir -p "$OUT_DIR"
-    #     pulumi stack export --file "$OUT_DIR/stack.json"
-    #
-    #     cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/"
-    #
-    #     if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_private_key_create)" == "true" ]]; then
-    #       ssh_key=$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_info | jq -r '.key')
-    #       cp "$ssh_key" "$OUT_DIR/"
-    #       cp "$ssh_key.pub" "$OUT_DIR/"
-    #     fi
-    # - name: Upload artifacts
-    #   if: ${{ inputs.action == 'spawn' && always() }}
-    #   uses: scality/action-artifacts@v4
-    #   with:
-    #     method: upload
-    #     url: https://artifacts.scality.net
-    #     user: ${{ inputs.artifacts_user }}
-    #     password: ${{ inputs.artifacts_password }}
-    #     source: "${{ github.workspace }}/_platform_artifacts"
 
     # Add step summary
     - name: Step Summary
@@ -487,7 +462,7 @@ runs:
         aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
         aws configure set default.region "$SCW_DEFAULT_REGION"
         
-        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
+        S3_KEY="${{ inputs.pulumi_backend_bucket }}/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
         
         echo "Downloading stack info from S3..."
         if aws s3 cp "s3://$S3_KEY" stack.json \
@@ -541,7 +516,7 @@ runs:
         aws configure set aws_secret_access_key "$SCW_S3_SECRET_KEY"
         aws configure set default.region "$SCW_DEFAULT_REGION"
         
-        S3_KEY="artesca-stacks/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
+        S3_KEY="${{ inputs.pulumi_backend_bucket }}/${{ github.event.repository.name }}/${{ env.STACK_NAME }}.json"
         
         echo "Deleting stack info from S3..."
         if aws s3 rm "s3://$S3_KEY" \

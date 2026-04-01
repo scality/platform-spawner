@@ -241,7 +241,7 @@ pulumi config set authorized_cidrs '["203.0.113.10/32", "198.51.100.0/24"]'
 pulumi config set --type bool offline true
 
 # Add custom routes for specific destinations
-pulumi config set custom_routes '[{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]'
+pulumi config set custom_routes '[{"destination": "203.0.113.10/32", "description": "my-package-server"}]'
 ```
 
 ### Custom Routes Format
@@ -251,12 +251,12 @@ Custom routes allow private instances to reach specific external hosts through t
 ```json
 [
   {
-    "destination": "35.241.243.135/32",
-    "description": "artifacts.scality.net"
+    "destination": "203.0.113.10/32",
+    "description": "my-package-server"
   },
   {
-    "destination": "217.182.187.84/32",
-    "description": "packages.scality.com"
+    "destination": "198.51.100.0/24",
+    "description": "corporate-network"
   }
 ]
 ```

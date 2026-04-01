@@ -83,6 +83,10 @@ config:
     default: 30
 
   # SSH information
+  node_user:
+    type: string
+    description: "OS username created on nodes via cloud-init for SSH access"
+    default: "spawner"
   ssh_key_name:
     type: string
     description: "Name of the SSH key to use (either this or ssh_private_key_create must be set)"
