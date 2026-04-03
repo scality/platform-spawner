@@ -265,8 +265,8 @@ class ScalewayNetwork(NetworkInterface):
 
         Args:
             name: Unique name for the route resource
-            destination: CIDR block for the destination (e.g., "35.241.243.135/32")
-            description: Human-readable description (e.g., "artifacts.scality.net")
+            destination: CIDR block for the destination (e.g., "203.0.113.10/32")
+            description: Human-readable description (e.g., "my-server")
             private_network_id: Optional private network ID to scope the route to.
                               If not provided, uses the GatewayNetwork's private_network_id
 

@@ -81,10 +81,10 @@ You can add also multiple extra private networks or custom routes if needed:
 pulumi config set --path 'extra_private_networks[0].suffix' data
 pulumi config set --path 'extra_private_networks[0].subnet' 192.168.20.0/24
 # Example: Add custom routes
-pulumi config set --path 'custom_routes[0].destination' 35.241.243.135/32
-pulumi config set --path 'custom_routes[0].description' artifacts.scality.net
-pulumi config set --path 'custom_routes[1].destination' 217.182.187.84/32
-pulumi config set --path 'custom_routes[1].description' packages.scality.com
+pulumi config set --path 'custom_routes[0].destination' 1.2.3.4/32
+pulumi config set --path 'custom_routes[0].description' my-package-server
+pulumi config set --path 'custom_routes[1].destination' 5.6.7.8/24
+pulumi config set --path 'custom_routes[1].description' corporate-network
 ```
 
 ### Extra Volumes
@@ -124,7 +124,7 @@ This automatically configures the gateway to only accept SSH connections from th
 pulumi stack output nodes --json | jq -r '."dev-node-01".ssh_command'
 
 # Connect to node
-ssh -J bastion@<gateway_ip>:61000 artesca-os@dev-node-01.dev-internal.internal
+ssh -J bastion@<gateway_ip>:61000 <node_user>@dev-node-01.dev-internal.internal
 ```
 
 ## Configuration Examples

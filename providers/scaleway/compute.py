@@ -14,11 +14,9 @@ from core.interfaces import ComputeInterface
 from core.models import ClusterConfig, NodeOutput
 from config.defaults import OS_NAME_ALIASES
 
-# NOTE: Update these IPs if the Scality CDN/package servers change.
+# Additional server IPs to allow through security groups.
 # Format: List of CIDR blocks (use /32 for single IPs, e.g., "203.0.113.10/32")
-# 35.241.243.135  artifacts.scality.net
-# 217.182.187.84  packages.scality.com
-UPDATE_SERVER_IPS: List[str] = ["35.241.243.135/32", "217.182.187.84/32"]
+ADDITIONAL_SERVER_IPS: List[str] = []
 
 
 class ScalewayCompute(ComputeInterface):
@@ -96,7 +94,7 @@ class ScalewayCompute(ComputeInterface):
         Marketplace labels use underscores (e.g. ``rockylinux_9``).  The
         Scaleway Pulumi provider normalises hyphens to underscores before
         looking up the marketplace, which breaks custom image names like
-        ``artesca-os-20928``.
+        ``my-custom-image-12345``.
 
         This method detects such names (containing hyphens) and resolves
         them via the ``get_instance_image`` data-source so the Server
@@ -272,9 +270,9 @@ class ScalewayCompute(ComputeInterface):
 
         # Resolve custom image names to UUIDs.
         # The Scaleway Pulumi provider treats non-UUID image strings as marketplace
-        # labels and normalises them (hyphens → underscores).  Custom images such as
-        # "artesca-os-20928" must be resolved to their UUID before being passed to
-        # the Server resource.
+        # labels and normalises them (hyphens → underscores).  Custom images with
+        # hyphens must be resolved to their UUID before being passed to the Server
+        # resource.
         if not is_snapshot and server_image and not self._is_uuid(server_image):
             server_image = self._resolve_custom_image(server_image)
 
@@ -701,7 +699,7 @@ class ScalewayCompute(ComputeInterface):
         ]
 
         # Add rules for each update server IP
-        for ip_range in UPDATE_SERVER_IPS:
+        for ip_range in ADDITIONAL_SERVER_IPS:
             outbound_rules.append(
                 scaleway.instance.SecurityGroupOutboundRuleArgs(
                     action="accept",

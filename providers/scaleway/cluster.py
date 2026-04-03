@@ -656,11 +656,13 @@ class ScalewayCluster(ClusterInterface):
 
                 # Generate SSH jump command for accessing the node via bastion
                 # Use bastion's public IP and private IP of the node
+                _bastion_user = self.config.bastion_user
+                _node_user = self.config.node_user
                 ssh_command = pulumi.Output.all(
                     bastion["node_output"].public_ip, node["node_output"].private_ip
                 ).apply(
-                    lambda args, name=node_config.name: (
-                        f"ssh -J rocky@{args[0]} artesca-os@{args[1]}"
+                    lambda args, name=node_config.name, bu=_bastion_user, nu=_node_user: (
+                        f"ssh -J {bu}@{args[0]} {nu}@{args[1]}"
                     )
                 )
 

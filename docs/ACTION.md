@@ -152,10 +152,10 @@ Restrict SSH bastion access to specific IPs or networks:
 
 ```yaml
 # JSON array format (recommended)
-authorized_cidrs: '["193.248.60.56/32", "10.0.0.0/8"]'
+authorized_cidrs: '["203.0.113.50/32", "10.0.0.0/8"]'
 
 # Comma-separated string format
-authorized_cidrs: "193.248.60.56/32,10.0.0.0/8"
+authorized_cidrs: "203.0.113.50/32,10.0.0.0/8"
 
 # Single IP
 authorized_cidrs: '["203.0.113.50/32"]'
@@ -170,14 +170,13 @@ Route traffic to specific external destinations through the gateway:
 
 ```yaml
 # Single route
-custom_routes: '[{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]'
+custom_routes: '[{"destination": "203.0.113.10/32", "description": "my-package-server"}]'
 
 # Multiple routes
 custom_routes: |
   [
-    {"destination": "35.241.243.135/32", "description": "artifacts.scality.net"},
-    {"destination": "217.182.187.84/32", "description": "packages.scality.com"},
-    {"destination": "10.100.0.0/16", "description": "corporate-network"}
+    {"destination": "203.0.113.10/32", "description": "my-package-server"},
+    {"destination": "198.51.100.0/24", "description": "corporate-network"}
   ]
 ```
 
@@ -197,8 +196,6 @@ custom_routes: |
 
 | Input | Status | Description |
 |-------|--------|-------------|
-| `artifacts_user` | **COMMENTED OUT** | Artifacts server username. Upload code is disabled. |
-| `artifacts_password` | **COMMENTED OUT** | Artifacts server password. Upload code is disabled. |
 | `instance_image` | **MOVED** | Now specified in `configuration` YAML instead of as a top-level input. |
 
 ---
@@ -234,7 +231,7 @@ The bastion is a VM with a public IP that acts as SSH jump host and NAT gateway:
 SSH to a worker node via the bastion:
 
 ```bash
-ssh -J rocky@<bastion_ip> artesca-os@<node_private_ip>
+ssh -J rocky@<bastion_ip> <node_user>@<node_private_ip>
 ```
 
 ### Nodes Output Format
@@ -246,7 +243,7 @@ ssh -J rocky@<bastion_ip> artesca-os@<node_private_ip>
     "name": "my-app-node-01",
     "instance_type": "PRO2-S",
     "private_ip": "192.168.10.2",
-    "ssh_command": "ssh -J bastion@51.159.x.x:61000 artesca-os@my-app-node-01.my-app-internal.internal",
+    "ssh_command": "ssh -J bastion@51.159.x.x:61000 spawner@my-app-node-01.my-app-internal.internal",
     "urn": "urn:pulumi:...",
     "volumes": [
       {
@@ -377,8 +374,8 @@ Custom routes allow instances to reach specific external destinations through th
 ```yaml
 custom_routes: |
   [
-    {"destination": "35.241.243.135/32", "description": "artifacts.scality.net"},
-    {"destination": "217.182.187.84/32", "description": "packages.scality.com"}
+    {"destination": "203.0.113.10/32", "description": "my-package-server"},
+    {"destination": "198.51.100.0/24", "description": "corporate-network"}
   ]
 ```
 
@@ -460,7 +457,7 @@ jobs:
     ssh_public_keys: ${{ steps.ssh-key.outputs.public_key }}
     authorized_cidrs: "52.161.62.16/28,52.159.241.192/28"
     custom_routes: |
-      [{"destination": "35.241.243.135/32", "description": "artifacts.scality.net"}]
+      [{"destination": "203.0.113.10/32", "description": "my-package-server"}]
     scaleway_access_key: ${{ secrets.SCW_ACCESS_KEY }}
     scaleway_secret_key: ${{ secrets.SCW_SECRET_KEY }}
     scaleway_project_id: ${{ secrets.SCW_PROJECT_ID }}
@@ -533,7 +530,7 @@ jobs:
 
 When `store_to_s3: true` (default), the action:
 
-1. Logs in to the Pulumi S3 backend at `s3://artesca-stacks`
+1. Logs in to the Pulumi S3 backend at `s3://<pulumi_backend_bucket>`
 2. Stores stack state in S3 for persistence across runs
 3. Stores stack output JSON for garbage collection
 

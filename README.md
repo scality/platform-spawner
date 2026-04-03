@@ -197,7 +197,7 @@ pulumi stack output nodes --json | jq -r '.[] | .ssh_command'
 ### SSH Access
 
 ```bash
-ssh -J bastion@<gateway_ip>:61000 artesca-os@<node_name>.<network_name>.internal
+ssh -J bastion@<gateway_ip>:61000 <node_user>@<node_name>.<network_name>.internal
 ```
 
 ---

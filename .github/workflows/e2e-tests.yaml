@@ -17,8 +17,6 @@ jobs:
           aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
           aws_region: ${{ vars.AWS_REGION }}
-          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
-          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
           stack_name: "${{ github.workflow }}-${{ github.run_number }}"
           configuration: |-
             instance_image: rocky-9
