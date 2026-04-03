@@ -2,10 +2,15 @@
 """Restore Pulumi stack config from downloaded files or imported state.
 
 Usage:
-    cd <directory-with-downloaded-files>
-    PULUMI_CONFIG_PASSPHRASE='' python3 /path/to/restore_config.py
+    PULUMI_CONFIG_PASSPHRASE='' python3 scripts/restore_config.py <download-dir>
 
-The script tries three sources in order:
+    <download-dir>  Directory containing the downloaded S3 files
+                    (stack_config.yaml, stack_output.json, stack_export.json).
+                    Defaults to current directory.
+
+The script must be run from the project root (where Pulumi.yaml lives).
+
+It tries three sources in order:
   1. stack_config.yaml   — the Pulumi config file exported by CI (best source)
   2. stack_output.json   — stack outputs contain a 'config' dict + network info
   3. Imported state      — reads config from stack resource outputs (last resort)
@@ -117,11 +122,12 @@ def _extract_extra_volumes(stack_output: dict) -> list:
     return list(groups.values())
 
 
-def _extract_project_id_from_export(filename: str = "stack_export.json") -> str | None:
+def _extract_project_id_from_export(source_dir: str, filename: str = "stack_export.json") -> str | None:
     """Extract project_id from the provider resource in stack_export.json."""
-    if not os.path.exists(filename):
+    filepath = os.path.join(source_dir, filename)
+    if not os.path.exists(filepath):
         return None
-    with open(filename) as f:
+    with open(filepath) as f:
         state = json.load(f)
     resources = state.get("deployment", {}).get("resources", [])
     for res in resources:
@@ -133,23 +139,40 @@ def _extract_project_id_from_export(filename: str = "stack_export.json") -> str 
     return None
 
 
-def restore_from_config_yaml(stack: str) -> bool:
-    """Copy stack_config.yaml to Pulumi.<stack>.yaml. Returns True on success."""
-    if not os.path.exists("stack_config.yaml"):
+def _find_project_root() -> str:
+    """Find the directory containing Pulumi.yaml (project root)."""
+    # Start from cwd and walk up
+    path = os.path.abspath(os.getcwd())
+    while True:
+        if os.path.exists(os.path.join(path, "Pulumi.yaml")):
+            return path
+        parent = os.path.dirname(path)
+        if parent == path:
+            break
+        path = parent
+    # Fallback: ask pulumi for the project root via about
+    return os.getcwd()
+
+
+def restore_from_config_yaml(stack: str, source_dir: str, project_root: str) -> bool:
+    """Copy stack_config.yaml to Pulumi.<stack>.yaml in the project root."""
+    src = os.path.join(source_dir, "stack_config.yaml")
+    if not os.path.exists(src):
         return False
 
-    dest = f"Pulumi.{stack}.yaml"
-    shutil.copy2("stack_config.yaml", dest)
-    print(f"Restored config from stack_config.yaml -> {dest}")
+    dest = os.path.join(project_root, f"Pulumi.{stack}.yaml")
+    shutil.copy2(src, dest)
+    print(f"Restored config from {src} -> {dest}")
     return True
 
 
-def restore_from_stack_output(stack: str) -> bool:
+def restore_from_stack_output(stack: str, source_dir: str) -> bool:
     """Recover config from stack_output.json. Returns True on success."""
-    if not os.path.exists("stack_output.json"):
+    filepath = os.path.join(source_dir, "stack_output.json")
+    if not os.path.exists(filepath):
         return False
 
-    with open("stack_output.json") as f:
+    with open(filepath) as f:
         stack_output = json.load(f)
 
     config = stack_output.get("config", {})
@@ -160,7 +183,7 @@ def restore_from_stack_output(stack: str) -> bool:
     # Supplement missing keys from other sections of stack_output.json
     # (for stacks created before the full config export was added)
     if "project_id" not in config or not config["project_id"]:
-        pid = _extract_project_id_from_export()
+        pid = _extract_project_id_from_export(source_dir)
         if pid:
             config["project_id"] = pid
 
@@ -204,17 +227,37 @@ def restore_from_state(stack: str) -> bool:
 
 
 def main():
+    # Determine source directory (arg or cwd)
+    if len(sys.argv) > 1:
+        source_dir = os.path.abspath(sys.argv[1])
+    else:
+        source_dir = os.getcwd()
+
+    if not os.path.isdir(source_dir):
+        print(f"ERROR: {source_dir} is not a directory")
+        sys.exit(1)
+
+    project_root = _find_project_root()
+    if not os.path.exists(os.path.join(project_root, "Pulumi.yaml")):
+        print(f"ERROR: Cannot find Pulumi.yaml. Run this from the project root.")
+        sys.exit(1)
+
     stack = subprocess.check_output(
         ["pulumi", "stack", "--show-name"], text=True
     ).strip()
 
+    print(f"Stack: {stack}")
+    print(f"Source: {source_dir}")
+    print(f"Project root: {project_root}")
+    print()
+
     # 1. Prefer the config YAML file (complete and authoritative)
-    if restore_from_config_yaml(stack):
+    if restore_from_config_yaml(stack, source_dir, project_root):
         return
 
     # 2. Try stack_output.json (always uploaded by CI, contains config dict)
     print("stack_config.yaml not found, trying stack_output.json...")
-    if restore_from_stack_output(stack):
+    if restore_from_stack_output(stack, source_dir):
         return
 
     # 3. Last resort: extract from imported state
