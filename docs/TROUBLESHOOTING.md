@@ -92,7 +92,7 @@ PRE <project>/
 ## Step 2: List Available Stacks
 
 ```bash
-aws s3 ls <BUCKET>/<project>/
+aws s3 ls <BUCKET>
 ```
 
 ## Step 3: Download the Full Pulumi State
@@ -101,14 +101,14 @@ Download all state files to your local Pulumi backend:
 
 ```bash
 aws s3 cp --recursive \
-    s3://<BUCKET>/<project>/ ~/bucket/
+    s3://<BUCKET> ~/bucket/
 ```
 
 Download the three files for the stack you want to import:
 
 ```bash
 STACK=<STACK_NAME>
-S3_KEY="<BUCKET>/<project>/$STACK"
+S3_KEY="<BUCKET>/$STACK"
 
 S3_KEY="artesca-stacks/artesca/$STACK"
 aws s3 cp "s3://$S3_KEY/stack_export.json"  "$DEST/stack_export.json"

@@ -264,7 +264,7 @@ def main():
     print("stack_output.json not found or empty, falling back to imported state...")
     if not restore_from_state(stack):
         print("\nFailed to restore config. Download files from S3:")
-        print(f"  aws s3 cp s3://<bucket>/<project>/<stack>/stack_config.yaml stack_config.yaml \\")
+        print(f"  aws s3 cp s3://<bucket>/<stack>/stack_config.yaml stack_config.yaml \\")
         print(f"    --endpoint-url <s3_endpoint>")
         sys.exit(1)
 
