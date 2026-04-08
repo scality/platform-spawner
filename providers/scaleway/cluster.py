@@ -127,26 +127,33 @@ IFACE="$1"
 [ "$IFACE" = "eth0" ] && exit 0   # Public interface — keep its default route
 [ -z "$CONNECTION_UUID" ] && exit 0
 
-# Idempotency guard: skip if already configured (prevents down/up loop).
 current=$(nmcli -g ipv4.ignore-auto-routes connection show "$CONNECTION_UUID" 2>/dev/null)
-[ "$current" = "yes" ] && exit 0
+if [ "$current" != "yes" ]; then
+    # First time: suppress DHCP routes and IPv6 on this private interface.
+    nmcli connection modify "$CONNECTION_UUID" \\
+        ipv4.ignore-auto-routes yes \\
+        ipv4.ignore-auto-dns yes \\
+        ipv6.ignore-auto-routes yes \\
+        ipv6.ignore-auto-dns yes \\
+        ipv6.method disabled 2>/dev/null || true
 
-# Suppress DHCP routes and IPv6 on this private interface.
-nmcli connection modify "$CONNECTION_UUID" \\
-    ipv4.ignore-auto-routes yes \\
-    ipv4.ignore-auto-dns yes \\
-    ipv6.ignore-auto-routes yes \\
-    ipv6.ignore-auto-dns yes \\
-    ipv6.method disabled 2>/dev/null || true
+    # Full reconnect: device reapply is not sufficient for ignore-auto-routes.
+    nmcli connection down "$CONNECTION_UUID" 2>/dev/null || true
+    nmcli connection up "$CONNECTION_UUID" 2>/dev/null || true
+fi
 
-# Full reconnect: device reapply is not sufficient for ignore-auto-routes.
-# The down/up cycle makes NM re-read the profile and honour the setting
-# from the start of DHCP negotiation, so cross-routes are never installed.
-nmcli connection down "$CONNECTION_UUID" 2>/dev/null || true
-nmcli connection up "$CONNECTION_UUID" 2>/dev/null || true
+# Always flush leftover DHCP cross-routes on this interface.
+# ignore-auto-routes *should* prevent them, but a race between DHCP
+# negotiation and NM profile read can leave stale routes behind.
+sleep 1
+ip route show dev "$IFACE" proto dhcp 2>/dev/null | while read -r route; do
+    case "$route" in
+        169.254.42.42*) ;; # keep metadata
+        *) ip route del $route dev "$IFACE" 2>/dev/null || true ;;
+    esac
+done
 
 # Restore Scaleway metadata route (killed by ignore-auto-routes).
-# 169.254.42.42 is the Scaleway metadata API used by cloud-init datasource.
 ip route replace 169.254.42.42/32 dev "$IFACE" scope link 2>/dev/null || true
 """
 
@@ -195,6 +202,26 @@ for uuid in $(nmcli -t -f UUID connection show --active 2>/dev/null); do
     nmcli connection up "$uuid" 2>/dev/null || true
     ip route replace 169.254.42.42/32 dev "$device" scope link 2>/dev/null || true
 done
+
+# Background delayed sweep: NICs are hot-plugged AFTER cloud-init, so the
+# loop above finds nothing at boot.  The dispatcher handles each NIC as it
+# appears, but a race between DHCP negotiation and ignore-auto-routes can
+# leave stale cross-routes on the last interface processed.  This sweep
+# waits for all NICs to stabilise, then flushes any surviving DHCP routes.
+(
+  sleep 120
+  for iface in $(ls /sys/class/net/ 2>/dev/null); do
+    [ "$iface" = "lo" ] || [ "$iface" = "eth0" ] && continue
+    [ -d "/sys/class/net/$iface" ] || continue
+    ip route show dev "$iface" proto dhcp 2>/dev/null | while read -r route; do
+      case "$route" in
+        169.254.42.42*) ;;
+        *) ip route del $route dev "$iface" 2>/dev/null || true ;;
+      esac
+    done
+    ip route replace 169.254.42.42/32 dev "$iface" scope link 2>/dev/null || true
+  done
+) &
 """
 
 # ---------------------------------------------------------------------------
