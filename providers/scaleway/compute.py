@@ -439,19 +439,28 @@ class ScalewayCompute(ComputeInterface):
         Args:
             instance: Server resource
             network: Private network resource
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters:
+                - instance_name: Name used for the Pulumi resource ID
+                - ipam_ip_ids: List of pre-reserved IPAM IP IDs to assign
 
         Returns:
             PrivateNic resource
         """
         # Extract instance name from Pulumi resource name
         instance_name = kwargs.get("instance_name", "unknown")
+        ipam_ip_ids = kwargs.get("ipam_ip_ids")
+
+        nic_args = {
+            "server_id": instance.id,
+            "private_network_id": network.id,
+            "zone": self.config.zone,
+        }
+        if ipam_ip_ids:
+            nic_args["ipam_ip_ids"] = ipam_ip_ids
 
         nic = scaleway.instance.PrivateNic(
             f"nic-{instance_name}",
-            server_id=instance.id,
-            private_network_id=network.id,
-            zone=self.config.zone,
+            **nic_args,
         )
 
         self._nics[instance_name] = nic

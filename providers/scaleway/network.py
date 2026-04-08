@@ -5,6 +5,7 @@ This module handles VPC, Private Network, and Public Gateway creation
 for Scaleway infrastructure, implementing the NetworkInterface.
 """
 
+import ipaddress
 from typing import Any, Dict, List, Optional, Union
 
 import pulumi
@@ -12,6 +13,36 @@ import pulumiverse_scaleway as scaleway
 
 from core.interfaces import NetworkInterface
 from core.models import ClusterConfig, NetworkOutput
+
+
+def compute_static_ip(subnet_cidr: str, role: str, node_index: int = 0) -> str:
+    """Compute a deterministic IP address for a node within a subnet.
+
+    Addressing scheme:
+        - bastion: x.y.z.2
+        - node N:  x.y.z.(10 + N)  (e.g. node 1 -> .11, node 2 -> .12)
+
+    Args:
+        subnet_cidr: CIDR block (e.g. "192.168.10.0/24")
+        role: "bastion" or "node"
+        node_index: 1-based node index (ignored for bastion)
+
+    Returns:
+        IPv4 address string (e.g. "192.168.10.11")
+
+    Raises:
+        ValueError: If the computed address falls outside the subnet
+    """
+    network = ipaddress.ip_network(subnet_cidr, strict=False)
+    base = int(network.network_address)
+    host_offset = 2 if role == "bastion" else 10 + node_index
+    addr = ipaddress.ip_address(base + host_offset)
+    if addr not in network:
+        raise ValueError(
+            f"Computed IP {addr} is outside subnet {subnet_cidr} "
+            f"(role={role}, node_index={node_index})"
+        )
+    return str(addr)
 
 
 class ScalewayNetwork(NetworkInterface):
@@ -361,6 +392,33 @@ class ScalewayNetwork(NetworkInterface):
         )
 
         return output
+
+    def create_ipam_ip(
+        self,
+        name: str,
+        address: str,
+        private_network: scaleway.network.PrivateNetwork,
+    ) -> scaleway.ipam.Ip:
+        """Book a static IPAM IP on a private network.
+
+        Args:
+            name: Unique resource name suffix
+            address: IPv4 address to reserve (e.g. "192.168.10.2")
+            private_network: Target private network resource
+
+        Returns:
+            scaleway.ipam.Ip resource
+        """
+        return scaleway.ipam.Ip(
+            f"ipam-{name}",
+            address=address,
+            sources=[scaleway.ipam.IpSourceArgs(
+                private_network_id=private_network.id,
+            )],
+            region=self.config.region,
+            project_id=self.config.project_id,
+            tags=["managed-by:pulumi"],
+        )
 
     @property
     def vpc(self) -> Optional[scaleway.network.Vpc]:

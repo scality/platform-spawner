@@ -19,7 +19,7 @@ import pulumiverse_scaleway as scaleway
 from core.interfaces import ClusterInterface
 from core.models import ClusterConfig, NodeConfig
 from config.flavors import get_instance_type
-from .network import ScalewayNetwork
+from .network import ScalewayNetwork, compute_static_ip
 from .compute import ScalewayCompute
 
 # ---------------------------------------------------------------------------
@@ -621,7 +621,7 @@ class ScalewayCluster(ClusterInterface):
         node_resources = []  # collected for pulumi_command depends_on
         node_ip_hostname_pairs = []  # (private_ip Output, hostname str) pairs
         if "node" in nodes_by_role:
-            for node_config in nodes_by_role["node"]:
+            for node_idx, node_config in enumerate(nodes_by_role["node"], start=1):
                 # Inject VPC route fix into worker cloud-init. Also set the
                 # hostname when one is defined on the node config.
                 node_base: Dict[str, Any] = {**_SCALEWAY_VPC_FIX_DATA}
@@ -652,6 +652,7 @@ class ScalewayCluster(ClusterInterface):
                     image_id=instance_image,
                     security_group=sg_internal,
                     placement_group_id=placement_group.id,
+                    node_index=node_idx,
                 )
 
                 # Generate SSH jump command for accessing the node via bastion
@@ -789,17 +790,21 @@ class ScalewayCluster(ClusterInterface):
         image_id: str,
         security_group: Any,
         placement_group_id: Any = None,
+        node_index: int = 1,
     ) -> Dict[str, Any]:
         """
         Deploy an internal node (private network only).
 
-        Creates an instance and attaches it to the private network(s).
-        Also creates and attaches additional volumes if configured.
+        Creates an instance and attaches it to the private network(s)
+        with deterministic IPAM IPs. Also creates and attaches additional
+        volumes if configured.
 
         Args:
             node_config: Node configuration
             image_id: OS image ID
             security_group: Security group resource
+            placement_group_id: Optional placement group ID
+            node_index: 1-based node index for deterministic IP assignment
 
         Returns:
             Dictionary with instance, volumes, NIC, and extra_nics resources
@@ -847,11 +852,20 @@ class ScalewayCluster(ClusterInterface):
             placement_group_id=placement_group_id,
         )
 
-        # Attach to primary private network
+        # Attach to primary private network with static IPAM IP
+        node_ip_addr = compute_static_ip(
+            self.config.network.private_subnet, "node", node_index
+        )
+        ipam_ip = self.network.create_ipam_ip(
+            name=node_config.name,
+            address=node_ip_addr,
+            private_network=self.network.private_network,
+        )
         nic = self.compute.attach_to_private_network(
             instance=instance_output.resource,
             network=self.network.private_network,
             instance_name=node_config.name,
+            ipam_ip_ids=[ipam_ip.id],
         )
 
         # Attach to extra private networks if configured (for multi-homed instances)
@@ -862,10 +876,19 @@ class ScalewayCluster(ClusterInterface):
                     net_config.suffix
                 )
                 if extra_network:
+                    extra_ip_addr = compute_static_ip(
+                        net_config.subnet, "node", node_index
+                    )
+                    extra_ipam_ip = self.network.create_ipam_ip(
+                        name=f"{node_config.name}-{net_config.suffix}",
+                        address=extra_ip_addr,
+                        private_network=extra_network,
+                    )
                     extra_nic = self.compute.attach_to_private_network(
                         instance=instance_output.resource,
                         network=extra_network,
                         instance_name=f"{node_config.name}-{net_config.suffix}",
+                        ipam_ip_ids=[extra_ipam_ip.id],
                     )
                     extra_nics[net_config.suffix] = extra_nic
 
@@ -926,11 +949,20 @@ class ScalewayCluster(ClusterInterface):
             placement_group_id=placement_group_id,
         )
 
-        # Attach to private network
+        # Attach to private network with static IPAM IP
+        bastion_ip_addr = compute_static_ip(
+            self.config.network.private_subnet, "bastion"
+        )
+        ipam_ip = self.network.create_ipam_ip(
+            name=node_config.name,
+            address=bastion_ip_addr,
+            private_network=self.network.private_network,
+        )
         nic = self.compute.attach_to_private_network(
             instance=instance_output.resource,
             network=self.network.private_network,
             instance_name=node_config.name,
+            ipam_ip_ids=[ipam_ip.id],
         )
 
         # Attach to extra private networks if configured (bastion is multi-homed like workers)
@@ -941,10 +973,19 @@ class ScalewayCluster(ClusterInterface):
                     net_config.suffix
                 )
                 if extra_network:
+                    extra_ip_addr = compute_static_ip(
+                        net_config.subnet, "bastion"
+                    )
+                    extra_ipam_ip = self.network.create_ipam_ip(
+                        name=f"{node_config.name}-{net_config.suffix}",
+                        address=extra_ip_addr,
+                        private_network=extra_network,
+                    )
                     extra_nic = self.compute.attach_to_private_network(
                         instance=instance_output.resource,
                         network=extra_network,
                         instance_name=f"{node_config.name}-{net_config.suffix}",
+                        ipam_ip_ids=[extra_ipam_ip.id],
                     )
                     extra_nics[net_config.suffix] = extra_nic
 
