@@ -199,13 +199,13 @@ class ClusterConfig:
     authorized_cidrs: List[str] = field(default_factory=list)
 
     # Instance configs
-    instance_flavor: str = "medium"
+    instance_flavor: str = "std-m"
     instance_root_disk_size: int = 50
 
     # Bastion host configuration
     bastion_os_name: str = "rocky"
     bastion_os_major_version: str = "9"
-    bastion_flavor: str = "small"
+    bastion_flavor: str = "dev-xs"
     bastion_root_disk_size: int = 20
     bastion_user: str = "rocky"
 

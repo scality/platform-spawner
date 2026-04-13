@@ -7,30 +7,35 @@ Scaleway-specific configuration values.
 
 from typing import List
 
-# Valid Scaleway instance types (subset of most common types)
+# Valid Scaleway instance types — Gen3 ranges (available in all zones)
 SCALEWAY_INSTANCE_TYPES = [
-    # Development instances
-    "PLAY2-NANO",
-    "PLAY2-MICRO",
-    "PLAY2-PICO",
-    
-    #Default instances
+    # BASIC3 — shared vCPUs, development / CI / bastions
+    "BASIC3-X2C-4G",
+    "BASIC3-X2C-8G",
+    "BASIC3-X4C-8G",
+    "BASIC3-X4C-16G",
+    "BASIC3-X8C-16G",
     "BASIC3-X8C-32G",
+    "BASIC3-X16C-32G",
     "BASIC3-X16C-64G",
-    
-    # Production instances
-    "PRO2-XXS",
-    "PRO2-XS",
-    "PRO2-S",
-    "PRO2-M",
-    "PRO2-L",
-    
-    # General Purpose
-    "GP1-XS",
-    "GP1-S",
-    "GP1-M",
-    "GP1-L",
-    "GP1-XL",
+
+    # STANDARD3 — dedicated vCPUs, balanced production
+    "STANDARD3-X2C-8G",
+    "STANDARD3-X4C-16G",
+    "STANDARD3-X8C-32G",
+    "STANDARD3-X16C-64G",
+    "STANDARD3-X32C-128G",
+    "STANDARD3-X48C-192G",
+
+    # COMPUTE3 — dedicated vCPUs, compute-optimised
+    "COMPUTE3-X2C-4G",
+    "COMPUTE3-X4C-8G",
+    "COMPUTE3-X8C-16G",
+    "COMPUTE3-X16C-32G",
+    "COMPUTE3-X32C-64G",
+    "COMPUTE3-X48C-96G",
+    "COMPUTE3-X64C-128G",
+    "COMPUTE3-X96C-192G",
 ]
 
 # Valid Scaleway regions
@@ -55,6 +60,7 @@ SCALEWAY_ZONES = [
 SCALEWAY_GATEWAY_TYPES = [
     "VPC-GW-S",   # Small gateway
     "VPC-GW-M",   # Medium gateway
+    "VPC-GW-L",   # Large gateway
 ]
 
 

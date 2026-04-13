@@ -95,7 +95,7 @@ def main():
             custom_routes = []
     
     # Instance configuration
-    instance_flavor = config.get("instance_flavor") or "medium"
+    instance_flavor = config.get("instance_flavor") or "std-m"
     instance_root_disk_size = config.get_int("instance_root_disk_size") or 50
     
     # Provider / region (needed early for OS alias resolution)
@@ -133,30 +133,9 @@ def main():
         )
     
     # Map abstract flavors to provider-specific instance types
-    from config.flavors import get_instance_type, get_scaleway_fallback_chain
+    from config.flavors import get_instance_type
     instance_type = get_instance_type(provider, instance_flavor)
     bastion_instance_type = get_instance_type(provider, bastion_flavor)
-    
-    # Scaleway multizone fallback: if the preferred instance type is not
-    # available in the default zone, walk the fallback chain to find an
-    # alternative (instance_type, zone) pair.  The resolved zone applies
-    # to the entire deployment (bastion, workers, networking).
-    if provider == Provider.SCALEWAY:
-        fallback_chain = get_scaleway_fallback_chain(instance_flavor)
-        if fallback_chain:
-            from providers.scaleway.availability import resolve_flavors
-            result = resolve_flavors(fallback_chain)
-            if result:
-                resolved_type, resolved_zone = result
-                if resolved_type != instance_type or resolved_zone != zone:
-                    pulumi.log.info(
-                        f"Availability fallback: {instance_type}@{zone} → "
-                        f"{resolved_type}@{resolved_zone}"
-                    )
-                instance_type = resolved_type
-                zone = resolved_zone
-                # Keep region consistent with the resolved zone
-                region = "-".join(zone.split("-")[:2])
             else:
                 pulumi.log.warn(
                     f"Could not resolve availability for flavor '{instance_flavor}', "

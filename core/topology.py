@@ -10,7 +10,7 @@ from .models import NodeConfig, NetworkConfig
 
 
 def get_cluster_config(
-    instance_count: int, base_instance_type: str = "PRO2-S", product: str = ""
+    instance_count: int, base_instance_type: str = "STANDARD3-X8C-32G", product: str = ""
 ) -> Dict[str, Any]:
     """
     Generate node and network configurations based on instance count.
@@ -19,7 +19,7 @@ def get_cluster_config(
     configuration for the requested number of instances.
 
     Instance Types:
-    - Instances: Uses base_instance_type parameter (default: PRO2-S)
+    - Instances: Uses base_instance_type parameter (default: STANDARD3-X8C-32G)
 
     Args:
         instance_count: Number of instances to deploy (must be >= 1)

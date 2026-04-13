@@ -5,16 +5,17 @@ Default configuration values for different providers and topologies.
 from typing import Dict
 
 # Default instance types per provider (for worker nodes)
-# Note: Bastion always uses small machines (e.g., PLAY2-NANO for Scaleway)
+# Note: Bastion always uses small dev-tier machines
 DEFAULT_INSTANCE_TYPES: Dict[str, Dict[str, str]] = {
     "scaleway": {
-        "development": "PLAY2-NANO",
-        "production": "PRO2-S",  # Default for worker nodes
-        "bastion": "PLAY2-NANO",  # Always small machine for SSH access
+        "development": "BASIC3-X2C-4G",
+        "production": "STANDARD3-X8C-32G",
+        "bastion": "BASIC3-X2C-4G",
     },
     "aws": {
-        "development": "t3.micro",
-        "production": "t3.medium",
+        "development": "t3.medium",
+        "production": "m6i.2xlarge",
+        "bastion": "t3.medium",
     },
 }
 
@@ -49,7 +50,7 @@ DEFAULT_INSTANCE_IMAGE = f"rockylinux_{DEFAULT_BASTION_OS_MAJOR_VERSION}"
 
 
 # Default bastion flavor (abstract flavor name, resolved via FLAVOR_MAP in config/flavors.py)
-DEFAULT_BASTION_FLAVOR = "small"
+DEFAULT_BASTION_FLAVOR = "dev-xs"
 
 # OS name alias map per provider.
 # Maps user-friendly OS family names to provider-specific marketplace label names.

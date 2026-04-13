@@ -1,101 +1,78 @@
 """
 Flavor abstraction layer for multi-provider support.
 
-This module provides mappings from abstract flavor names (small, medium, large)
-to provider-specific instance types, enabling consistent sizing across clouds.
+This module provides mappings from abstract flavor names to provider-specific
+instance types, organised by performance tier and size.
+
+Tiers
+-----
+dev-*   Shared vCPUs, cost-optimised — dev, CI, bastion hosts.
+        SCW: BASIC3   |  AWS: t3 (burstable)
+
+std-*   Dedicated vCPUs, balanced compute/memory — general production.
+        SCW: STANDARD3  |  AWS: m6i (general purpose)
+
+cpu-*   Dedicated vCPUs, compute-optimised — CPU-intensive workloads.
+        SCW: COMPUTE3   |  AWS: c6i (compute optimised)
+
+Sizes within each tier: xs < s < m < l < xl < 2xl (< 3xl < 4xl for cpu).
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
 from core.models import Provider
 
 
 # Flavor mappings per provider
 FLAVOR_MAP: Dict[str, Dict[str, str]] = {
     "scaleway": {
-        # Small instances - suitable for bastion hosts, testing
-        "small": "PLAY2-NANO",
-        "tiny": "PLAY2-PICO",
+        # dev tier — BASIC3, shared vCPUs (development / CI / bastions)
+        "dev-xs": "BASIC3-X2C-4G",    # 2 vCPU shared,  4 GB, 350 Mbps
+        "dev-s":  "BASIC3-X4C-8G",    # 4 vCPU shared,  8 GB, 700 Mbps
+        "dev-m":  "BASIC3-X4C-16G",   # 4 vCPU shared, 16 GB, 700 Mbps
+        "dev-l":  "BASIC3-X8C-32G",   # 8 vCPU shared, 32 GB, 1.5 Gbps
 
-        # Medium instances - suitable for general workloads
-        "medium": "BASIC3-X8C-16G",
-        "medium-plus": "BASIC3-X16C-64G",
+        # std tier — STANDARD3, dedicated vCPUs (balanced production)
+        "std-xs":  "STANDARD3-X2C-8G",    # 2 vCPU,  8 GB,  500 Mbps
+        "std-s":   "STANDARD3-X4C-16G",   # 4 vCPU, 16 GB,   1 Gbps
+        "std-m":   "STANDARD3-X8C-32G",   # 8 vCPU, 32 GB,   2 Gbps
+        "std-l":   "STANDARD3-X16C-64G",  # 16 vCPU, 64 GB,  4 Gbps
+        "std-xl":  "STANDARD3-X32C-128G", # 32 vCPU, 128 GB, 8 Gbps
+        "std-2xl": "STANDARD3-X48C-192G", # 48 vCPU, 192 GB, 16 Gbps
 
-        # Large instances - suitable for production workloads
-        "large": "STANDARD3-X32C-128G",
-        "xlarge": "STANDARD3-X48C-192G",
-
-        # General purpose instances
-        "gp-small": "GP1-XS",
-        "gp-medium": "GP1-S",
-        "gp-large": "GP1-M",
-        "gp-xlarge": "GP1-L",
+        # cpu tier — COMPUTE3, dedicated vCPUs (compute-optimised)
+        "cpu-s":   "COMPUTE3-X4C-8G",    # 4 vCPU,  8 GB,   1 Gbps
+        "cpu-m":   "COMPUTE3-X8C-16G",   # 8 vCPU, 16 GB,   2 Gbps
+        "cpu-l":   "COMPUTE3-X16C-32G",  # 16 vCPU, 32 GB,  4 Gbps
+        "cpu-xl":  "COMPUTE3-X32C-64G",  # 32 vCPU, 64 GB,  8 Gbps
+        "cpu-2xl": "COMPUTE3-X48C-96G",  # 48 vCPU, 96 GB,  16 Gbps
+        "cpu-3xl": "COMPUTE3-X64C-128G", # 64 vCPU, 128 GB, 16 Gbps
+        "cpu-4xl": "COMPUTE3-X96C-192G", # 96 vCPU, 192 GB, 16 Gbps
     },
     "aws": {
-        # Small instances - suitable for bastion hosts, testing
-        "small": "t3.small",
-        "tiny": "t3.micro",
+        # dev tier — t3 burstable (development / CI / bastions)
+        "dev-xs": "t3.medium",   # 2 vCPU,  4 GB
+        "dev-s":  "t3.large",    # 2 vCPU,  8 GB
+        "dev-m":  "t3.xlarge",   # 4 vCPU, 16 GB
+        "dev-l":  "t3.2xlarge",  # 8 vCPU, 32 GB
 
-        # Medium instances - suitable for general workloads
-        "medium": "t3.medium",
-        "medium-plus": "t3.large",
+        # std tier — m6i general purpose (balanced production)
+        "std-xs":  "m6i.large",    # 2 vCPU,   8 GB
+        "std-s":   "m6i.xlarge",   # 4 vCPU,  16 GB
+        "std-m":   "m6i.2xlarge",  # 8 vCPU,  32 GB
+        "std-l":   "m6i.4xlarge",  # 16 vCPU, 64 GB
+        "std-xl":  "m6i.8xlarge",  # 32 vCPU, 128 GB
+        "std-2xl": "m6i.12xlarge", # 48 vCPU, 192 GB
 
-        # Large instances - suitable for production workloads
-        "large": "t3.xlarge",
-        "xlarge": "t3.2xlarge",
-
-        # General purpose instances
-        "gp-small": "m5.large",
-        "gp-medium": "m5.xlarge",
-        "gp-large": "m5.2xlarge",
-        "gp-xlarge": "m5.4xlarge",
+        # cpu tier — c6i compute optimised
+        "cpu-s":   "c6i.xlarge",   # 4 vCPU,  8 GB
+        "cpu-m":   "c6i.2xlarge",  # 8 vCPU, 16 GB
+        "cpu-l":   "c6i.4xlarge",  # 16 vCPU, 32 GB
+        "cpu-xl":  "c6i.8xlarge",  # 32 vCPU, 64 GB
+        "cpu-2xl": "c6i.12xlarge", # 48 vCPU, 96 GB
+        "cpu-3xl": "c6i.16xlarge", # 64 vCPU, 128 GB
+        "cpu-4xl": "c6i.24xlarge", # 96 vCPU, 192 GB
     },
 }
-
-
-# ---------------------------------------------------------------------------
-# Scaleway multizone fallback chains
-# ---------------------------------------------------------------------------
-# For flavors whose preferred instance type may not be available in every
-# zone, define an ordered list of (instance_type, zone) pairs.  The
-# availability resolver walks the list and picks the first entry that the
-# Scaleway API reports as "available" or "scarce".
-#
-# DEFAULT_ZONE / SPARE_ZONE are kept here rather than imported from
-# config.defaults to avoid circular imports and because they are
-# Scaleway-flavor-specific constants.
-# ---------------------------------------------------------------------------
-
-SCALEWAY_DEFAULT_ZONE = "fr-par-2"
-SCALEWAY_SPARE_ZONE = "fr-par-1"
-
-SCALEWAY_FLAVOR_FALLBACKS: Dict[str, List[Tuple[str, str]]] = {
-    "medium": [
-        ("BASIC3-X8C-32G", SCALEWAY_DEFAULT_ZONE),
-        ("PRO2-S", SCALEWAY_DEFAULT_ZONE),
-        ("PRO2-S", SCALEWAY_SPARE_ZONE),
-    ],
-    "medium-plus": [
-        ("BASIC3-X16C-64G", SCALEWAY_DEFAULT_ZONE),
-        ("PRO2-M", SCALEWAY_DEFAULT_ZONE),
-        ("PRO2-M", SCALEWAY_SPARE_ZONE),
-    ],
-}
-
-
-def get_scaleway_fallback_chain(
-    flavor: str,
-) -> Optional[List[Tuple[str, str]]]:
-    """
-    Return the multizone fallback chain for a Scaleway abstract flavor.
-
-    Args:
-        flavor: Abstract flavor name (e.g., "medium", "medium-plus")
-
-    Returns:
-        Ordered list of ``(instance_type, zone)`` pairs, or ``None``
-        if the flavor has no fallback chain (use the simple mapping).
-    """
-    return SCALEWAY_FLAVOR_FALLBACKS.get(flavor)
 
 
 def get_instance_type(provider: Provider, flavor: str) -> str:
@@ -113,14 +90,14 @@ def get_instance_type(provider: Provider, flavor: str) -> str:
         Provider-specific instance type
 
     Examples:
-        >>> get_instance_type(Provider.SCALEWAY, "small")
-        'PLAY2-NANO'
+        >>> get_instance_type(Provider.SCALEWAY, "dev-xs")
+        'BASIC3-X2C-4G'
 
-        >>> get_instance_type(Provider.AWS, "medium")
-        't3.medium'
+        >>> get_instance_type(Provider.AWS, "std-m")
+        'm6i.2xlarge'
 
-        >>> get_instance_type(Provider.SCALEWAY, "PRO2-XXS")
-        'PRO2-XXS'  # Pass-through for exact instance types
+        >>> get_instance_type(Provider.SCALEWAY, "COMPUTE3-X8C-16G")
+        'COMPUTE3-X8C-16G'  # Pass-through for exact instance types
     """
     provider_key = provider.value
 
@@ -151,7 +128,7 @@ def list_available_flavors(provider: Provider) -> list[str]:
 
     Example:
         >>> list_available_flavors(Provider.SCALEWAY)
-        ['small', 'tiny', 'medium', 'medium-plus', 'large', ...]
+        ['dev-xs', 'dev-s', 'dev-m', 'dev-l', 'std-xs', 'std-s', ...]
     """
     provider_key = provider.value
 
@@ -174,7 +151,7 @@ def validate_flavor(provider: Provider, flavor: str, allow_exact: bool = True) -
         True if flavor is valid, False otherwise
 
     Example:
-        >>> validate_flavor(Provider.SCALEWAY, "small")
+        >>> validate_flavor(Provider.SCALEWAY, "dev-xs")
         True
 
         >>> validate_flavor(Provider.SCALEWAY, "invalid")
@@ -211,11 +188,11 @@ def get_flavor_info(provider: Provider, flavor: str) -> Dict[str, str]:
         - is_exact: Whether the flavor was an exact instance type
 
     Example:
-        >>> get_flavor_info(Provider.SCALEWAY, "medium")
-        {'abstract_flavor': 'medium', 'instance_type': 'PRO2-S', 'is_exact': False}
+        >>> get_flavor_info(Provider.SCALEWAY, "std-m")
+        {'abstract_flavor': 'std-m', 'instance_type': 'STANDARD3-X8C-32G', 'is_exact': False}
 
-        >>> get_flavor_info(Provider.SCALEWAY, "PRO2-XXS")
-        {'abstract_flavor': None, 'instance_type': 'PRO2-XXS', 'is_exact': True}
+        >>> get_flavor_info(Provider.SCALEWAY, "COMPUTE3-X8C-16G")
+        {'abstract_flavor': None, 'instance_type': 'COMPUTE3-X8C-16G', 'is_exact': True}
     """
     provider_key = provider.value
     instance_type = get_instance_type(provider, flavor)

@@ -45,7 +45,7 @@ class ScalewayCompute(ComputeInterface):
         """
         Get the OS image label for the bastion node.
 
-        Since bastion always uses PLAY2-NANO (block-storage-only instance),
+        Since bastion always uses a block-storage-only instance (Gen3 BASIC3),
         we return the marketplace image label format (e.g., "rockylinux_9")
         rather than a UUID.
 
@@ -226,7 +226,7 @@ class ScalewayCompute(ComputeInterface):
         Args:
             name: Instance name
             image: Image ID (UUID)
-            instance_type: Instance type (e.g., "PLAY2-NANO")
+            instance_type: Instance type (e.g., "BASIC3-X4C-8G")
             security_group: Security group resource
             tags: List of tags
             **kwargs: Additional parameters:
@@ -246,15 +246,17 @@ class ScalewayCompute(ComputeInterface):
             user_data_dict = {"cloud-init": user_data}
 
         # Determine if instance type uses block-storage-only
-        # (PLAY2, STARDUST, PRO2 families)
-        # These instances MUST NOT have root_volume specified - Scaleway
-        # manages it automatically. Also, they need image LABELS not UUIDs,
-        # as marketplace image UUIDs contain local volume specs
+        # Gen3 (BASIC3, STANDARD3, COMPUTE3) and legacy (PLAY2, PRO2, STARDUST)
+        # families MUST NOT have root_volume specified — Scaleway manages it
+        # automatically. They also need image LABELS not UUIDs, as marketplace
+        # image UUIDs embed local volume specs.
         uses_block_storage_only = (
-            instance_type.startswith("PLAY2-")
+            instance_type.startswith("BASIC3-")
+            or instance_type.startswith("STANDARD3-")
+            or instance_type.startswith("COMPUTE3-")
+            or instance_type.startswith("PLAY2-")
             or instance_type.startswith("STARDUST")
             or instance_type.startswith("PRO2-")
-            or instance_type.startswith("BASIC3-")
         )
 
         # For block-storage-only instances using marketplace images,
@@ -316,7 +318,7 @@ class ScalewayCompute(ComputeInterface):
                 volume_type="sbs_volume",
             )
         elif not uses_block_storage_only and kwargs.get("root_volume_size_gb"):
-            # For instances that support local storage (DEV1, GP1, etc.)
+            # For instances that support local storage
             root_volume = scaleway.instance.ServerRootVolumeArgs(
                 size_in_gb=kwargs.get("root_volume_size_gb"),
                 delete_on_termination=True,
