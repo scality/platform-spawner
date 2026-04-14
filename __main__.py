@@ -136,12 +136,7 @@ def main():
     from config.flavors import get_instance_type
     instance_type = get_instance_type(provider, instance_flavor)
     bastion_instance_type = get_instance_type(provider, bastion_flavor)
-            else:
-                pulumi.log.warn(
-                    f"Could not resolve availability for flavor '{instance_flavor}', "
-                    f"using default {instance_type}@{zone}"
-                )
-    
+
     pulumi.log.info(f"Instance flavor '{instance_flavor}' mapped to {instance_type}")
     pulumi.log.info(f"Bastion flavor '{bastion_flavor}' mapped to {bastion_instance_type}")
     
