@@ -3,6 +3,11 @@ name: "End to End Tests"
 on:
   workflow_call:
 
+permissions:
+  id-token: write
+  actions: read
+  contents: read
+
 jobs:
   test-spawn:
     runs-on: ubuntu-24.04
@@ -10,13 +15,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
       - name: Spawn platform
         uses: ./
         with:
           action: spawn
-          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          aws_region: ${{ vars.AWS_REGION }}
           artifacts_user: ${{ secrets.ARTIFACTS_USER }}
           artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
           stack_name: "${{ github.workflow }}-${{ github.run_number }}"
@@ -38,11 +47,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
       - name: Destroy platform
         uses: ./
         with:
           action: destroy
-          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          aws_region: ${{ vars.AWS_REGION }}
           stack_name: "${{ github.workflow }}-${{ github.run_number }}"
