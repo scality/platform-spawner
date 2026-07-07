@@ -6,6 +6,11 @@ on:
     # Run it every day at midnight
     - cron: "0 0 * * *"
 
+permissions:
+  id-token: write
+  actions: read
+  contents: read
+
 jobs:
   stack-to-delete:
     runs-on: ubuntu-24.04
@@ -15,6 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
       - name: List stacks to delete
         id: list_stacks
         uses: ./
@@ -22,9 +34,6 @@ jobs:
           action: list
           # List stacks older than 4 hours
           age: 4
-          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          aws_region: ${{ vars.AWS_REGION }}
 
   garbage-collection:
     needs: stack-to-delete
@@ -38,11 +47,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
       - name: Destroy platform
         uses: ./
         with:
           action: destroy
-          aws_access_key_id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          aws_region: ${{ vars.AWS_REGION }}
           stack_name: ${{ matrix.stack }}
