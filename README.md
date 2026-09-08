@@ -49,6 +49,8 @@ A platform is described by the configuration of its stack. Set a key with
 | ssh_key_name | Name of the SSH key to use (either this or ssh_private_key_create must be set) | string | `` | no |
 | ssh_private_key_create | If true, a new SSH key will be created (either this or ssh_key_name must be set) | boolean | `False` | no |
 | disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |
+| openstack_external_network | Name of the network providing internet access and floating IPs | string | `Ext-Net` | no |
+| openstack_dns_nameservers | Resolvers handed to the instances (OpenStack has no managed resolver) | array | `['8.8.8.8', '8.8.4.4']` | no |
 | extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
 

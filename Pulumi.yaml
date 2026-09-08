@@ -97,6 +97,20 @@ config:
     description: "If true, the instance will not be automatically stopped"
     default: false
 
+  # OpenStack specific configuration
+  openstack_external_network:
+    type: string
+    description: "Name of the network providing internet access and floating IPs"
+    default: "Ext-Net"
+  openstack_dns_nameservers:
+    type: array
+    items:
+      type: string
+    description: "Resolvers handed to the instances (OpenStack has no managed resolver)"
+    default:
+      - 8.8.8.8
+      - 8.8.4.4
+
   # Extra stuff
   extra_volumes:
     type: array

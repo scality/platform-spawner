@@ -6,12 +6,13 @@ All implementing the BaseProvider interface.
 
 import pulumi
 
-from providers import aws, base
+from providers import aws, base, openstack
 
 UNKNOWN_PROVIDER = "Unknown provider {name!r}, must be one of: {known}."
 
 _PROVIDERS: dict[str, type[base.BaseProvider]] = {
     aws.AWSProvider.provider_name: aws.AWSProvider,
+    openstack.OpenStackProvider.provider_name: openstack.OpenStackProvider,
 }
 
 

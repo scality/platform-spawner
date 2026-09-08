@@ -139,7 +139,9 @@ dependencies = [
     { name = "pulumi" },
     { name = "pulumi-aws" },
     { name = "pulumi-command" },
+    { name = "pulumi-openstack" },
     { name = "pulumi-tls" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "ruff" },
 ]
@@ -149,7 +151,9 @@ requires-dist = [
     { name = "pulumi", specifier = ">=3.0.0,<4.0.0" },
     { name = "pulumi-aws", specifier = ">=7.0.0,<8.0.0" },
     { name = "pulumi-command", specifier = ">=1.0.0,<2.0.0" },
+    { name = "pulumi-openstack", specifier = ">=5.0.0,<6.0.0" },
     { name = "pulumi-tls", specifier = ">=5.0.0,<6.0.0" },
+    { name = "pyyaml", specifier = "~=6.0.2" },
     { name = "requests", specifier = "~=2.33.0" },
     { name = "ruff", specifier = "~=0.12.9" },
 ]
@@ -211,6 +215,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/96/b4/03d37a61e49b636b7cd5ba72a28996f07a18d815e6ba2343f6071b77fc51/pulumi_command-1.1.0.tar.gz", hash = "sha256:509b2709938aacfb13717b7b537d728375cd90b409093bf24dacab17d9294a4a", size = 33072, upload-time = "2025-05-27T18:25:11.671Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/f4/c89295ca63e2555cda4b4e16069200cf04262ac87ae263c48562f8297cc8/pulumi_command-1.1.0-py3-none-any.whl", hash = "sha256:d6a62444a1a9a26ded354b668a9cf88c0becd4faacabe4adafbc8dbb65af96c4", size = 36859, upload-time = "2025-05-27T18:25:10.401Z" },
+]
+
+[[package]]
+name = "pulumi-openstack"
+version = "5.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "parver" },
+    { name = "pulumi" },
+    { name = "semver" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4b/79/89f6e73bf43d2092d2e8caaea3cb8e259e4b2c9bdd1ece68d63447e38d2a/pulumi_openstack-5.4.2.tar.gz", hash = "sha256:033bab0c16acdc7dcac908d96fc71a9308ad6a0aa16c73f80a44bb08101144d3", size = 413472, upload-time = "2026-04-10T16:32:55.426Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/54/04df2d1e4d5a2d0496c8d6a276bd8da86d17f824d54e99cf325bd3c81eb8/pulumi_openstack-5.4.2-py3-none-any.whl", hash = "sha256:4290e7d123ccbad832c4b953d7b03b4bca51359e51ad45950b37a0e9b3e2fe0c", size = 647232, upload-time = "2026-04-10T16:32:53.442Z" },
 ]
 
 [[package]]
