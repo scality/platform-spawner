@@ -33,7 +33,7 @@ class BaseProvider(ABC):
         name: str,
         image_name: str,
         flavor: InstanceFlavor,
-        key_name: str,
+        key_name: pulumi.Input[str],
         root_disk_size: int,
         interfaces: list[pulumi.Resource],
         extra_volumes: list[dict] | None = None,
@@ -49,10 +49,10 @@ class BaseProvider(ABC):
     def create_key_pair(
         self,
         name: str,
-        public_key: str,
-    ) -> pulumi.Resource:
+        public_key: pulumi.Input[str],
+    ) -> pulumi.Output[str]:
         """
-        Create and return a new key pair.
+        Create a new key pair and return its name.
 
         This method must be implemented by subclasses.
         """

@@ -43,7 +43,7 @@ class AWSProvider(base.BaseProvider):
         name: str,
         image_name: str,
         flavor: base.InstanceFlavor,
-        key_name: str,
+        key_name: pulumi.Input[str],
         root_disk_size: int,
         interfaces: list[pulumi_aws.ec2.NetworkInterface],
         extra_volumes: list[dict] | None = None,
@@ -94,14 +94,14 @@ class AWSProvider(base.BaseProvider):
     def create_key_pair(
         self,
         name: str,
-        public_key: str,
-    ) -> pulumi_aws.ec2.KeyPair:
-        """Create and return a new key pair."""
+        public_key: pulumi.Input[str],
+    ) -> pulumi.Output[str]:
+        """Create a new key pair and return its name."""
         return pulumi_aws.ec2.KeyPair(
             name,
             public_key=public_key,
             key_name=self.compute_resource_name(name),
-        )
+        ).key_name
 
     def create_network(
         self,

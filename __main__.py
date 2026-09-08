@@ -171,7 +171,11 @@ def __main__() -> None:
     pulumi.Output.all(ssh_info).apply(_generate_ssh_config)
 
 
-def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider, ssh_info: dict) -> str:
+def _prepare_ssh_key(
+    config: pulumi.Config,
+    provider: base.BaseProvider,
+    ssh_info: dict,
+) -> pulumi.Input[str]:
     if config.require_bool("ssh_private_key_create"):
         path = pathlib.Path(f"./ssh_{provider.compute_resource_name()}").resolve()
 
@@ -193,7 +197,7 @@ def _prepare_ssh_key(config: pulumi.Config, provider: base.BaseProvider, ssh_inf
         )
 
         ssh_info["key"] = str(path)
-        return provider.create_key_pair("key", private_key.public_key_openssh).id
+        return provider.create_key_pair("key", private_key.public_key_openssh)
 
     ssh_key_name = config.require("ssh_key_name")
     if not ssh_key_name:
