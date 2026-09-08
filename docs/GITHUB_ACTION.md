@@ -23,7 +23,13 @@ Whatever it is asked to do, it takes:
 | `action` | `spawn` | What to do: `spawn`, `destroy` or `list` |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
 
-AWS credentials are not inputs. They go in the environment of the job.
+The credentials of the cloud are not inputs. They go in the environment of the
+job, and they are the ones
+[step 2 of the quickstart](QUICKSTART.md#2-get-cloud-credentials) sets up.
+
+> **Note**
+> AWS credentials are needed on top of the provider ones whenever
+> `store_to_s3` is enabled, since the stack state lives in an S3 bucket.
 
 ## Spawning
 

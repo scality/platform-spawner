@@ -6,7 +6,7 @@ fixed, and the same on every platform.
 ```text
                        internet
                           |
-                   public IP (an elastic IP from AWS)
+         public IP (an elastic IP on AWS, a floating IP on OpenStack)
                           |
      +--------------------+-------------------+
      | bastion                                |

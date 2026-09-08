@@ -53,7 +53,7 @@ config:
   # Node hosts configs
   instance_image:
     type: string
-    description: "Image for the instances (e.g.: AMI name for AWS)"
+    description: "Image for the instances (AMI name on AWS, Glance image name on OpenStack)"
   instance_count:
     type: integer
     description: "Number of instances to create"
@@ -64,7 +64,7 @@ config:
     default: "medium"
   instance_root_disk_size:
     type: integer
-    description: "Root disk size for the instance (in GiB)"
+    description: "Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack)"
     default: 50
 
   # Bastion host configuration
@@ -78,7 +78,7 @@ config:
     default: "small"
   bastion_root_disk_size:
     type: integer
-    description: "Root disk size for the bastion host (in GiB)"
+    description: "Root disk size for the bastion in GiB (AWS only, set by the flavor on OpenStack)"
     default: 30
 
   # SSH information

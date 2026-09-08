@@ -5,6 +5,10 @@
 A Pulumi program that spawns a platform to test on. One bastion, a handful of
 nodes, three networks, and addresses that are the same on every platform.
 
+It spawns on AWS, or on an OpenStack cloud such as OVH Public Cloud. Both
+take the same configuration keys. Only the values differ, mostly the image
+and flavor names.
+
 ```bash
 pulumi stack init <stack>
 pulumi config set instance_image rocky-9
@@ -39,13 +43,13 @@ A platform is described by the configuration of its stack. Set a key with
 | authorized_udp_ports | List of authorized UDP ports for ingress to the instances | array | `[]` | no |
 | authorized_icmp | Whether ICMP traffic is authorized for ingress to the instances | boolean | `True` | no |
 | authorized_cidrs | List of authorized CIDRs for the instances | array | `['141.94.181.72/32', '84.14.13.200/29', '193.248.60.56/32', '38.142.74.18/32', '__my_ip__']` | no |
-| instance_image | Image for the instances (e.g.: AMI name for AWS) | string | N/A | yes |
+| instance_image | Image for the instances (AMI name on AWS, Glance image name on OpenStack) | string | N/A | yes |
 | instance_count | Number of instances to create | integer | `3` | no |
 | instance_flavor | Flavor of the instance | string | `medium` | no |
-| instance_root_disk_size | Root disk size for the instance (in GiB) | integer | `50` | no |
+| instance_root_disk_size | Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack) | integer | `50` | no |
 | bastion_image | Image for the bastion host | string | `rocky-9` | no |
 | bastion_flavor | Flavor of the bastion host | string | `small` | no |
-| bastion_root_disk_size | Root disk size for the bastion host (in GiB) | integer | `30` | no |
+| bastion_root_disk_size | Root disk size for the bastion in GiB (AWS only, set by the flavor on OpenStack) | integer | `30` | no |
 | ssh_key_name | Name of the SSH key to use (either this or ssh_private_key_create must be set) | string | `` | no |
 | ssh_private_key_create | If true, a new SSH key will be created (either this or ssh_key_name must be set) | boolean | `False` | no |
 | disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |

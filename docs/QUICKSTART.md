@@ -1,6 +1,7 @@
 # Quickstart
 
-Spawn a platform from your machine, connect to it, then take it down.
+Spawn a platform from your machine, on OVH Public Cloud (OpenStack) or on
+AWS, connect to it, then take it down.
 
 Spawning from a workflow is [another story](GITHUB_ACTION.md).
 
@@ -29,7 +30,24 @@ cd platform-spawner
 
 ## 2. Get cloud credentials
 
-Log in to AWS the way your team does, with SSO for example:
+### OVH Public Cloud (OpenStack)
+
+1. In the OVH Manager, open your Public Cloud project.
+2. Create an OpenStack user, or ask your team for one. It needs rights on
+   compute, network, block storage and images.
+3. Download the OpenStack RC file (Keystone v3) of the region you want.
+4. Load it. It asks for the password of the user:
+
+   ```bash
+   source ./openrc.sh
+   ```
+
+The RC file sets the `OS_*` variables, and only for the shell that loaded it.
+Load it again in every new one.
+
+### AWS
+
+Log in the way your team does, with SSO for example:
 
 ```bash
 aws sso login --profile <profile>
@@ -69,9 +87,25 @@ pulumi stack init <you>-dev
 
 ## 5. Configure the stack
 
-The smallest configuration that spawns something:
+The smallest configuration that spawns something, on OVH Public Cloud:
 
 ```bash
+pulumi config set provider openstack
+pulumi config set product <you>
+pulumi config set instance_image rocky-9
+pulumi config set instance_count 1
+pulumi config set ssh_private_key_create true
+```
+
+> **Note**
+> The OpenStack provider needs a network providing internet access and
+> floating IPs, which is `Ext-Net` on OVH Public Cloud. Set
+> `openstack_external_network` if your cloud names it differently.
+
+The same on AWS, which needs a region of its own:
+
+```bash
+pulumi config set provider aws
 pulumi config set aws:region eu-north-1
 pulumi config set product <you>
 pulumi config set instance_image rocky-9
@@ -81,9 +115,10 @@ pulumi config set ssh_private_key_create true
 
 | Key | Why |
 |-----|-----|
-| `aws:region` | Where the platform goes. `rocky-9` is only known in `eu-north-1` and `us-west-2`. |
+| `provider` | Which cloud to spawn on. `aws` is the default. |
+| `aws:region` | Where an AWS platform goes. `rocky-9` is only known there in `eu-north-1` and `us-west-2`. |
 | `product` | Prefixes the names of the resources. Two platforms sharing a product and a stack name collide. |
-| `instance_image` | The AMI the nodes boot on, by name. It has no default. |
+| `instance_image` | What the nodes boot on, an AMI name on AWS and a Glance image name on OpenStack. It has no default. |
 | `instance_count` | One node is enough to see it work, three is the default. |
 | `ssh_private_key_create` | Generates a key for this platform. The other way is `ssh_key_name`, a key the cloud already holds, which then has to be in your `ssh-agent`. |
 
@@ -93,7 +128,7 @@ The ones worth knowing early:
 | Key | Default | What it does |
 |-----|---------|--------------|
 | `instance_flavor` | `medium` | `small`, `medium`, `large` or `xlarge`. |
-| `instance_root_disk_size` | `50` | Root disk of a node, in GiB. |
+| `instance_root_disk_size` | `50` | Root disk of a node, in GiB. AWS only, since the flavor decides it on OpenStack. |
 | `bastion_flavor` | `small` | Same sizes as `instance_flavor`. |
 | `authorized_cidrs` | `['__my_ip__']` | Who may reach the bastion. `__my_ip__` stands for the public address of the machine spawning. |
 | `offline` | `false` | `true` cuts the nodes off the internet, and the bastion keeps it. |
@@ -104,7 +139,7 @@ easier for the keys taking a list:
 
 ```yaml
 config:
-  aws:region: eu-north-1
+  platform-spawner:provider: openstack
   platform-spawner:product: jdoe
   platform-spawner:instance_image: rocky-9
   platform-spawner:instance_count: 3
