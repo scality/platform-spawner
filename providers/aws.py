@@ -206,7 +206,7 @@ class AWSProvider(base.BaseProvider):
     ) -> pulumi_aws.ec2.SecurityGroup:
         """Create a new security group."""
         if ingress_cidrs is None:
-            ingress_cidrs = ["0.0.0/0"]
+            ingress_cidrs = ["0.0.0.0/0"]
 
         sg = pulumi_aws.ec2.SecurityGroup(
             name,
