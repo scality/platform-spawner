@@ -32,6 +32,7 @@ A platform is described by the configuration of its stack. Set a key with
 <!-- BEGIN_PULUMI_DOCS -->
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|----------|
+| provider | Cloud provider to spawn the platform on | string | `aws` | no |
 | product | Product name for the resources | string | `unknown` | no |
 | offline | If true, the platform will not be connected to the internet | boolean | `False` | no |
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |

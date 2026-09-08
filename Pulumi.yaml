@@ -7,6 +7,10 @@ runtime:
 
 config:
   # Global values
+  provider:
+    type: string
+    description: "Cloud provider to spawn the platform on"
+    default: "aws"
   product:
     type: string
     description: "Product name for the resources"

@@ -1,4 +1,4 @@
-"""An AWS Python Pulumi program."""
+"""A Pulumi program to spawn platforms on a cloud provider."""
 
 import pathlib
 
@@ -7,7 +7,8 @@ import pulumi_command
 import pulumi_tls
 import requests
 
-from providers import aws, base
+import providers
+from providers import base
 
 SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
 SSH_USERS = {
@@ -18,7 +19,7 @@ SSH_CONFIG_FILE = pathlib.Path("./ssh_config").resolve()
 
 
 def __main__() -> None:
-    provider = aws.AWSProvider()
+    provider = providers.get_provider()
 
     config = pulumi.Config()
 
