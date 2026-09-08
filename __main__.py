@@ -114,16 +114,16 @@ def __main__() -> None:
         "bastion",
         {
             "id": bastion.id,
-            "public_ip": bastion.public_ip,
+            "public_ip": bastion_public_iface.public_ip,
             "private_ips": {
-                "public": bastion_public_iface.private_ips[0],
-                "control-plane": bastion_cp_iface.private_ips[0],
-                "workload-plane": bastion_wp_iface.private_ips[0],
+                "public": bastion_public_iface.ip,
+                "control-plane": bastion_cp_iface.ip,
+                "workload-plane": bastion_wp_iface.ip,
             },
         },
     )
     ssh_info["bastion"] = {
-        "ip": bastion.public_ip,
+        "ip": bastion_public_iface.public_ip,
         "user": SSH_USERS.get(config.require("bastion_image")),
     }
     nodes_info = {}
@@ -156,12 +156,12 @@ def __main__() -> None:
         nodes_info[f"node-{node_index}"] = {
             "id": node.id,
             "private_ips": {
-                "control-plane": cp_iface.private_ips[0],
-                "workload-plane": wp_iface.private_ips[0],
+                "control-plane": cp_iface.ip,
+                "workload-plane": wp_iface.ip,
             },
         }
         ssh_info["nodes"][f"node-{node_index}"] = {
-            "ip": cp_iface.private_ips[0],
+            "ip": cp_iface.ip,
             "user": SSH_USERS.get(config.require("instance_image")),
         }
 

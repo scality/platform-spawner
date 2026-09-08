@@ -45,7 +45,7 @@ class AWSProvider(base.BaseProvider):
         flavor: base.InstanceFlavor,
         key_name: pulumi.Input[str],
         root_disk_size: int,
-        interfaces: list[pulumi_aws.ec2.NetworkInterface],
+        interfaces: list[base.Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
     ) -> pulumi_aws.ec2.Instance:
@@ -82,7 +82,7 @@ class AWSProvider(base.BaseProvider):
             ),
             network_interfaces=[
                 pulumi_aws.ec2.InstanceNetworkInterfaceArgs(
-                    network_interface_id=iface.id,
+                    network_interface_id=iface.resource.id,
                     device_index=index,
                 )
                 for index, iface in enumerate(interfaces)
@@ -264,7 +264,7 @@ class AWSProvider(base.BaseProvider):
         ip: str,
         security_groups: list[pulumi_aws.ec2.SecurityGroup] | None = None,
         public: bool = False,
-    ) -> pulumi_aws.ec2.NetworkInterface:
+    ) -> base.Interface:
         """Create a new network interface."""
         name = f"{node_name}-{subnet_name}"
         tags = {
@@ -282,15 +282,20 @@ class AWSProvider(base.BaseProvider):
             tags=tags,
         )
 
+        public_ip = None
         if public:
-            pulumi_aws.ec2.Eip(
+            public_ip = pulumi_aws.ec2.Eip(
                 name,
                 domain="vpc",
                 network_interface=iface.id,
                 tags=tags,
-            )
+            ).public_ip
 
-        return iface
+        return base.Interface(
+            resource=iface,
+            ip=iface.private_ips[0],
+            public_ip=public_ip,
+        )
 
     def _get_ami(self, image_name: str) -> pulumi_aws.ec2.GetAmiResult:
         """Retrieve the AMI ID for a given image name."""

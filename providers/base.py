@@ -1,5 +1,6 @@
 """Base class for all providers."""
 
+import dataclasses
 from abc import ABC, abstractmethod
 from enum import StrEnum
 
@@ -13,6 +14,15 @@ class InstanceFlavor(StrEnum):
     MEDIUM = "medium"
     LARGE = "large"
     XLARGE = "xlarge"
+
+
+@dataclasses.dataclass(frozen=True)
+class Interface:
+    """A network interface, in a form that is common to every provider."""
+
+    resource: pulumi.CustomResource
+    ip: pulumi.Output[str]
+    public_ip: pulumi.Output[str] | None = None
 
 
 class BaseProvider(ABC):
@@ -35,10 +45,10 @@ class BaseProvider(ABC):
         flavor: InstanceFlavor,
         key_name: pulumi.Input[str],
         root_disk_size: int,
-        interfaces: list[pulumi.Resource],
+        interfaces: list[Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
-    ) -> pulumi.Resource:
+    ) -> pulumi.CustomResource:
         """
         Create and return a new instance.
 
@@ -111,7 +121,7 @@ class BaseProvider(ABC):
         ip: str,
         security_groups: list[pulumi.Resource] | None = None,
         public: bool = False,
-    ) -> pulumi.Resource:
+    ) -> Interface:
         """
         Create and return a new network interface.
 
