@@ -143,6 +143,7 @@ The ones worth knowing early:
 | `authorized_cidrs` | `['__my_ip__']` | Who may reach the bastion. `__my_ip__` stands for the public address of the machine spawning. |
 | `offline` | `false` | `true` cuts the nodes off the internet, and the bastion keeps it. |
 | `extra_volumes` | none | Extra disks on every node. |
+| `extra_networks` | none | Extra isolated networks, on every machine. See [PLATFORM.md](PLATFORM.md#extra-networks). |
 
 These commands write `Pulumi.<stack>.yaml`. Writing that file directly is
 easier for the keys taking a list:

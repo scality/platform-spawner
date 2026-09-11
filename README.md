@@ -57,6 +57,7 @@ A platform is described by the configuration of its stack. Set a key with
 | disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |
 | openstack_external_network | Name of the network providing internet access and floating IPs | string | `Ext-Net` | no |
 | openstack_dns_nameservers | Resolvers handed to the instances (OpenStack has no managed resolver) | array | `['8.8.8.8', '8.8.4.4']` | no |
+| extra_networks | Additional isolated networks, attached to every machine | array | `[]` | no |
 | extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
 

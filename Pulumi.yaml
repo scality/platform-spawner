@@ -120,6 +120,21 @@ config:
       - 8.8.4.4
 
   # Extra stuff
+  extra_networks:
+    type: array
+    description: "Additional isolated networks, attached to every machine"
+    default: []
+    items:
+      # NOTE: Those types are not handled by pulumi typing yet so
+      # it's only here for explanation but pulumi does not validate it
+      type: object
+      properties:
+      - name:
+          type: string
+          description: "Name of the network, defaults to extra-network-<position>"
+      - redundant:
+          type: boolean
+          description: "Give the instances a second interface on it, for bonding"
   extra_volumes:
     type: array
     description: "Additional volumes to attach to the instances"

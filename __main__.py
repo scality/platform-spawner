@@ -1,5 +1,6 @@
 """A Pulumi program to spawn platforms on a cloud provider."""
 
+import ipaddress
 import pathlib
 
 import pulumi
@@ -12,6 +13,9 @@ from providers import base
 
 SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
 SSH_USER_UNKNOWN = "No user to reach the {machine} with, set {machine}_ssh_user."
+EXTRA_NETWORK_TOO_SMALL = "{name} ({cidr}) has no room left, there are too many instances."
+TOO_MANY_EXTRA_NETWORKS = "At most {limit} extra networks can be asked for."
+DUPLICATE_EXTRA_NETWORK = "Several extra networks are named {names}."
 # Fallback for the images we know, anything else has to be configured
 SSH_USERS = {
     "rocky-8": "rocky",
@@ -46,6 +50,11 @@ for host in {hosts}; do
     fi
 done
 """
+# Extra networks sit beside the public one, in the space the planes already
+# share, and the control plane is what bounds how many of them there can be
+EXTRA_NETWORK_CIDR = "172.30.{index}.0/24"
+EXTRA_NETWORK_MAX = 99
+EXTRA_NETWORK_NAME = "extra-network-{index}"
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 SSH_CONFIG_LINK_NAME = "ssh_config"
 
@@ -113,6 +122,23 @@ def __main__() -> None:
         open_egress=True,
     )
 
+    extra_networks = config.require_object("extra_networks")
+    extra_subnets = [
+        (
+            extra,
+            name,
+            provider.create_subnet(
+                name=name,
+                network=main_network,
+                cidr=_extra_network_cidr(index),
+            ),
+        )
+        for index, (extra, name) in enumerate(
+            zip(extra_networks, _extra_network_names(extra_networks), strict=True),
+            start=1,
+        )
+    ]
+
     # Create instances
     bastion_public_iface = provider.create_interface(
         subnet=public_subnet,
@@ -137,13 +163,22 @@ def __main__() -> None:
         ip="172.30.200.99",
     )
     instances = []
+    bastion_extra_ifaces = _create_extra_interfaces(
+        provider, extra_subnets, "bastion", 99, [internal_sg], max_interfaces=1
+    )
+
     bastion = provider.create_instance(
         name="bastion",
         image_name=config.require("bastion_image"),
         flavor=base.InstanceFlavor(config.require("bastion_flavor")),
         key_name=ssh_key_name,
         root_disk_size=config.require_int("bastion_root_disk_size"),
-        interfaces=[bastion_public_iface, bastion_wp_iface, bastion_cp_iface],
+        interfaces=[
+            bastion_public_iface,
+            bastion_wp_iface,
+            bastion_cp_iface,
+            *(iface for _, iface in bastion_extra_ifaces),
+        ],
         disable_auto_stop=config.require_bool("disable_auto_stop"),
     )
     pulumi.export(
@@ -155,6 +190,7 @@ def __main__() -> None:
                 "public": bastion_public_iface.ip,
                 "control-plane": bastion_cp_iface.ip,
                 "workload-plane": bastion_wp_iface.ip,
+                **{name: iface.ip for name, iface in bastion_extra_ifaces},
             },
         },
     )
@@ -180,13 +216,17 @@ def __main__() -> None:
             security_groups=[internal_sg, egress_sg],
             ip=f"172.30.200.{100 + node_index}",
         )
+        extra_ifaces = _create_extra_interfaces(
+            provider, extra_subnets, f"node-{node_index}", 100 + node_index, [internal_sg]
+        )
+
         node = provider.create_instance(
             name=f"node-{node_index}",
             image_name=instance_image,
             flavor=instance_flavor,
             key_name=ssh_key_name,
             root_disk_size=config.require_int("instance_root_disk_size"),
-            interfaces=[wp_iface, cp_iface],
+            interfaces=[wp_iface, cp_iface, *(iface for _, iface in extra_ifaces)],
             extra_volumes=config.require_object("extra_volumes"),
             disable_auto_stop=config.require_bool("disable_auto_stop"),
         )
@@ -196,6 +236,7 @@ def __main__() -> None:
             "private_ips": {
                 "control-plane": cp_iface.ip,
                 "workload-plane": wp_iface.ip,
+                **{name: iface.ip for name, iface in extra_ifaces},
             },
         }
         ssh_info["nodes"][f"node-{node_index}"] = {
@@ -274,6 +315,90 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
             "count": vol.get("count", 1),
         }
     return volumes
+
+
+def _extra_network_cidr(index: int) -> str:
+    """
+    Return the address space of the `index`th extra network.
+
+    NOTE: Derived rather than configured. An extra network is the same kind
+    of isolated private network as the planes, whose address spaces are
+    spelled out here too, so there is nothing for a caller to decide. Letting
+    it decide would mean checking that what it picks overlaps neither the
+    planes nor another extra network, which nothing did.
+    """
+    if index > EXTRA_NETWORK_MAX:
+        message = TOO_MANY_EXTRA_NETWORKS.format(limit=EXTRA_NETWORK_MAX)
+        raise ValueError(message)
+
+    return EXTRA_NETWORK_CIDR.format(index=index)
+
+
+def _extra_network_names(extra_networks: list[dict]) -> list[str]:
+    """
+    Return the name of every extra network, in order.
+
+    NOTE: A name is a label and nothing else. The address space comes from
+    the position in the list, so renaming a network leaves it exactly where
+    it was and reordering the list moves it, whatever the names say.
+    """
+    names = [
+        extra.get("name") or EXTRA_NETWORK_NAME.format(index=index)
+        for index, extra in enumerate(extra_networks, start=1)
+    ]
+
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        message = DUPLICATE_EXTRA_NETWORK.format(names=", ".join(duplicates))
+        raise ValueError(message)
+
+    return names
+
+
+def _create_extra_interfaces(
+    provider: base.BaseProvider,
+    extra_subnets: list[tuple[dict, str, pulumi.Resource]],
+    machine: str,
+    host: int,
+    security_groups: list[pulumi.Resource],
+    max_interfaces: int = 2,
+) -> list[tuple[str, base.Interface]]:
+    """
+    Attach a machine to every extra network, possibly more than once.
+
+    `host` is the address the machine takes on each of them, the same one it
+    holds on the other networks. A second interface is what makes a bonding
+    setup testable, and it sits a hundred further so that addresses stay
+    readable: node 3 at `.103` also answers at `.203`. The bastion only ever
+    takes the first one.
+    """
+    interfaces = []
+    for network_index, (extra, network_name, subnet) in enumerate(extra_subnets, start=1):
+        cidr = _extra_network_cidr(network_index)
+        addresses = ipaddress.ip_network(cidr)
+        count = min(2 if extra.get("redundant") else 1, max_interfaces)
+
+        for iface_index in range(1, count + 1):
+            offset = host + 100 * (iface_index - 1)
+            if offset >= addresses.num_addresses:
+                message = EXTRA_NETWORK_TOO_SMALL.format(cidr=cidr, name=network_name)
+                raise ValueError(message)
+
+            name = f"{network_name}-{iface_index}"
+            interfaces.append(
+                (
+                    name,
+                    provider.create_interface(
+                        subnet=subnet,
+                        subnet_name=name,
+                        node_name=machine,
+                        security_groups=security_groups,
+                        ip=str(addresses[offset]),
+                    ),
+                )
+            )
+
+    return interfaces
 
 
 def _ssh_user(config: pulumi.Config, machine: str) -> str:
