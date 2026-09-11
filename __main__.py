@@ -57,6 +57,7 @@ EXTRA_NETWORK_MAX = 99
 EXTRA_NETWORK_NAME = "extra-network-{index}"
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 SSH_CONFIG_LINK_NAME = "ssh_config"
+SSH_KNOWN_HOSTS_PREFIX = "ssh_known_hosts"
 
 
 def __main__() -> None:
@@ -401,6 +402,23 @@ def _create_extra_interfaces(
     return interfaces
 
 
+def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
+    """Return the options every host block of the config repeats."""
+    stack = ssh_config_path.name.removeprefix(f"{SSH_CONFIG_LINK_NAME}-")
+    known_hosts = ssh_config_path.with_name(f"{SSH_KNOWN_HOSTS_PREFIX}-{stack}")
+
+    return [
+        "  IdentitiesOnly yes",
+        "  StrictHostKeyChecking no",
+        # NOTE: A file of its own for each platform. The machines always sit at
+        # the same addresses, so a shared one would hold the keys of the
+        # platform before this one and get in the way, while a dedicated one
+        # still catches a key changing under us within the life of this one.
+        f"  UserKnownHostsFile {known_hosts}",
+        "  ServerAliveInterval 15",
+    ]
+
+
 def _ssh_user(config: pulumi.Config, machine: str) -> str:
     """
     Return the user to reach a machine with, configured or taken from its image.
@@ -445,6 +463,7 @@ def _wait_for_boot(
 
 def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> str:
     ssh_info = ssh_info_list[0]
+    common_options = _ssh_common_options(path)
     config_lines = []
     if "bastion" in ssh_info:
         config_lines.append("Host bastion")
@@ -454,9 +473,7 @@ def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> str:
             config_lines.append(f"  User {ssh_info['bastion']['user']}")
         if ssh_info.get("key"):
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
-        config_lines.append("  IdentitiesOnly yes")
-        config_lines.append("  StrictHostKeyChecking no")
-        config_lines.append("  ServerAliveInterval 15")
+        config_lines.extend(common_options)
         config_lines.append("")
 
     for host, info in ssh_info["nodes"].items():
@@ -469,9 +486,7 @@ def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> str:
             config_lines.append(f"  User {info['user']}")
         if ssh_info.get("key"):
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
-        config_lines.append("  IdentitiesOnly yes")
-        config_lines.append("  StrictHostKeyChecking no")
-        config_lines.append("  ServerAliveInterval 15")
+        config_lines.extend(common_options)
         config_lines.append("")
 
     path.write_text("\n".join(config_lines))

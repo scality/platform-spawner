@@ -180,6 +180,7 @@ A spawn writes its SSH files beside `Pulumi.yaml`:
 |------|------------|
 | `ssh_config-<stack>` | The configuration of that platform |
 | `ssh_config` | A link to the platform spawned last |
+| `ssh_known_hosts-<stack>` | The host keys of that platform, which the config points at |
 | `ssh_<product>_<stack>` and `.pub` | The generated key, when `ssh_private_key_create` is set |
 
 ```bash
