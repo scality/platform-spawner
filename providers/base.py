@@ -99,11 +99,17 @@ class BaseProvider(ABC):
         name: str,
         network: Network,
         cidr: str,
+        routed: bool = False,
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi.Resource | None = None,
     ) -> pulumi.Resource:
         """
         Create and return a new subnet.
+
+        `routed` tells whether the subnet sits behind a router at all, while
+        the two gateway arguments tell whether that router has a way out. They
+        are separate because a subnet can be routed and yet reach nothing,
+        which is what an offline platform looks like.
 
         This method must be implemented by subclasses.
         """

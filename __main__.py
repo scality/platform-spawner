@@ -42,6 +42,7 @@ def __main__() -> None:
         name="public",
         network=main_network,
         cidr="172.30.0.0/24",
+        routed=True,
         gateway_to_internet=True,
     )
     control_plane_subnet = provider.create_subnet(
@@ -53,6 +54,7 @@ def __main__() -> None:
         name="workload-plane",
         network=main_network,
         cidr="172.30.200.0/24",
+        routed=True,
         # Workload plane can reach the public subnet
         # if offline mode is disable
         gateway_to_net=public_subnet if not config.require_bool("offline") else None,

@@ -122,10 +122,16 @@ class AWSProvider(base.BaseProvider):
         name: str,
         network: base.Network,
         cidr: str,
+        routed: bool = False,  # noqa: ARG002
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi_aws.ec2.Subnet | None = None,
     ) -> pulumi_aws.ec2.Subnet:
-        """Create and return a new subnet."""
+        """
+        Create and return a new subnet.
+
+        NOTE: `routed` is unused, a VPC carries a local route reaching every
+        subnet it holds and there is no way to opt out of it.
+        """
         tags = {
             "network": name,
         }
