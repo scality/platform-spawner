@@ -157,7 +157,9 @@ pulumi preview   # what it would create
 pulumi up        # create it
 ```
 
-It takes a few minutes.
+It takes a few minutes. The command only returns once every machine answers
+SSH and cloud-init is done with it. A finished update is a platform ready to
+be used.
 
 ## 7. Connect
 

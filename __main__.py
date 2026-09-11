@@ -15,6 +15,35 @@ SSH_USERS = {
     "rocky-8": "rocky",
     "rocky-9": "rocky",
 }
+# Held until every machine answers SSH and cloud-init is done with it, so that
+# a finished update means a platform that can actually be used.
+BOOT_WAIT_TIMEOUT = 600
+BOOT_WAIT_SCRIPT = """set -eu
+for host in {hosts}; do
+    give_up=$(( $(date +%s) + {timeout} ))
+    until ssh -F {config} -o ConnectTimeout=10 "$host" true 2>/dev/null; do
+        if [ "$(date +%s)" -ge "$give_up" ]; then
+            echo "$host never answered ssh" >&2
+            exit 1
+        fi
+        sleep 5
+    done
+
+    # NOTE: Bounded like the wait above. `cloud-init status --wait` holds for
+    # as long as it takes, and a boot that never ends would otherwise hold the
+    # update with it. 124 is what the timeout itself exits with.
+    booted=0
+    timeout {timeout} ssh -F {config} "$host" cloud-init status --wait || booted=$?
+    if [ "$booted" -eq 124 ]; then
+        echo "$host was still booting after {timeout}s" >&2
+        exit 1
+    fi
+    if [ "$booted" -ne 0 ]; then
+        echo "$host booted badly, cloud-init exited $booted" >&2
+        exit 1
+    fi
+done
+"""
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 SSH_CONFIG_LINK_NAME = "ssh_config"
 
@@ -105,6 +134,7 @@ def __main__() -> None:
         security_groups=[internal_sg, egress_sg],
         ip="172.30.200.99",
     )
+    instances = []
     bastion = provider.create_instance(
         name="bastion",
         image_name=config.require("bastion_image"),
@@ -126,6 +156,7 @@ def __main__() -> None:
             },
         },
     )
+    instances.append(bastion)
     ssh_info["bastion"] = {
         "ip": bastion_public_iface.public_ip,
         "user": SSH_USERS.get(config.require("bastion_image")),
@@ -157,6 +188,7 @@ def __main__() -> None:
             extra_volumes=config.require_object("extra_volumes"),
             disable_auto_stop=config.require_bool("disable_auto_stop"),
         )
+        instances.append(node)
         nodes_info[f"node-{node_index}"] = {
             "id": node.id,
             "private_ips": {
@@ -174,7 +206,11 @@ def __main__() -> None:
 
     ssh_config_file = SSH_CONFIG_DIR / f"{SSH_CONFIG_LINK_NAME}-{provider.stack}"
     pulumi.export("ssh_config", str(ssh_config_file))
-    pulumi.Output.all(ssh_info).apply(lambda info: _generate_ssh_config(info, ssh_config_file))
+    ssh_config_ready = pulumi.Output.all(ssh_info).apply(
+        lambda info: _generate_ssh_config(info, ssh_config_file)
+    )
+
+    _wait_for_boot(ssh_config_ready, ["bastion", *nodes_info], instances)
 
 
 def _prepare_ssh_key(
@@ -238,7 +274,28 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
     return volumes
 
 
-def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> None:
+def _wait_for_boot(
+    ssh_config: pulumi.Output[str],
+    hosts: list[str],
+    instances: list[pulumi.CustomResource],
+) -> None:
+    """Hold the update until every machine is done booting."""
+    pulumi_command.local.Command(
+        "wait-for-boot",
+        create=ssh_config.apply(
+            lambda config: BOOT_WAIT_SCRIPT.format(
+                hosts=" ".join(hosts),
+                config=config,
+                timeout=BOOT_WAIT_TIMEOUT,
+            )
+        ),
+        # Wait again whenever a machine is replaced under us
+        triggers=[instance.id for instance in instances],
+        opts=pulumi.ResourceOptions(depends_on=instances),
+    )
+
+
+def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> str:
     ssh_info = ssh_info_list[0]
     config_lines = []
     if "bastion" in ssh_info:
@@ -276,6 +333,8 @@ def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> None:
     link = path.with_name(SSH_CONFIG_LINK_NAME)
     link.unlink(missing_ok=True)
     link.symlink_to(path.name)
+
+    return str(path)
 
 
 if __name__ == "__main__":
