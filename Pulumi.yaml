@@ -62,6 +62,10 @@ config:
     type: string
     description: "Flavor of the instance"
     default: "medium"
+  instance_ssh_user:
+    type: string
+    description: "SSH user for the instances (defaults to the one the image is known to use)"
+    default: ""
   instance_root_disk_size:
     type: integer
     description: "Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack)"
@@ -76,6 +80,10 @@ config:
     type: string
     description: "Flavor of the bastion host"
     default: "small"
+  bastion_ssh_user:
+    type: string
+    description: "SSH user for the bastion (defaults to the one the image is known to use)"
+    default: ""
   bastion_root_disk_size:
     type: integer
     description: "Root disk size for the bastion in GiB (AWS only, set by the flavor on OpenStack)"

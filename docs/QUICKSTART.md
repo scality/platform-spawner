@@ -122,6 +122,16 @@ pulumi config set ssh_private_key_create true
 | `instance_count` | One node is enough to see it work, three is the default. |
 | `ssh_private_key_create` | Generates a key for this platform. The other way is `ssh_key_name`, a key the cloud already holds, which then has to be in your `ssh-agent`. |
 
+An image that is not one of the `rocky-*` ones has to say who to log in as,
+since nothing else names the user:
+
+```bash
+pulumi config set instance_ssh_user <user>
+```
+
+`bastion_ssh_user` does the same for the bastion, which runs `bastion_image`
+rather than the image of the nodes.
+
 Every key is in the [configuration reference](../README.md#configuration).
 The ones worth knowing early:
 

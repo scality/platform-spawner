@@ -11,6 +11,8 @@ import providers
 from providers import base
 
 SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
+SSH_USER_UNKNOWN = "No user to reach the {machine} with, set {machine}_ssh_user."
+# Fallback for the images we know, anything else has to be configured
 SSH_USERS = {
     "rocky-8": "rocky",
     "rocky-9": "rocky",
@@ -159,7 +161,7 @@ def __main__() -> None:
     instances.append(bastion)
     ssh_info["bastion"] = {
         "ip": bastion_public_iface.public_ip,
-        "user": SSH_USERS.get(config.require("bastion_image")),
+        "user": _ssh_user(config, "bastion"),
     }
     nodes_info = {}
 
@@ -198,7 +200,7 @@ def __main__() -> None:
         }
         ssh_info["nodes"][f"node-{node_index}"] = {
             "ip": cp_iface.ip,
-            "user": SSH_USERS.get(config.require("instance_image")),
+            "user": _ssh_user(config, "instance"),
         }
 
     pulumi.export("nodes", nodes_info)
@@ -272,6 +274,27 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
             "count": vol.get("count", 1),
         }
     return volumes
+
+
+def _ssh_user(config: pulumi.Config, machine: str) -> str:
+    """
+    Return the user to reach a machine with, configured or taken from its image.
+
+    NOTE: An image nobody here has heard of has to be told about rather than
+    left to whatever account happens to be running the spawn. A machine
+    nothing can log into is worth saying so about now rather than ten minutes
+    later, when it turns out never to have answered.
+    """
+    configured = config.require(f"{machine}_ssh_user")
+    if configured:
+        return configured
+
+    user = SSH_USERS.get(config.require(f"{machine}_image"))
+    if user is None:
+        message = SSH_USER_UNKNOWN.format(machine=machine)
+        raise ValueError(message)
+
+    return user
 
 
 def _wait_for_boot(
