@@ -161,12 +161,17 @@ It takes a few minutes.
 
 ## 7. Connect
 
-A spawn writes an `ssh_config` beside `Pulumi.yaml`, and the key it generated
-next to it as `ssh_<product>_<stack>`:
+A spawn writes its SSH files beside `Pulumi.yaml`:
+
+| File | What it is |
+|------|------------|
+| `ssh_config-<stack>` | The configuration of that platform |
+| `ssh_config` | A link to the platform spawned last |
+| `ssh_<product>_<stack>` and `.pub` | The generated key, when `ssh_private_key_create` is set |
 
 ```bash
-ssh -F ssh_config bastion
-ssh -F ssh_config node-1     # jumps through the bastion on its own
+ssh -F ssh_config bastion          # the platform spawned last
+ssh -F ssh_config-<stack> node-1   # jumps through the bastion on its own
 ```
 
 To reach the node networks from your machine rather than from the bastion,

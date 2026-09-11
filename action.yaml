@@ -219,7 +219,10 @@ runs:
         mkdir -p "$OUT_DIR"
         pulumi stack export --file "$OUT_DIR/stack.json"
 
-        cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/"
+        # NOTE: The artifacts directory is already named after the stack, so
+        # the config is published under its stable name rather than the per
+        # stack one it has in the workspace.
+        cp "$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_config)" "$OUT_DIR/ssh_config"
 
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_private_key_create)" == "true" ]]; then
           ssh_key=$(pulumi $PULUMI_DEFAULT_ARGS stack output ssh_info | jq -r '.key')

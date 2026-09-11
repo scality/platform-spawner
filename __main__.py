@@ -15,7 +15,8 @@ SSH_USERS = {
     "rocky-8": "rocky",
     "rocky-9": "rocky",
 }
-SSH_CONFIG_FILE = pathlib.Path("./ssh_config").resolve()
+SSH_CONFIG_DIR = pathlib.Path.cwd()
+SSH_CONFIG_LINK_NAME = "ssh_config"
 
 
 def __main__() -> None:
@@ -170,8 +171,10 @@ def __main__() -> None:
 
     pulumi.export("nodes", nodes_info)
     pulumi.export("ssh_info", ssh_info)
-    pulumi.export("ssh_config", str(SSH_CONFIG_FILE))
-    pulumi.Output.all(ssh_info).apply(_generate_ssh_config)
+
+    ssh_config_file = SSH_CONFIG_DIR / f"{SSH_CONFIG_LINK_NAME}-{provider.stack}"
+    pulumi.export("ssh_config", str(ssh_config_file))
+    pulumi.Output.all(ssh_info).apply(lambda info: _generate_ssh_config(info, ssh_config_file))
 
 
 def _prepare_ssh_key(
@@ -235,7 +238,7 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
     return volumes
 
 
-def _generate_ssh_config(ssh_info_list: list[dict]) -> None:
+def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> None:
     ssh_info = ssh_info_list[0]
     config_lines = []
     if "bastion" in ssh_info:
@@ -266,7 +269,13 @@ def _generate_ssh_config(ssh_info_list: list[dict]) -> None:
         config_lines.append("  ServerAliveInterval 15")
         config_lines.append("")
 
-    SSH_CONFIG_FILE.write_text("\n".join(config_lines))
+    path.write_text("\n".join(config_lines))
+
+    # Point the stable name at the stack we just spawned, so that `ssh -F
+    # ssh_config` keeps working while the per stack files pile up next to it.
+    link = path.with_name(SSH_CONFIG_LINK_NAME)
+    link.unlink(missing_ok=True)
+    link.symlink_to(path.name)
 
 
 if __name__ == "__main__":
