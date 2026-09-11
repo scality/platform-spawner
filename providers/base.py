@@ -17,6 +17,20 @@ class InstanceFlavor(StrEnum):
 
 
 @dataclasses.dataclass(frozen=True)
+class Network:
+    """
+    A network, in a form that is common to every provider.
+
+    `resource` is the underlying network when the provider has such an object
+    to group the subnets under. Some providers have none and build everything
+    at the subnet level, in which case only the address space is carried.
+    """
+
+    cidr: str
+    resource: pulumi.CustomResource | None = None
+
+
+@dataclasses.dataclass(frozen=True)
 class Interface:
     """A network interface, in a form that is common to every provider."""
 
@@ -72,7 +86,7 @@ class BaseProvider(ABC):
         self,
         name: str,
         cidr: str,
-    ) -> pulumi.Resource:
+    ) -> Network:
         """
         Create and return a new network.
 
@@ -83,7 +97,7 @@ class BaseProvider(ABC):
     def create_subnet(
         self,
         name: str,
-        network: pulumi.Resource,
+        network: Network,
         cidr: str,
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi.Resource | None = None,
@@ -98,7 +112,7 @@ class BaseProvider(ABC):
     def create_security_group(
         self,
         name: str,
-        network: pulumi.Resource,
+        network: Network,
         ingress_tcp_ports: list[int] | None = None,
         ingress_udp_ports: list[int] | None = None,
         ingress_icmp: bool = False,

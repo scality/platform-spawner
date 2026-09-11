@@ -107,17 +107,20 @@ class AWSProvider(base.BaseProvider):
         self,
         name: str,
         cidr: str,
-    ) -> pulumi_aws.ec2.Vpc:
+    ) -> base.Network:
         """Create and return a new VPC."""
-        return pulumi_aws.ec2.Vpc(
-            name,
-            cidr_block=cidr,
+        return base.Network(
+            cidr=cidr,
+            resource=pulumi_aws.ec2.Vpc(
+                name,
+                cidr_block=cidr,
+            ),
         )
 
     def create_subnet(
         self,
         name: str,
-        network: pulumi_aws.ec2.Vpc,
+        network: base.Network,
         cidr: str,
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi_aws.ec2.Subnet | None = None,
@@ -129,7 +132,7 @@ class AWSProvider(base.BaseProvider):
 
         subnet = pulumi_aws.ec2.Subnet(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             cidr_block=cidr,
             availability_zone=self._get_availability_zone(),
             tags=tags,
@@ -137,7 +140,7 @@ class AWSProvider(base.BaseProvider):
 
         route_table = pulumi_aws.ec2.RouteTable(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             tags=tags,
         )
 
@@ -150,7 +153,7 @@ class AWSProvider(base.BaseProvider):
         if gateway_to_internet:
             internet_gateway = pulumi_aws.ec2.InternetGateway(
                 name,
-                vpc_id=network.id,
+                vpc_id=network.resource.id,
                 tags=tags,
             )
 
@@ -187,7 +190,7 @@ class AWSProvider(base.BaseProvider):
     def create_security_group(
         self,
         name: str,
-        network: pulumi_aws.ec2.Vpc,
+        network: base.Network,
         ingress_tcp_ports: list[int] | None = None,
         ingress_udp_ports: list[int] | None = None,
         ingress_icmp: bool = False,
@@ -201,7 +204,7 @@ class AWSProvider(base.BaseProvider):
 
         sg = pulumi_aws.ec2.SecurityGroup(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             tags={
                 "type": name,
             },
