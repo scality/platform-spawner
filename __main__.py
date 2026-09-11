@@ -255,6 +255,7 @@ def __main__() -> None:
     )
 
     _wait_for_boot(ssh_config_ready, ["bastion", *nodes_info], instances)
+    _clean_up_ssh_files(ssh_config_file)
 
 
 def _prepare_ssh_key(
@@ -402,11 +403,36 @@ def _create_extra_interfaces(
     return interfaces
 
 
+def _clean_up_ssh_files(ssh_config_path: pathlib.Path) -> None:
+    """Take the files generated for a platform away with it."""
+    known_hosts = _known_hosts_path(ssh_config_path)
+    link = ssh_config_path.with_name(SSH_CONFIG_LINK_NAME)
+
+    pulumi_command.local.Command(
+        "ssh-files",
+        # NOTE: The files are written by the program itself, this only sees to
+        # their removal. The stable name is a link to whichever platform was
+        # spawned last, so it only goes if it still points at this one.
+        #
+        # The SSH key is left behind on purpose, throwing a private key away
+        # is for someone to decide, not for a destroy to do on its own.
+        delete=(
+            f"rm -f {known_hosts} {ssh_config_path};"
+            f' [ "$(readlink {link} 2>/dev/null)" = "{ssh_config_path.name}" ]'
+            f" && rm -f {link} || true"
+        ),
+    )
+
+
+def _known_hosts_path(ssh_config_path: pathlib.Path) -> pathlib.Path:
+    """Return the known_hosts file that goes with a generated config."""
+    stack = ssh_config_path.name.removeprefix(f"{SSH_CONFIG_LINK_NAME}-")
+
+    return ssh_config_path.with_name(f"{SSH_KNOWN_HOSTS_PREFIX}-{stack}")
+
+
 def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
     """Return the options every host block of the config repeats."""
-    stack = ssh_config_path.name.removeprefix(f"{SSH_CONFIG_LINK_NAME}-")
-    known_hosts = ssh_config_path.with_name(f"{SSH_KNOWN_HOSTS_PREFIX}-{stack}")
-
     return [
         "  IdentitiesOnly yes",
         "  StrictHostKeyChecking no",
@@ -414,7 +440,7 @@ def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
         # the same addresses, so a shared one would hold the keys of the
         # platform before this one and get in the way, while a dedicated one
         # still catches a key changing under us within the life of this one.
-        f"  UserKnownHostsFile {known_hosts}",
+        f"  UserKnownHostsFile {_known_hosts_path(ssh_config_path)}",
         "  ServerAliveInterval 15",
     ]
 

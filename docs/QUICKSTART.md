@@ -219,8 +219,9 @@ pulumi destroy
 pulumi stack rm <you>-dev
 ```
 
-The key generated for the platform stays on disk. Throwing a private key away
-is for someone to decide, so remove it once you are sure:
+The SSH files of that platform go with it, and the `ssh_config` link too when
+it still points there. The key stays on disk. Throwing a private key away is
+for someone to decide, so remove it once you are sure:
 
 ```bash
 rm -f ssh_<product>_<stack> ssh_<product>_<stack>.pub
