@@ -17,6 +17,7 @@ EXTRA_NETWORK_TOO_SMALL = "{name} ({cidr}) has no room left, there are too many 
 TOO_MANY_EXTRA_NETWORKS = "At most {limit} extra networks can be asked for."
 DUPLICATE_EXTRA_NETWORK = "Several extra networks are named {names}."
 INSTANCE_IMAGE_MISSING = "One of instance_image or instance_image_file must be set."
+SNAPSHOT_EXCLUDES_IMAGE_FILE = "restore_snapshot cannot be used with instance_image_file."
 # Fallback for the images we know, anything else has to be configured
 SSH_USERS = {
     "rocky-8": "rocky",
@@ -66,7 +67,8 @@ def __main__() -> None:
 
     config = pulumi.Config()
 
-    instance_image = _instance_image(config, provider)
+    instance_count = config.require_int("instance_count")
+    instance_images = _instance_images(config, provider, instance_count)
     instance_flavor = config.require("instance_flavor")
 
     ssh_info = {
@@ -203,7 +205,7 @@ def __main__() -> None:
     }
     nodes_info = {}
 
-    for node_index in range(1, config.require_int("instance_count") + 1):
+    for node_index in range(1, instance_count + 1):
         cp_iface = provider.create_interface(
             subnet=control_plane_subnet,
             subnet_name="control-plane",
@@ -224,7 +226,7 @@ def __main__() -> None:
 
         node = provider.create_instance(
             name=f"node-{node_index}",
-            image_name=instance_image,
+            image_name=instance_images[node_index - 1],
             flavor=instance_flavor,
             key_name=ssh_key_name,
             root_disk_size=config.require_int("instance_root_disk_size"),
@@ -444,6 +446,30 @@ def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
         f"  UserKnownHostsFile {_known_hosts_path(ssh_config_path)}",
         "  ServerAliveInterval 15",
     ]
+
+
+def _instance_images(
+    config: pulumi.Config,
+    provider: base.BaseProvider,
+    count: int,
+) -> list[str]:
+    """
+    Return the image each instance boots on, one per instance.
+
+    Restoring a snapshot is the only case where they differ: a snapshot holds
+    one image per machine, so instance N comes back from the one taken of it.
+    The names follow what the snapshot tool wrote them as.
+    """
+    snapshot = config.require("restore_snapshot")
+    if not snapshot:
+        return [_instance_image(config, provider)] * count
+
+    if config.require("instance_image_file"):
+        raise ValueError(SNAPSHOT_EXCLUDES_IMAGE_FILE)
+
+    prefix = f"{config.require('product')}-{snapshot}"
+
+    return [f"{prefix}-node-{index}" for index in range(1, count + 1)]
 
 
 def _instance_image(config: pulumi.Config, provider: base.BaseProvider) -> str:

@@ -55,6 +55,10 @@ config:
     type: string
     description: "Image for the instances (AMI name on AWS, Glance image name on OpenStack)"
     default: ""
+  restore_snapshot:
+    type: string
+    description: "Name of a snapshot to restore the instances from, instead of an image"
+    default: ""
   instance_image_file:
     type: string
     description: "Image file to upload and boot the instances on, instead of instance_image"
