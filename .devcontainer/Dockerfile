@@ -41,8 +41,8 @@ RUN curl --fail -L -o /tmp/uv.tar.gz https://github.com/astral-sh/uv/releases/do
     uv generate-shell-completion zsh | sudo tee /usr/local/share/zsh/site-functions/_uv > /dev/null
 
 # Install python
-ARG PYTHON_VERISON=3.13
-RUN uv python install 3.13 --default
+ARG PYTHON_VERSION=3.13
+RUN uv python install ${PYTHON_VERSION} --default
 
 # Install pre-commit
 # renovate: datasource=github-releases depName=pre-commit/pre-commit
