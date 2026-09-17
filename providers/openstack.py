@@ -129,7 +129,7 @@ class OpenStackProvider(base.BaseProvider):
         self,
         name: str,
         image_name: str,
-        flavor: base.InstanceFlavor,
+        flavor: base.InstanceFlavor | str,
         key_name: pulumi.Input[str],
         root_disk_size: int,  # noqa: ARG002
         interfaces: list[base.Interface],
@@ -154,7 +154,7 @@ class OpenStackProvider(base.BaseProvider):
 
         instance = pulumi_openstack.compute.Instance(
             name,
-            flavor_name=_instance_flavor_matching[flavor],
+            flavor_name=_instance_flavor_matching.get(flavor, flavor),
             image_id=image_id,
             key_pair=key_name,
             # NOTE: The security groups are held by the ports, setting them

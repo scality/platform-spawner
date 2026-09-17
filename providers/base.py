@@ -10,7 +10,13 @@ IMAGE_UPLOAD_UNSUPPORTED = "The {provider} provider cannot upload an image file.
 
 
 class InstanceFlavor(StrEnum):
-    """Flavor of an Instance."""
+    """
+    Flavor of an Instance, in the sizes every provider can offer.
+
+    A provider translates these into whatever its catalog calls them, and
+    lets any other value through untouched, so that a flavor it has never
+    heard of can still be asked for by name.
+    """
 
     SMALL = "small"
     MEDIUM = "medium"
@@ -58,7 +64,7 @@ class BaseProvider(ABC):
         self,
         name: str,
         image_name: str,
-        flavor: InstanceFlavor,
+        flavor: InstanceFlavor | str,
         key_name: pulumi.Input[str],
         root_disk_size: int,
         interfaces: list[Interface],

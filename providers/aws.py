@@ -42,7 +42,7 @@ class AWSProvider(base.BaseProvider):
         self,
         name: str,
         image_name: str,
-        flavor: base.InstanceFlavor,
+        flavor: base.InstanceFlavor | str,
         key_name: pulumi.Input[str],
         root_disk_size: int,
         interfaces: list[base.Interface],
@@ -73,7 +73,7 @@ class AWSProvider(base.BaseProvider):
 
         return pulumi_aws.ec2.Instance(
             name,
-            instance_type=_instance_flavor_matching[flavor],
+            instance_type=_instance_flavor_matching.get(flavor, flavor),
             ami=ami.id,
             key_name=key_name,
             root_block_device=pulumi_aws.ec2.InstanceRootBlockDeviceArgs(

@@ -69,7 +69,7 @@ config:
     default: 3
   instance_flavor:
     type: string
-    description: "Flavor of the instance"
+    description: "Flavor of the instance, a portable size or a name from the cloud catalog"
     default: "medium"
   instance_ssh_user:
     type: string
@@ -87,7 +87,7 @@ config:
     default: "rocky-9"
   bastion_flavor:
     type: string
-    description: "Flavor of the bastion host"
+    description: "Flavor of the bastion, a portable size or a name from the cloud catalog"
     default: "small"
   bastion_ssh_user:
     type: string

@@ -43,6 +43,10 @@ a stack configuration:
   | large | `t3.large` | `b3-8` | 50 GB NVMe |
   | xlarge | `t3.2xlarge` | `b3-32` | 200 GB NVMe |
 
+  Anything outside that table is handed to the cloud as it is, so a flavor of
+  its catalog can be asked for by name. Nothing then says how big the root
+  disk will be on OpenStack, since the flavor is what decides it.
+
 - `instance_root_disk_size` and `bastion_root_disk_size` are honoured on AWS,
   where the root volume of the AMI is simply resized, and ignored on
   OpenStack, where the instance boots on the local disk the flavor comes with.

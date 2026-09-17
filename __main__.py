@@ -67,7 +67,7 @@ def __main__() -> None:
     config = pulumi.Config()
 
     instance_image = _instance_image(config, provider)
-    instance_flavor = base.InstanceFlavor(config.require("instance_flavor"))
+    instance_flavor = config.require("instance_flavor")
 
     ssh_info = {
         "bastion": {},
@@ -172,7 +172,7 @@ def __main__() -> None:
     bastion = provider.create_instance(
         name="bastion",
         image_name=config.require("bastion_image"),
-        flavor=base.InstanceFlavor(config.require("bastion_flavor")),
+        flavor=config.require("bastion_flavor"),
         key_name=ssh_key_name,
         root_disk_size=config.require_int("bastion_root_disk_size"),
         interfaces=[
