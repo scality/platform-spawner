@@ -1,0 +1,17 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  extends: [
+    "github>scality/platform-renovate",
+    // The pre-commit manager is off unless asked for, and the hooks here are
+    // pinned by revision like everything else.
+    ":enablePreCommit",
+  ],
+
+  // The Python dependencies are declared as ranges wide enough that a new
+  // release never needs pyproject.toml touched, so nothing would ever move and
+  // uv.lock would quietly drift. Refresh the lock on its own.
+  lockFileMaintenance: {
+    enabled: true,
+  },
+}

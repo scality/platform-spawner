@@ -112,6 +112,7 @@ runs:
     - name: Install pulumi
       shell: bash
       env:
+        # renovate: datasource=github-releases depName=pulumi/pulumi
         PULUMI_VERSION: "v3.263.0"
       run: |-
         curl --fail -L -o /tmp/pulumi.tar.gz "https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz"
@@ -120,6 +121,7 @@ runs:
     - name: Install uv
       shell: bash
       env:
+        # renovate: datasource=github-releases depName=astral-sh/uv
         UV_VERSION: "0.8.13"
       run: |-
         curl --fail -L -o /tmp/uv.tar.gz "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"

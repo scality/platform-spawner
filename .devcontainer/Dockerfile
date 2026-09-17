@@ -25,6 +25,7 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
 # Install pulumi
+# renovate: datasource=github-releases depName=pulumi/pulumi
 ARG PULUMI_VERSION=v3.263.0
 RUN curl --fail -L -o /tmp/pulumi.tar.gz https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz&& \
     sudo tar -xzf /tmp/pulumi.tar.gz -C /usr/local/bin --strip-components=1 pulumi && \
@@ -32,6 +33,7 @@ RUN curl --fail -L -o /tmp/pulumi.tar.gz https://get.pulumi.com/releases/sdk/pul
     pulumi gen-completion zsh | sudo tee /usr/local/share/zsh/site-functions/_pulumi > /dev/null
 
 # Install uv
+# renovate: datasource=github-releases depName=astral-sh/uv
 ARG UV_VERSION=0.8.13
 RUN curl --fail -L -o /tmp/uv.tar.gz https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz && \
     sudo tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu && \
@@ -43,10 +45,12 @@ ARG PYTHON_VERISON=3.13
 RUN uv python install 3.13 --default
 
 # Install pre-commit
+# renovate: datasource=github-releases depName=pre-commit/pre-commit
 ARG PRE_COMMIT_VERSION=v4.3.0
 RUN uv tool install pre-commit@${PRE_COMMIT_VERSION} --with pre-commit-uv
 
 # Install ruff
+# renovate: datasource=github-releases depName=astral-sh/ruff
 ARG RUFF_VERSION=0.12.10
 RUN uv tool install ruff@${RUFF_VERSION} && \
     uv tool run ruff generate-shell-completion zsh | sudo tee /usr/local/share/zsh/site-functions/_ruff > /dev/null
