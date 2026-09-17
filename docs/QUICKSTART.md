@@ -212,7 +212,9 @@ pulumi up
 
 ## 9. Destroy
 
-Nothing takes a platform away on its own, and it is billed until it goes:
+Nothing takes a platform away on its own, and it is billed until it goes. To
+keep one for later rather than for good, capture it first as described in
+[SNAPSHOTS.md](SNAPSHOTS.md):
 
 ```bash
 pulumi destroy

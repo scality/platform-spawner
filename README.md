@@ -25,6 +25,7 @@ The [quickstart](docs/QUICKSTART.md) takes it from the top, on either cloud.
 |-------|---------------|
 | [Quickstart](docs/QUICKSTART.md) | Spawning a platform from your machine, from a clone to a shell on it |
 | [Platform](docs/PLATFORM.md) | The machines, the networks and the addresses a platform comes with |
+| [Snapshots](docs/SNAPSHOTS.md) | Capturing a platform as images, and spawning one back from them |
 | [GitHub Action](docs/GITHUB_ACTION.md) | Spawning and destroying from a workflow |
 
 ## Configuration

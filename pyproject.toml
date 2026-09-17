@@ -29,5 +29,15 @@ ignore = [
   "COM812",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Command line tools report what they are doing on stdout, and sit beside each
+# other rather than in a package
+"tools/*" = ["T201", "INP001"]
+
 [tool.ruff.lint.pylint]
 max-args = 10
+
+[dependency-groups]
+snapshot = [
+    "openstacksdk>=4.20.0",
+]
