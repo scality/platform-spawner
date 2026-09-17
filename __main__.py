@@ -16,6 +16,7 @@ SSH_USER_UNKNOWN = "No user to reach the {machine} with, set {machine}_ssh_user.
 EXTRA_NETWORK_TOO_SMALL = "{name} ({cidr}) has no room left, there are too many instances."
 TOO_MANY_EXTRA_NETWORKS = "At most {limit} extra networks can be asked for."
 DUPLICATE_EXTRA_NETWORK = "Several extra networks are named {names}."
+INSTANCE_IMAGE_MISSING = "One of instance_image or instance_image_file must be set."
 # Fallback for the images we know, anything else has to be configured
 SSH_USERS = {
     "rocky-8": "rocky",
@@ -65,7 +66,7 @@ def __main__() -> None:
 
     config = pulumi.Config()
 
-    instance_image = config.require("instance_image")
+    instance_image = _instance_image(config, provider)
     instance_flavor = base.InstanceFlavor(config.require("instance_flavor"))
 
     ssh_info = {
@@ -443,6 +444,29 @@ def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
         f"  UserKnownHostsFile {_known_hosts_path(ssh_config_path)}",
         "  ServerAliveInterval 15",
     ]
+
+
+def _instance_image(config: pulumi.Config, provider: base.BaseProvider) -> str:
+    """
+    Return the image the instances boot on, uploading a file first if asked.
+
+    NOTE: The bastion is left out, it keeps running whatever `bastion_image`
+    names. An image handed over is the one under test, and the bastion is not
+    what is being tested.
+    """
+    image_file = config.require("instance_image_file")
+    if not image_file:
+        image = config.require("instance_image")
+        if not image:
+            raise ValueError(INSTANCE_IMAGE_MISSING)
+
+        return image
+
+    return provider.create_image(
+        "image",
+        image_file,
+        config.require("instance_image_file_format"),
+    )
 
 
 def _ssh_user(config: pulumi.Config, machine: str) -> str:

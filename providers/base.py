@@ -6,6 +6,8 @@ from enum import StrEnum
 
 import pulumi
 
+IMAGE_UPLOAD_UNSUPPORTED = "The {provider} provider cannot upload an image file."
+
 
 class InstanceFlavor(StrEnum):
     """Flavor of an Instance."""
@@ -68,6 +70,24 @@ class BaseProvider(ABC):
 
         This method must be implemented by subclasses.
         """
+
+    def create_image(
+        self,
+        name: str,
+        file_path: str,
+        file_format: str,
+    ) -> str:
+        """
+        Upload an image file to the cloud and return the name it took.
+
+        NOTE: Not abstract on purpose. Uploading an image is something only
+        some clouds make cheap, and a provider has nothing to write here until
+        someone needs the capability on it.
+        """
+        del name, file_path, file_format
+
+        message = IMAGE_UPLOAD_UNSUPPORTED.format(provider=self.provider_name)
+        raise NotImplementedError(message)
 
     @abstractmethod
     def create_key_pair(

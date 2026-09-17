@@ -43,7 +43,9 @@ A platform is described by the configuration of its stack. Set a key with
 | authorized_udp_ports | List of authorized UDP ports for ingress to the instances | array | `[]` | no |
 | authorized_icmp | Whether ICMP traffic is authorized for ingress to the instances | boolean | `True` | no |
 | authorized_cidrs | List of authorized CIDRs for the instances | array | `['141.94.181.72/32', '84.14.13.200/29', '193.248.60.56/32', '38.142.74.18/32', '__my_ip__']` | no |
-| instance_image | Image for the instances (AMI name on AWS, Glance image name on OpenStack) | string | N/A | yes |
+| instance_image | Image for the instances (AMI name on AWS, Glance image name on OpenStack) | string | `` | no |
+| instance_image_file | Image file to upload and boot the instances on, instead of instance_image | string | `` | no |
+| instance_image_file_format | Format of the uploaded image file | string | `qcow2` | no |
 | instance_count | Number of instances to create | integer | `3` | no |
 | instance_flavor | Flavor of the instance | string | `medium` | no |
 | instance_ssh_user | SSH user for the instances (defaults to the one the image is known to use) | string | `` | no |

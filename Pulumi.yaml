@@ -54,6 +54,15 @@ config:
   instance_image:
     type: string
     description: "Image for the instances (AMI name on AWS, Glance image name on OpenStack)"
+    default: ""
+  instance_image_file:
+    type: string
+    description: "Image file to upload and boot the instances on, instead of instance_image"
+    default: ""
+  instance_image_file_format:
+    type: string
+    description: "Format of the uploaded image file"
+    default: "qcow2"
   instance_count:
     type: integer
     description: "Number of instances to create"

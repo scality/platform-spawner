@@ -26,6 +26,13 @@ a stack configuration:
   against the Glance images on OpenStack. `rocky-9` is an alias on both, known
   on AWS in `eu-north-1` and `us-west-2` only. `rocky-8` is an alias on
   OpenStack alone. Any other value is looked up as it is given.
+- `instance_image_file` hands an image file over instead, uploaded on OpenStack
+  only. AWS can do it, through an S3 bucket, a VM Import task and an account
+  wide IAM role, and only from a VHD or a VMDK, which is enough work that the
+  provider says it cannot rather than pretending. The image belongs to the
+  stack and is uploaded again on every spawn, which is what makes it useful:
+  it is handed over when the image itself is under test. The bastion is left
+  out of it and keeps running `bastion_image`.
 - `instance_flavor` maps to a `t3` instance type on AWS and to an OVH Public
   Cloud flavor on OpenStack, where it also decides the root disk size:
 

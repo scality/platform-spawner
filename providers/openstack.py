@@ -119,6 +119,7 @@ class OpenStackProvider(base.BaseProvider):
         self.external_network = config.require("openstack_external_network")
         self.dns_nameservers = config.require_object("openstack_dns_nameservers")
 
+        self._uploaded_images: dict[str, pulumi_openstack.images.Image] = {}
         self._external_network_id: pulumi.Output[str] | None = None
         self._router_interfaces: list[pulumi_openstack.networking.RouterInterface] = []
 
@@ -143,7 +144,7 @@ class OpenStackProvider(base.BaseProvider):
         would mean booting from a Block Storage volume, which the flavor's
         local disk gets billed on top of rather than instead of.
         """
-        image = self._get_image(image_name)
+        image_id = self._get_image(image_name)
 
         metadata = {
             "node": name,
@@ -154,7 +155,7 @@ class OpenStackProvider(base.BaseProvider):
         instance = pulumi_openstack.compute.Instance(
             name,
             flavor_name=_instance_flavor_matching[flavor],
-            image_id=image.id,
+            image_id=image_id,
             key_pair=key_name,
             # NOTE: The security groups are held by the ports, setting them
             # here as well would apply them to every interface.
@@ -199,6 +200,30 @@ class OpenStackProvider(base.BaseProvider):
                 volume_index += 1
 
         return instance
+
+    def create_image(
+        self,
+        name: str,
+        file_path: str,
+        file_format: str,
+    ) -> str:
+        """
+        Upload an image file to Glance and return the name it took.
+
+        NOTE: The image belongs to the stack and goes away with it, so every
+        spawn uploads its own copy. That is the point rather than a cost: an
+        image is handed over when the image itself is what is being tested.
+        """
+        image_name = self.compute_resource_name(name)
+        self._uploaded_images[image_name] = pulumi_openstack.images.Image(
+            name,
+            name=image_name,
+            local_file_path=file_path,
+            disk_format=file_format,
+            container_format="bare",
+        )
+
+        return image_name
 
     def create_key_pair(
         self,
@@ -482,12 +507,23 @@ class OpenStackProvider(base.BaseProvider):
 
         return f"{CLOUD_CONFIG_HEADER}\n{yaml.safe_dump(config)}"
 
-    def _get_image(self, image_name: str) -> pulumi_openstack.images.GetImageResult:
-        """Retrieve the image for a given image name."""
+    def _get_image(self, image_name: str) -> pulumi.Input[str]:
+        """
+        Return the id of the image an instance should boot on.
+
+        NOTE: An image we uploaded ourselves is handed back straight from the
+        resource rather than looked up. Looking it up would mean an invoke on
+        a name that does not exist yet, and going through the resource is also
+        what tells Pulumi to upload before booting anything on it.
+        """
+        uploaded = self._uploaded_images.get(image_name)
+        if uploaded is not None:
+            return uploaded.id
+
         return pulumi_openstack.images.get_image(
             name=_known_images.get(image_name, image_name),
             most_recent=True,
-        )
+        ).id
 
     def _transform_add_common_metadata(
         self,
