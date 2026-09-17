@@ -20,7 +20,7 @@ Whatever it is asked to do, it takes:
 
 | Input | Default | What it is |
 |-------|---------|------------|
-| `action` | `spawn` | What to do: `spawn`, `destroy` or `list` |
+| `action` | `spawn` | What to do: `spawn`, `snapshot`, `destroy` or `list` |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
 
 The credentials of the cloud are not inputs. They go in the environment of the
@@ -48,6 +48,15 @@ machines, as JSON.
 | Input | Required | What it is |
 |-------|----------|------------|
 | `stack_name` | yes | The stack to take away |
+
+## Snapshotting
+
+| Input | Required | What it is |
+|-------|----------|------------|
+| `stack_name` | yes | The stack holding the platform to capture |
+| `snapshot_name` | yes | The name to capture it under |
+
+What a snapshot is made of is in [SNAPSHOTS.md](SNAPSHOTS.md).
 
 ## Listing
 

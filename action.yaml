@@ -3,7 +3,7 @@ description: Spawn and destroy platforms
 
 inputs:
   action:
-    description: "The action to perform (setup, list, spawn or destroy)"
+    description: "The action to perform (setup, list, spawn, snapshot or destroy)"
     required: true
     default: "spawn"
 
@@ -33,6 +33,12 @@ inputs:
     required: false
     default: ""
 
+  # Snapshot specific
+  snapshot_name:
+    description: "The name to give the snapshot (only for snapshot action)"
+    required: false
+    default: ""
+
   # List specific
   age:
     description: "The age in hours to list stacks (only for list action)"
@@ -57,9 +63,9 @@ runs:
       shell: bash
       run: |
         case ${{ inputs.action }} in
-          setup|list|spawn|destroy) ;;
+          setup|list|spawn|snapshot|destroy) ;;
           *)
-            echo "Invalid action: ${{ inputs.action }}. Must be 'setup', 'list', 'spawn' or 'destroy'."
+            echo "Invalid action: ${{ inputs.action }}. Must be 'setup', 'list', 'spawn', 'snapshot' or 'destroy'."
             exit 1
             ;;
         esac
@@ -72,11 +78,21 @@ runs:
           exit 1
         fi
     - name: "Check stack argument"
-      if: ${{ inputs.action == 'destroy' || inputs.action == 'spawn' }}
+      if: ${{ inputs.action == 'destroy' || inputs.action == 'spawn' || inputs.action == 'snapshot' }}
       shell: bash
       run: |
         if [ "${{ inputs.stack_name }}" == "" ]; then
           echo "Stack name must be provided for spawn actions."
+          exit 1
+        fi
+    - name: "Check argument for snapshot"
+      if: ${{ inputs.action == 'snapshot' }}
+      shell: bash
+      env:
+        SNAPSHOT_NAME: ${{ inputs.snapshot_name }}
+      run: |
+        if [ "$SNAPSHOT_NAME" == "" ]; then
+          echo "Snapshot name must be provided for snapshot action."
           exit 1
         fi
     - name: "Check argument for list"
@@ -283,6 +299,20 @@ runs:
         echo "nodes<<EOF" >> "$GITHUB_OUTPUT"
         pulumi $PULUMI_DEFAULT_ARGS stack output nodes --json >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
+    # }}}
+
+    # Snapshot {{{
+    - name: Snapshot the platform
+      if: ${{ inputs.action == 'snapshot' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      # NOTE: Handed over through the environment rather than interpolated
+      # into the script, where it would be read as shell rather than as a name
+      env:
+        SNAPSHOT_NAME: ${{ inputs.snapshot_name }}
+      run: |-
+        pulumi $PULUMI_DEFAULT_ARGS stack select "$STACK_NAME"
+        uv run --group snapshot tools/generate_snapshot.py "$SNAPSHOT_NAME"
     # }}}
 
     # Destroy {{{
