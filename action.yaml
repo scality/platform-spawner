@@ -61,27 +61,33 @@ runs:
   steps:
     - name: "Check action"
       shell: bash
+      env:
+        ACTION: ${{ inputs.action }}
       run: |
-        case ${{ inputs.action }} in
+        case "$ACTION" in
           setup|list|spawn|snapshot|destroy) ;;
           *)
-            echo "Invalid action: ${{ inputs.action }}. Must be 'setup', 'list', 'spawn', 'snapshot' or 'destroy'."
+            echo "Invalid action: $ACTION. Must be 'setup', 'list', 'spawn', 'snapshot' or 'destroy'."
             exit 1
             ;;
         esac
     - name: "Check argument for spawn"
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
       run: |
-        if [ "${{ inputs.configuration }}" == "" ]; then
+        if [ "$CONFIGURATION" == "" ]; then
           echo "Configuration must be provided for spawn action."
           exit 1
         fi
     - name: "Check stack argument"
       if: ${{ inputs.action == 'destroy' || inputs.action == 'spawn' || inputs.action == 'snapshot' }}
       shell: bash
+      env:
+        STACK_NAME_INPUT: ${{ inputs.stack_name }}
       run: |
-        if [ "${{ inputs.stack_name }}" == "" ]; then
+        if [ "$STACK_NAME_INPUT" == "" ]; then
           echo "Stack name must be provided for spawn actions."
           exit 1
         fi
@@ -98,12 +104,14 @@ runs:
     - name: "Check argument for list"
       if: ${{ inputs.action == 'list' }}
       shell: bash
+      env:
+        AGE: ${{ inputs.age }}
       run: |
-        if [ "${{ inputs.age }}" == "" ]; then
+        if [ "$AGE" == "" ]; then
           echo "Age must be provided for list action."
           exit 1
         fi
-        if ! [[ "${{ inputs.age }}" =~ ^[0-9]+$ ]]; then
+        if ! [[ "$AGE" =~ ^[0-9]+$ ]]; then
           echo "Age must be a positive integer."
           exit 1
         fi
@@ -137,8 +145,10 @@ runs:
     - name: Set stack variables
       if: ${{ inputs.stack_name != '' }}
       shell: bash
+      env:
+        STACK_NAME_INPUT: ${{ inputs.stack_name }}
       run: |-
-        STACK_NAME=$(echo "${{ inputs.stack_name }}" | sed 's/ /-/g')
+        STACK_NAME="${STACK_NAME_INPUT// /-}"
         echo "STACK_NAME=$STACK_NAME" >> "$GITHUB_ENV"
         echo "PULUMI_STACK_FILE=Pulumi.$STACK_NAME.yaml" >> "$GITHUB_ENV"
 
@@ -147,8 +157,10 @@ runs:
       shell: bash
       if: ${{ fromJSON(inputs.store_to_s3) }}
       working-directory: ${{ github.action_path }}
+      env:
+        REPOSITORY: ${{ github.event.repository.name }}
       run: |-
-        pulumi $PULUMI_DEFAULT_ARGS login "s3://platform-spawner-stacks/${{ github.event.repository.name }}"
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://platform-spawner-stacks/$REPOSITORY"
     - name: Login locally
       shell: bash
       if: ${{ ! fromJSON(inputs.store_to_s3) }}
@@ -163,11 +175,13 @@ runs:
       id: list_stacks
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        AGE: ${{ inputs.age }}
       run: |-
         stack_list=$(
           pulumi stack ls --json |
-          jq -rc '[.[] | select(
-            (.lastUpdate | sub("\\.\\d+Z"; "Z") | fromdateiso8601) < (now - (3600 * ${{ inputs.age }}))
+          jq -rc --argjson age "$AGE" '[.[] | select(
+            (.lastUpdate | sub("\\.\\d+Z"; "Z") | fromdateiso8601) < (now - (3600 * $age))
           ) | .name]'
         )
         echo "STACKS_LIST=$stack_list" >> "$GITHUB_OUTPUT"
@@ -195,9 +209,11 @@ runs:
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        REPOSITORY: ${{ github.event.repository.name }}
       run: |-
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
-          pulumi $PULUMI_DEFAULT_ARGS config set product "${{ github.event.repository.name }}"
+          pulumi $PULUMI_DEFAULT_ARGS config set product "$REPOSITORY"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
@@ -267,8 +283,8 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |-
+        echo "# Platform Spawner for $STACK_NAME" >> "$GITHUB_STEP_SUMMARY"
         cat << "EOF" >> "$GITHUB_STEP_SUMMARY"
-        # Platform Spawner for ${{ env.STACK_NAME }}
 
         <details>
         <summary>Configuration used</summary>
