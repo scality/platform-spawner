@@ -179,8 +179,12 @@ runs:
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      # NOTE: Handed over through the environment rather than interpolated into
+      # the script, where a multi line value would be read as shell
+      env:
+        CONFIGURATION: ${{ inputs.configuration }}
       run: |-
-        python -c 'import yaml,sys; print(yaml.safe_dump({"config": yaml.safe_load(sys.stdin)}))' <<< "${{ inputs.configuration }}" > "$PULUMI_STACK_FILE"
+        uv run python -c 'import yaml,sys; print(yaml.safe_dump({"config": yaml.safe_load(sys.stdin)}))' <<< "$CONFIGURATION" > "$PULUMI_STACK_FILE"
     - name: Create stack
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
