@@ -21,6 +21,7 @@ Whatever it is asked to do, it takes:
 | Input | Default | What it is |
 |-------|---------|------------|
 | `action` | `spawn` | What to do: `spawn`, `snapshot`, `destroy` or `list` |
+| `max_attempts` | `3` | How many times a spawn or a destroy is tried before giving up, since a cloud is not always reachable on the first go |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
 
 The credentials of the cloud are not inputs. They go in the environment of the

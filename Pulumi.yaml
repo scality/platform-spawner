@@ -6,6 +6,11 @@ runtime:
     toolchain: uv
 
 config:
+  # OpenStack API calls are not retried at all by default, and OVH times a
+  # connection out often enough for a spawn to fall over on it. Ten rides out
+  # a Keystone that is down for a couple of minutes, which five did not.
+  openstack:maxRetries: 10
+
   # Global values
   provider:
     type: string

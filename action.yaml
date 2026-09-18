@@ -26,6 +26,10 @@ inputs:
     description: "Whether to store the stack output in S3 (needed for garbage collection)"
     required: false
     default: "true"
+  max_attempts:
+    description: "How many times to try a spawn or a destroy before giving up"
+    required: false
+    default: "3"
 
   # Spawn specific
   configuration:
@@ -99,6 +103,15 @@ runs:
       run: |
         if [ "$SNAPSHOT_NAME" == "" ]; then
           echo "Snapshot name must be provided for snapshot action."
+          exit 1
+        fi
+    - name: "Check max attempts"
+      shell: bash
+      env:
+        MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+      run: |
+        if ! [[ "$MAX_ATTEMPTS" =~ ^[1-9][0-9]*$ ]]; then
+          echo "Max attempts must be a positive integer."
           exit 1
         fi
     - name: "Check argument for list"
@@ -231,8 +244,25 @@ runs:
       if: ${{ inputs.action == 'spawn' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+      # NOTE: An update carries on from where the last one stopped, so trying
+      # again is free of consequence and picks up whatever the cloud refused
+      # to do the first time. The provider already retries a call that never
+      # connects, this catches what it answers and then cannot deliver.
+      #
+      # The stack is not cancelled in between. It was created a few steps ago
+      # so nothing else can hold it, and cancelling an update that has just
+      # failed abandons whatever was in flight, which is how a port outlives
+      # the stack that made it and keeps an address nobody can take back.
       run: |-
-        pulumi $PULUMI_DEFAULT_ARGS up --yes --skip-preview
+        for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+          if pulumi $PULUMI_DEFAULT_ARGS up --yes --skip-preview; then
+            exit 0
+          fi
+          echo "Spawn failed [$attempt/$MAX_ATTEMPTS]"
+        done
+        exit 1
 
     # Add symlink to ssh_config to workspace
     - name: Copy SSH config
@@ -357,9 +387,20 @@ runs:
       if: ${{ inputs.action == 'destroy' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      env:
+        MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+      # NOTE: Cancelled once and only here, where a lock can only be left by a
+      # run that was killed. Doing it between attempts would abandon what the
+      # destroy we just watched fail had in flight.
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS cancel --yes || true
-        pulumi $PULUMI_DEFAULT_ARGS destroy --yes
+        for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+          if pulumi $PULUMI_DEFAULT_ARGS destroy --yes; then
+            exit 0
+          fi
+          echo "Destroy failed [$attempt/$MAX_ATTEMPTS]"
+        done
+        exit 1
     - name: Remove the stack
       if: ${{ inputs.action == 'destroy' }}
       shell: bash

@@ -21,6 +21,12 @@ def _compute_tab_content(pulumi_config: dict) -> str:
         "|------|-------------|------|---------|----------|",
     ]
     for key, values in (pulumi_config.get("config") or {}).items():
+        # A key of another namespace carries a plain value rather than a
+        # declaration. It configures a provider, not this project, so it has
+        # no place in the table.
+        if not isinstance(values, dict):
+            continue
+
         name = key
         description = values.get("description", "")
         type_ = values.get("type", "")
