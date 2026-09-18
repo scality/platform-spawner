@@ -7,6 +7,12 @@ on:
     branches:
       - main
 
+# One run per branch at a time. On push, cancels any ongoing run since nobody
+# is waiting for it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   PYTHON_VERSION: "3.13"
 
