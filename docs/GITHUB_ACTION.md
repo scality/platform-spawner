@@ -20,7 +20,7 @@ Whatever it is asked to do, it takes:
 
 | Input | Default | What it is |
 |-------|---------|------------|
-| `action` | `spawn` | What to do: `spawn`, `snapshot`, `destroy` or `list` |
+| `action` | `spawn` | What to do: `spawn`, `snapshot`, `delete-snapshot`, `destroy` or `list` |
 | `max_attempts` | `3` | How many times a spawn or a destroy is tried before giving up, since a cloud is not always reachable on the first go |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
 
@@ -38,6 +38,7 @@ job, and they are the ones
 |-------|----------|------------|
 | `stack_name` | yes | The name of the stack, which nothing else may answer to |
 | `configuration` | yes | The platform to spawn, as YAML. Its keys are those of the [configuration reference](../README.md#configuration) |
+| `product` | no | What the platform belongs to, and what its snapshots are found under. The name of the repository by default |
 | `artifacts_user` | yes | The user publishing the artifacts of the spawn |
 | `artifacts_password` | yes | The password of that user |
 
@@ -57,7 +58,21 @@ machines, as JSON.
 | `stack_name` | yes | The stack holding the platform to capture |
 | `snapshot_name` | yes | The name to capture it under |
 
-What a snapshot is made of is in [SNAPSHOTS.md](SNAPSHOTS.md).
+The images are named under the `product` the stack carries, so nothing has to
+say it again here. What a snapshot is made of is in
+[SNAPSHOTS.md](SNAPSHOTS.md).
+
+## Deleting a snapshot
+
+| Input | Required | What it is |
+|-------|----------|------------|
+| `snapshot_name` | yes | The snapshot to take away |
+| `product` | no | The product the platform was spawned under |
+
+Nothing else ever takes a snapshot away, so whoever took it says when it goes.
+The stack is not asked for, since it is usually gone by then. A snapshot is
+found under the `product` the platform was spawned with, so the same one has
+to be given to both, or left out of both to take the name of the repository.
 
 ## Listing
 

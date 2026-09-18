@@ -29,3 +29,12 @@ The `product` and the number of instances have to match those the snapshot was
 taken with, since each instance comes back from the image taken of it.
 `instance_ssh_user` has to be given as well: a snapshot names no image, so
 nothing is left to work out who to log in as.
+
+## Take the images away
+
+```bash
+uv run --group snapshot tools/delete_snapshot.py --product <product> <name>
+```
+
+Nothing else ever will. Destroying the platform a snapshot came from leaves it
+alone, which is the whole point of having one.

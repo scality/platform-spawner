@@ -3,7 +3,7 @@ description: Spawn and destroy platforms
 
 inputs:
   action:
-    description: "The action to perform (setup, list, spawn, snapshot or destroy)"
+    description: "The action to perform (setup, list, spawn, snapshot, delete-snapshot or destroy)"
     required: true
     default: "spawn"
 
@@ -14,6 +14,12 @@ inputs:
     default: ""
   artifacts_password:
     description: "The artifacts password (only for spawn action)"
+    required: false
+    default: ""
+
+  # What the platform belongs to, naming both its resources and its snapshots
+  product:
+    description: "Product the platform is spawned for (defaults to the repository name)"
     required: false
     default: ""
 
@@ -39,7 +45,7 @@ inputs:
 
   # Snapshot specific
   snapshot_name:
-    description: "The name to give the snapshot (only for snapshot action)"
+    description: "The name of the snapshot (only for snapshot and delete-snapshot actions)"
     required: false
     default: ""
 
@@ -69,9 +75,9 @@ runs:
         ACTION: ${{ inputs.action }}
       run: |
         case "$ACTION" in
-          setup|list|spawn|snapshot|destroy) ;;
+          setup|list|spawn|snapshot|delete-snapshot|destroy) ;;
           *)
-            echo "Invalid action: $ACTION. Must be 'setup', 'list', 'spawn', 'snapshot' or 'destroy'."
+            echo "Invalid action: $ACTION. Must be 'setup', 'list', 'spawn', 'snapshot', 'delete-snapshot' or 'destroy'."
             exit 1
             ;;
         esac
@@ -96,13 +102,13 @@ runs:
           exit 1
         fi
     - name: "Check argument for snapshot"
-      if: ${{ inputs.action == 'snapshot' }}
+      if: ${{ inputs.action == 'snapshot' || inputs.action == 'delete-snapshot' }}
       shell: bash
       env:
         SNAPSHOT_NAME: ${{ inputs.snapshot_name }}
       run: |
         if [ "$SNAPSHOT_NAME" == "" ]; then
-          echo "Snapshot name must be provided for snapshot action."
+          echo "Snapshot name must be provided for snapshot actions."
           exit 1
         fi
     - name: "Check max attempts"
@@ -223,10 +229,11 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
+        PRODUCT_INPUT: ${{ inputs.product }}
         REPOSITORY: ${{ github.event.repository.name }}
       run: |-
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get product)" == "unknown" ]]; then
-          pulumi $PULUMI_DEFAULT_ARGS config set product "$REPOSITORY"
+          pulumi $PULUMI_DEFAULT_ARGS config set product "${PRODUCT_INPUT:-$REPOSITORY}"
         fi
         if [[ "$(pulumi $PULUMI_DEFAULT_ARGS config get ssh_key_name)" == "" ]]; then
           pulumi $PULUMI_DEFAULT_ARGS config set --type bool ssh_private_key_create true
@@ -365,6 +372,21 @@ runs:
       run: |-
         pulumi $PULUMI_DEFAULT_ARGS stack select "$STACK_NAME"
         uv run --group snapshot tools/generate_snapshot.py "$SNAPSHOT_NAME"
+    - name: Delete the snapshot
+      if: ${{ inputs.action == 'delete-snapshot' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      # NOTE: Read from the input rather than from the stack, which is
+      # usually gone by the time its snapshots are taken away. It is the very
+      # input a spawn names the platform with, so the two always agree.
+      env:
+        SNAPSHOT_NAME: ${{ inputs.snapshot_name }}
+        PRODUCT_INPUT: ${{ inputs.product }}
+        REPOSITORY: ${{ github.event.repository.name }}
+      run: |-
+        uv run --group snapshot tools/delete_snapshot.py \
+          --product "${PRODUCT_INPUT:-$REPOSITORY}" \
+          "$SNAPSHOT_NAME"
     # }}}
 
     # Destroy {{{
