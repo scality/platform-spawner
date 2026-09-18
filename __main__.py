@@ -60,11 +60,16 @@ install="install -d -m 700 ~/.ssh && cat > ~/{key} && chmod 600 ~/{key}"
 printf '%s' "$BASTION_PRIVATE_KEY" | ssh -F {config} bastion "$install"
 scp -F {config} {bastion_config} bastion:{remote_config}
 """
+# Address space of the routed planes, needed both to carve the subnets out
+# and to tell the bastion whose clock it is allowed to serve
+CONTROL_PLANE_CIDR = "172.30.100.0/24"
+WORKLOAD_PLANE_CIDR = "172.30.200.0/24"
 # Extra networks sit beside the public one, in the space the planes already
 # share, and the control plane is what bounds how many of them there can be
 EXTRA_NETWORK_CIDR = "172.30.{index}.0/24"
 EXTRA_NETWORK_MAX = 99
 EXTRA_NETWORK_NAME = "extra-network-{index}"
+NTP_CLIENT = "chrony"
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 SSH_CONFIG_LINK_NAME = "ssh_config"
 SSH_KNOWN_HOSTS_PREFIX = "ssh_known_hosts"
@@ -105,12 +110,12 @@ def __main__() -> None:
     control_plane_subnet = provider.create_subnet(
         name="control-plane",
         network=main_network,
-        cidr="172.30.100.0/24",
+        cidr=CONTROL_PLANE_CIDR,
     )
     workload_plane_subnet = provider.create_subnet(
         name="workload-plane",
         network=main_network,
-        cidr="172.30.200.0/24",
+        cidr=WORKLOAD_PLANE_CIDR,
         routed=True,
         # Workload plane can reach the public subnet
         # if offline mode is disable
@@ -196,6 +201,7 @@ def __main__() -> None:
             *(iface for _, iface in bastion_extra_ifaces),
         ],
         disable_auto_stop=config.require_bool("disable_auto_stop"),
+        cloud_config=_ntp_config(allow=[CONTROL_PLANE_CIDR, WORKLOAD_PLANE_CIDR]),
     )
     pulumi.export(
         "bastion",
@@ -245,7 +251,10 @@ def __main__() -> None:
             interfaces=[wp_iface, cp_iface, *(iface for _, iface in extra_ifaces)],
             extra_volumes=config.require_object("extra_volumes"),
             disable_auto_stop=config.require_bool("disable_auto_stop"),
-            cloud_config={"ssh_authorized_keys": [bastion_key.public_key_openssh]},
+            cloud_config={
+                "ssh_authorized_keys": [bastion_key.public_key_openssh],
+                **_ntp_config(servers=[bastion_cp_iface.ip, bastion_wp_iface.ip]),
+            },
         )
         instances.append(node)
         nodes_info[f"node-{node_index}"] = {
@@ -334,6 +343,22 @@ def _parse_extra_volumes(extra_volumes: list[dict]) -> dict:
             "count": vol.get("count", 1),
         }
     return volumes
+
+
+def _ntp_config(**settings: object) -> dict:
+    """
+    Render the cloud-init configuration of a machine's clock.
+
+    NOTE: The bastion serves the platform its time and the nodes take it from
+    there, rather than each reaching for a public pool. The bastion is the
+    only machine with a way out once the platform is offline, and clocks that
+    drift apart break a cluster in ways that look like anything but a clock.
+
+    Leaving both `servers` and `pools` out is what makes cloud-init fall back
+    to the public pool, so the bastion gets neither and the nodes get only
+    `servers`, which keeps a pool they cannot reach out of their config.
+    """
+    return {"ntp": {"enabled": True, "ntp_client": NTP_CLIENT, **settings}}
 
 
 def _extra_network_cidr(index: int) -> str:

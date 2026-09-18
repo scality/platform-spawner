@@ -34,6 +34,10 @@ It carries a key and an `ssh_config` of its own, so the nodes are one `ssh`
 away from there too. That key belongs to the bastion alone: the instances are
 told to trust it, and the key opening the platform never leaves for them.
 
+It is also the clock of the platform. It takes its time from a public pool and
+serves it to the nodes, which is what keeps them in step once the platform is
+offline and has no pool of its own to reach.
+
 ### The nodes
 
 The nodes run the workloads. `instance_count` says how many there are, three
