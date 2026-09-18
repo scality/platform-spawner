@@ -43,6 +43,19 @@ jobs:
       matrix:
         stack: ${{ fromJson(needs.stack-to-delete.outputs.stacks) }}
     runs-on: ubuntu-24.04
+    env:
+      # NOTE: A stack carries the provider it was spawned on, and the bucket
+      # holds both, so collecting has to be able to reach either one. Without
+      # these the OpenStack stacks fail to destroy and their instances stay up.
+      OS_AUTH_URL: ${{ vars.OS_AUTH_URL }}
+      OS_USERNAME: ${{ vars.OS_USERNAME }}
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+      OS_PROJECT_ID: ${{ vars.OS_PROJECT_ID }}
+      OS_PROJECT_NAME: ${{ vars.OS_PROJECT_NAME }}
+      OS_REGION_NAME: ${{ vars.OS_REGION }}
+      OS_USER_DOMAIN_NAME: "Default"
+      OS_PROJECT_DOMAIN_ID: "default"
+      OS_IDENTITY_API_VERSION: "3"
     steps:
       - name: Checkout
         uses: actions/checkout@v6

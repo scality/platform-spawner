@@ -1,0 +1,150 @@
+name: "Snapshot Test"
+
+on:
+  workflow_call:
+    inputs:
+      stack:
+        description: "Name of the stack to snapshot"
+        required: true
+        type: string
+      snapshot:
+        description: "Name to take the snapshot under"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  actions: read
+  contents: read
+
+# NOTE: Read by the OpenStack provider straight from the environment, the way
+# the AWS one reads what the credentials step leaves behind. The password
+# cannot be set here: a workflow level environment cannot read secrets.
+env:
+  OS_AUTH_URL: ${{ vars.OS_AUTH_URL }}
+  OS_USERNAME: ${{ vars.OS_USERNAME }}
+  OS_PROJECT_ID: ${{ vars.OS_PROJECT_ID }}
+  OS_PROJECT_NAME: ${{ vars.OS_PROJECT_NAME }}
+  # The variable holds the region, the tooling reads it under another name
+  OS_REGION_NAME: ${{ vars.OS_REGION }}
+  # Not configured anywhere, being the same for every OVH project
+  OS_USER_DOMAIN_NAME: "Default"
+  OS_PROJECT_DOMAIN_ID: "default"
+  OS_IDENTITY_API_VERSION: "3"
+
+jobs:
+  # Take a platform away and bring it back from its images. It spawns twice
+  # and snapshots in between, which is why it is not a platform test like the
+  # others.
+  test:
+    name: "snapshot test"
+    runs-on: ubuntu-24.04
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # NOTE: Needed whatever the provider, the stacks living in an S3 bucket
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Spawn the platform to snapshot
+        uses: ./
+        with:
+          action: spawn
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: ${{ inputs.stack }}
+          configuration: |-
+            provider: openstack
+            instance_image: rocky-9
+            instance_count: 1
+
+      - name: Leave something behind to recognise it by
+        env:
+          MARKER: ${{ github.run_id }}
+        run: ssh -F ssh_config node-1 "echo '$MARKER' > ~/snapshot-marker"
+
+      - name: Take the snapshot
+        uses: ./
+        with:
+          action: snapshot
+          stack_name: ${{ inputs.stack }}
+          snapshot_name: ${{ inputs.snapshot }}
+
+      - name: Take the platform away
+        uses: ./
+        with:
+          action: destroy
+          stack_name: ${{ inputs.stack }}
+
+      - name: Spawn it back from the snapshot
+        uses: ./
+        with:
+          action: spawn
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: "${{ inputs.stack }}-restore"
+          configuration: |-
+            provider: openstack
+            instance_count: 1
+            restore_snapshot: ${{ inputs.snapshot }}
+            # A snapshot names no image, so nothing can work out who to log in
+            # as. It came from a rocky-9.
+            instance_ssh_user: rocky
+
+      - name: Check what was left behind came back
+        env:
+          EXPECTED: ${{ github.run_id }}
+        run: |-
+          found=$(ssh -F ssh_config node-1 'cat ~/snapshot-marker')
+          echo "node-1 came back carrying $found"
+          [ "$found" == "$EXPECTED" ]
+
+      # NOTE: Nothing else takes the images away. They outlive the platform
+      # they were taken from, which is the point of them, so a run that leaves
+      # its own behind piles them up in the cloud for good.
+      - name: Take the snapshot away
+        if: always()
+        uses: ./
+        with:
+          action: delete-snapshot
+          snapshot_name: ${{ inputs.snapshot }}
+
+  destroy:
+    name: "snapshot destroy the ${{ matrix.platform }} platform"
+    needs: test
+    if: always()
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        # The snapshotted one is taken away mid test, this is what catches it
+        # when the test never got that far
+        include:
+          - platform: snapshotted
+            stack: ${{ inputs.stack }}
+          - platform: restored
+            stack: ${{ inputs.stack }}-restore
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Destroy platform
+        uses: ./
+        with:
+          action: destroy
+          stack_name: ${{ matrix.stack }}

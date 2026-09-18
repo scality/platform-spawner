@@ -9,53 +9,53 @@ permissions:
   contents: read
 
 jobs:
-  test-spawn:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+  platform:
+    # NOTE: Named, or the default is built out of every matrix value and the
+    # whole configuration lands in the job name
+    name: ${{ matrix.name }}
+    strategy:
+      # One platform failing says nothing about the others, and letting them
+      # finish is what tells us whether the break is shared
+      fail-fast: false
+      matrix:
+        include:
+          - name: aws
+            checks: tests/check_platform.sh
+            configuration: |-
+              provider: aws
+              instance_image: rocky-9
+          - name: openstack
+            checks: tests/check_platform.sh
+            configuration: |-
+              provider: openstack
+              instance_image: rocky-9
+          # Everything a platform can be asked for at once, rather than a
+          # spawn each
+          - name: options
+            checks: tests/check_options.sh
+            configuration: |-
+              provider: openstack
+              instance_image: rocky-9
+              instance_count: 2
+              offline: true
+              extra_networks:
+                - name: storage
+                - name: bonded
+                  redundant: true
+              extra_volumes:
+                - size: 10
+                  count: 2
+    uses: ./.github/workflows/platform-test.yaml
+    with:
+      name: ${{ matrix.name }}
+      stack: "${{ github.workflow }}-${{ github.run_number }}-${{ matrix.name }}"
+      configuration: ${{ matrix.configuration }}
+      checks: ${{ matrix.checks }}
+    secrets: inherit
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
-          role-session-name: GitHubActions-${{ github.run_id }}
-          aws-region: eu-north-1
-
-      - name: Spawn platform
-        uses: ./
-        with:
-          action: spawn
-          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
-          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
-          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
-          configuration: |-
-            instance_image: rocky-9
-
-      - name: Test to ssh
-        run: |-
-          ssh -F ssh_config bastion hostname
-          ssh -F ssh_config node-1 hostname
-          ssh -F ssh_config node-2 hostname
-          ssh -F ssh_config node-3 hostname
-
-  destroy:
-    needs: test-spawn
-    runs-on: ubuntu-24.04
-    if: always()
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
-          role-session-name: GitHubActions-${{ github.run_id }}
-          aws-region: eu-north-1
-
-      - name: Destroy platform
-        uses: ./
-        with:
-          action: destroy
-          stack_name: "${{ github.workflow }}-${{ github.run_number }}"
+  snapshot:
+    uses: ./.github/workflows/snapshot-test.yaml
+    with:
+      stack: "${{ github.workflow }}-${{ github.run_number }}-snapshot"
+      snapshot: "e2e-${{ github.run_number }}"
+    secrets: inherit

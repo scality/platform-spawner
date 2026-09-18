@@ -1,0 +1,98 @@
+name: "Platform Test"
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: "What the platform is called, in the job names"
+        required: true
+        type: string
+      stack:
+        description: "Name of the stack to spawn"
+        required: true
+        type: string
+      configuration:
+        description: "Configuration of the platform to spawn"
+        required: true
+        type: string
+      checks:
+        description: "Script to run against the spawned platform"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  actions: read
+  contents: read
+
+# NOTE: Read by the OpenStack provider straight from the environment, the way
+# the AWS one reads what the credentials step leaves behind. They are harmless
+# to a platform spawned on AWS, which never looks. The password cannot be set
+# here: a workflow level environment cannot read secrets.
+env:
+  OS_AUTH_URL: ${{ vars.OS_AUTH_URL }}
+  OS_USERNAME: ${{ vars.OS_USERNAME }}
+  OS_PROJECT_ID: ${{ vars.OS_PROJECT_ID }}
+  OS_PROJECT_NAME: ${{ vars.OS_PROJECT_NAME }}
+  # The variable holds the region, the tooling reads it under another name
+  OS_REGION_NAME: ${{ vars.OS_REGION }}
+  # Not configured anywhere, being the same for every OVH project
+  OS_USER_DOMAIN_NAME: "Default"
+  OS_PROJECT_DOMAIN_ID: "default"
+  OS_IDENTITY_API_VERSION: "3"
+
+jobs:
+  test:
+    name: "${{ inputs.name }} test"
+    runs-on: ubuntu-24.04
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # NOTE: Needed whatever the provider, the stacks living in an S3 bucket
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Spawn platform
+        uses: ./
+        with:
+          action: spawn
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: ${{ inputs.stack }}
+          configuration: ${{ inputs.configuration }}
+
+      - name: Check the platform
+        env:
+          CHECKS: ${{ inputs.checks }}
+        run: ./"$CHECKS"
+
+  destroy:
+    name: "${{ inputs.name }} destroy"
+    needs: test
+    if: always()
+    runs-on: ubuntu-24.04
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Destroy platform
+        uses: ./
+        with:
+          action: destroy
+          stack_name: ${{ inputs.stack }}
