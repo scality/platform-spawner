@@ -391,13 +391,22 @@ runs:
 
     # Destroy {{{
     - name: Refresh the config
+      id: select_stack
       if: ${{ inputs.action == 'destroy' }}
       shell: bash
       working-directory: ${{ github.action_path }}
+      # NOTE: A stack that was never created has nothing to leak, so saying so
+      # and stopping there beats failing. It lets a cleanup job name every
+      # stack a run may have spawned without knowing how far the run got.
       run: |-
-        pulumi stack select "$STACK_NAME"
+        if pulumi stack select "$STACK_NAME" 2>/dev/null; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "found=false" >> "$GITHUB_OUTPUT"
+          echo "No stack named $STACK_NAME, nothing to destroy"
+        fi
     - name: Set mandatory config
-      if: ${{ inputs.action == 'destroy' }}
+      if: ${{ inputs.action == 'destroy' && steps.select_stack.outputs.found == 'true' }}
       shell: bash
       working-directory: ${{ github.action_path }}
       # NOTE: We set mandatory config flags otherwise pulumi destroy fails because
@@ -406,7 +415,7 @@ runs:
         pulumi $PULUMI_DEFAULT_ARGS config refresh ||
           pulumi $PULUMI_DEFAULT_ARGS config set instance_image rocky-9
     - name: Destroy
-      if: ${{ inputs.action == 'destroy' }}
+      if: ${{ inputs.action == 'destroy' && steps.select_stack.outputs.found == 'true' }}
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
@@ -424,7 +433,7 @@ runs:
         done
         exit 1
     - name: Remove the stack
-      if: ${{ inputs.action == 'destroy' }}
+      if: ${{ inputs.action == 'destroy' && steps.select_stack.outputs.found == 'true' }}
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |-
