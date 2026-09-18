@@ -48,6 +48,7 @@ class AWSProvider(base.BaseProvider):
         interfaces: list[base.Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
+        cloud_config: dict | None = None,
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
@@ -88,6 +89,11 @@ class AWSProvider(base.BaseProvider):
                 for index, iface in enumerate(interfaces)
             ],
             ebs_block_devices=volumes,
+            user_data=(
+                pulumi.Output.from_input(cloud_config).apply(base.render_cloud_config)
+                if cloud_config
+                else None
+            ),
             tags=tags,
         )
 

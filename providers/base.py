@@ -5,8 +5,17 @@ from abc import ABC, abstractmethod
 from enum import StrEnum
 
 import pulumi
+import yaml
+
+# cloud-init only reads the payload as cloud-config when it opens with this
+CLOUD_CONFIG_HEADER = "#cloud-config"
 
 IMAGE_UPLOAD_UNSUPPORTED = "The {provider} provider cannot upload an image file."
+
+
+def render_cloud_config(config: dict) -> str:
+    """Render a cloud-config document from what it should hold."""
+    return f"{CLOUD_CONFIG_HEADER}\n{yaml.safe_dump(config)}"
 
 
 class InstanceFlavor(StrEnum):
@@ -70,9 +79,13 @@ class BaseProvider(ABC):
         interfaces: list[Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
+        cloud_config: dict | None = None,
     ) -> pulumi.CustomResource:
         """
         Create and return a new instance.
+
+        `cloud_config` is handed to cloud-init on the instance, on top of
+        whatever the provider needs to say there itself.
 
         This method must be implemented by subclasses.
         """

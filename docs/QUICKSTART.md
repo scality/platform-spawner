@@ -181,12 +181,16 @@ A spawn writes its SSH files beside `Pulumi.yaml`:
 | `ssh_config-<stack>` | The configuration of that platform |
 | `ssh_config` | A link to the platform spawned last |
 | `ssh_known_hosts-<stack>` | The host keys of that platform, which the config points at |
+| `ssh_config-<stack>-bastion` | The copy handed to the bastion, so it reaches the nodes too |
 | `ssh_<product>_<stack>` and `.pub` | The generated key, when `ssh_private_key_create` is set |
 
 ```bash
 ssh -F ssh_config bastion          # the platform spawned last
 ssh -F ssh_config-<stack> node-1   # jumps through the bastion on its own
 ```
+
+From the bastion, `ssh -F ssh_config node-1` works the same way. It carries a
+config and a key of its own.
 
 To reach the node networks from your machine rather than from the bastion,
 `sshuttle` carries them over:

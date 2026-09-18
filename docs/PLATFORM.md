@@ -30,6 +30,10 @@ The bastion sits on the three networks, and it is the only machine reachable
 from the outside. Whatever needs to speak to the nodes from close by runs
 there.
 
+It carries a key and an `ssh_config` of its own, so the nodes are one `ssh`
+away from there too. That key belongs to the bastion alone: the instances are
+told to trust it, and the key opening the platform never leaves for them.
+
 ### The nodes
 
 The nodes run the workloads. `instance_count` says how many there are, three

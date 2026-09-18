@@ -6,7 +6,6 @@ import ipaddress
 
 import pulumi
 import pulumi_openstack
-import yaml
 
 from providers import base
 
@@ -42,9 +41,6 @@ INSTANCE_TIMEOUT = "10m"
 # resource. A name long enough to overflow it would be dropped server side.
 MAX_TAG_LENGTH = 60
 TAG_SHORTENED = "The tag {tag!r} is {length} characters, cut to the {limit} OpenStack takes."
-
-# cloud-init only reads the payload as cloud-config when it opens with this
-CLOUD_CONFIG_HEADER = "#cloud-config"
 
 UNKNOWN_RESOURCE = "Cannot introspect {type_}, the layout of the OpenStack SDK changed."
 
@@ -135,6 +131,7 @@ class OpenStackProvider(base.BaseProvider):
         interfaces: list[base.Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
+        cloud_config: dict | None = None,
     ) -> pulumi_openstack.compute.Instance:
         """
         Create a new Nova instance.
@@ -164,7 +161,7 @@ class OpenStackProvider(base.BaseProvider):
                 for iface in interfaces
             ],
             metadata=metadata,
-            user_data=self._cloud_config(),
+            user_data=pulumi.Output.from_input(cloud_config or {}).apply(self._cloud_config),
             opts=pulumi.ResourceOptions(
                 custom_timeouts=pulumi.CustomTimeouts(
                     create=INSTANCE_TIMEOUT,
@@ -471,9 +468,9 @@ class OpenStackProvider(base.BaseProvider):
 
         return self._external_network_id
 
-    def _cloud_config(self) -> str:
+    def _cloud_config(self, given: dict) -> str:
         """
-        Render the cloud-init configuration handed to every instance.
+        Render the cloud-init configuration handed to an instance.
 
         NOTE: The images OVH publishes carry the `/etc/resolv.conf` of the
         machine they were built on, whose resolver does not exist here.
@@ -495,17 +492,17 @@ class OpenStackProvider(base.BaseProvider):
             ]
         )
 
-        config = {
-            "write_files": [
-                {
-                    "path": "/etc/resolv.conf",
-                    "defer": True,
-                    "content": resolv_conf,
-                }
-            ]
-        }
+        config = {key: value for key, value in given.items() if key != "write_files"}
+        config["write_files"] = [
+            *given.get("write_files", []),
+            {
+                "path": "/etc/resolv.conf",
+                "defer": True,
+                "content": resolv_conf,
+            },
+        ]
 
-        return f"{CLOUD_CONFIG_HEADER}\n{yaml.safe_dump(config)}"
+        return base.render_cloud_config(config)
 
     def _get_image(self, image_name: str) -> pulumi.Input[str]:
         """
