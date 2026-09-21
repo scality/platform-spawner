@@ -10,6 +10,7 @@ import requests
 
 import providers
 from providers import base
+from tools import ssh_config
 
 SSH_ARG_MUTUALLY_EXCLUSIFE = "One of ssh_key_name or ssh_private_key_create can be set."
 SSH_USER_UNKNOWN = "No user to reach the {machine} with, set {machine}_ssh_user."
@@ -53,8 +54,6 @@ for host in {hosts}; do
 done
 """
 # What the bastion is handed, so that it reaches the nodes on its own
-BASTION_SSH_KEY = ".ssh/bastion"
-BASTION_SSH_CONFIG = "ssh_config"
 BASTION_SETUP_SCRIPT = """set -eu
 install="install -d -m 700 ~/.ssh && cat > ~/{key} && chmod 600 ~/{key}"
 printf '%s' "$BASTION_PRIVATE_KEY" | ssh -F {config} bastion "$install"
@@ -71,8 +70,6 @@ EXTRA_NETWORK_MAX = 99
 EXTRA_NETWORK_NAME = "extra-network-{index}"
 NTP_CLIENT = "chrony"
 SSH_CONFIG_DIR = pathlib.Path.cwd()
-SSH_CONFIG_LINK_NAME = "ssh_config"
-SSH_KNOWN_HOSTS_PREFIX = "ssh_known_hosts"
 
 
 def __main__() -> None:
@@ -273,10 +270,10 @@ def __main__() -> None:
     pulumi.export("nodes", nodes_info)
     pulumi.export("ssh_info", ssh_info)
 
-    ssh_config_file = SSH_CONFIG_DIR / f"{SSH_CONFIG_LINK_NAME}-{provider.stack}"
+    ssh_config_file = ssh_config.path_for(SSH_CONFIG_DIR, provider.stack)
     pulumi.export("ssh_config", str(ssh_config_file))
     ssh_config_ready = pulumi.Output.all(ssh_info).apply(
-        lambda info: _generate_ssh_config(info, ssh_config_file)
+        lambda info: ssh_config.generate(info[0], ssh_config_file)
     )
 
     booted = _wait_for_boot(ssh_config_ready, ["bastion", *nodes_info], instances)
@@ -447,8 +444,8 @@ def _create_extra_interfaces(
 
 def _clean_up_ssh_files(ssh_config_path: pathlib.Path) -> None:
     """Take the files generated for a platform away with it."""
-    known_hosts = _known_hosts_path(ssh_config_path)
-    link = ssh_config_path.with_name(SSH_CONFIG_LINK_NAME)
+    known_hosts = ssh_config.known_hosts_path(ssh_config_path)
+    link = ssh_config_path.with_name(ssh_config.LINK_NAME)
 
     pulumi_command.local.Command(
         "ssh-files",
@@ -460,32 +457,11 @@ def _clean_up_ssh_files(ssh_config_path: pathlib.Path) -> None:
         # is for someone to decide, not for a destroy to do on its own.
         delete=(
             f"rm -f {known_hosts} {ssh_config_path}"
-            f" {_bastion_config_path(ssh_config_path)};"
+            f" {ssh_config.bastion_path(ssh_config_path)};"
             f' [ "$(readlink {link} 2>/dev/null)" = "{ssh_config_path.name}" ]'
             f" && rm -f {link} || true"
         ),
     )
-
-
-def _known_hosts_path(ssh_config_path: pathlib.Path) -> pathlib.Path:
-    """Return the known_hosts file that goes with a generated config."""
-    stack = ssh_config_path.name.removeprefix(f"{SSH_CONFIG_LINK_NAME}-")
-
-    return ssh_config_path.with_name(f"{SSH_KNOWN_HOSTS_PREFIX}-{stack}")
-
-
-def _ssh_common_options(ssh_config_path: pathlib.Path) -> list[str]:
-    """Return the options every host block of the config repeats."""
-    return [
-        "  IdentitiesOnly yes",
-        "  StrictHostKeyChecking no",
-        # NOTE: A file of its own for each platform. The machines always sit at
-        # the same addresses, so a shared one would hold the keys of the
-        # platform before this one and get in the way, while a dedicated one
-        # still catches a key changing under us within the life of this one.
-        f"  UserKnownHostsFile {_known_hosts_path(ssh_config_path)}",
-        "  ServerAliveInterval 15",
-    ]
 
 
 def _instance_images(
@@ -557,14 +533,14 @@ def _ssh_user(config: pulumi.Config, machine: str) -> str:
 
 
 def _wait_for_boot(
-    ssh_config: pulumi.Output[str],
+    config_file: pulumi.Output[str],
     hosts: list[str],
     instances: list[pulumi.CustomResource],
 ) -> pulumi_command.local.Command:
     """Hold the update until every machine is done booting."""
     return pulumi_command.local.Command(
         "wait-for-boot",
-        create=ssh_config.apply(
+        create=config_file.apply(
             lambda config: BOOT_WAIT_SCRIPT.format(
                 hosts=" ".join(hosts),
                 config=config,
@@ -578,7 +554,7 @@ def _wait_for_boot(
 
 
 def _equip_bastion(
-    ssh_config: pulumi.Output[str],
+    config_file: pulumi.Output[str],
     bastion_key: pulumi_tls.PrivateKey,
     booted: pulumi_command.local.Command,
 ) -> None:
@@ -591,87 +567,17 @@ def _equip_bastion(
     """
     pulumi_command.local.Command(
         "bastion-ssh-config",
-        create=ssh_config.apply(
+        create=config_file.apply(
             lambda config: BASTION_SETUP_SCRIPT.format(
                 config=config,
-                key=BASTION_SSH_KEY,
-                bastion_config=_bastion_config_path(pathlib.Path(config)),
-                remote_config=BASTION_SSH_CONFIG,
+                key=ssh_config.BASTION_KEY,
+                bastion_config=ssh_config.bastion_path(pathlib.Path(config)),
+                remote_config=ssh_config.BASTION_CONFIG,
             )
         ),
         environment={"BASTION_PRIVATE_KEY": bastion_key.private_key_openssh},
         opts=pulumi.ResourceOptions(depends_on=[booted]),
     )
-
-
-def _bastion_config_path(ssh_config_path: pathlib.Path) -> pathlib.Path:
-    """Return the config written for the bastion itself, next to the local one."""
-    return ssh_config_path.with_name(f"{ssh_config_path.name}-bastion")
-
-
-def _generate_bastion_ssh_config(ssh_info: dict, path: pathlib.Path) -> None:
-    """
-    Write the config the bastion uses to reach the nodes.
-
-    It carries no bastion entry, there being nothing to jump through from
-    there, and points at the key the bastion is handed rather than at the one
-    that stays here. Host keys are left to the default file: the machines are
-    as new as the bastion reading it, so nothing stale can get in the way.
-    """
-    config_lines = []
-    for host, info in ssh_info["nodes"].items():
-        config_lines.append(f"Host {host}")
-        config_lines.append(f"  HostName {info['ip']}")
-        config_lines.append("  Port 22")
-        if info.get("user"):
-            config_lines.append(f"  User {info['user']}")
-        config_lines.append(f"  IdentityFile ~/{BASTION_SSH_KEY}")
-        config_lines.append("  IdentitiesOnly yes")
-        config_lines.append("  StrictHostKeyChecking no")
-        config_lines.append("  ServerAliveInterval 15")
-        config_lines.append("")
-
-    _bastion_config_path(path).write_text("\n".join(config_lines))
-
-
-def _generate_ssh_config(ssh_info_list: list[dict], path: pathlib.Path) -> str:
-    ssh_info = ssh_info_list[0]
-    common_options = _ssh_common_options(path)
-    config_lines = []
-    if "bastion" in ssh_info:
-        config_lines.append("Host bastion")
-        config_lines.append(f"  HostName {ssh_info['bastion']['ip']}")
-        config_lines.append("  Port 22")
-        if ssh_info["bastion"].get("user"):
-            config_lines.append(f"  User {ssh_info['bastion']['user']}")
-        if ssh_info.get("key"):
-            config_lines.append(f"  IdentityFile {ssh_info['key']}")
-        config_lines.extend(common_options)
-        config_lines.append("")
-
-    for host, info in ssh_info["nodes"].items():
-        config_lines.append(f"Host {host}")
-        if "bastion" in ssh_info:
-            config_lines.append("  ProxyJump bastion")
-        config_lines.append(f"  HostName {info['ip']}")
-        config_lines.append("  Port 22")
-        if info.get("user"):
-            config_lines.append(f"  User {info['user']}")
-        if ssh_info.get("key"):
-            config_lines.append(f"  IdentityFile {ssh_info['key']}")
-        config_lines.extend(common_options)
-        config_lines.append("")
-
-    path.write_text("\n".join(config_lines))
-    _generate_bastion_ssh_config(ssh_info, path)
-
-    # Point the stable name at the stack we just spawned, so that `ssh -F
-    # ssh_config` keeps working while the per stack files pile up next to it.
-    link = path.with_name(SSH_CONFIG_LINK_NAME)
-    link.unlink(missing_ok=True)
-    link.symlink_to(path.name)
-
-    return str(path)
 
 
 if __name__ == "__main__":
