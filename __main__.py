@@ -296,7 +296,9 @@ def _prepare_ssh_key(
         pulumi_command.local.Command(
             "ssh-private-key-file",
             create=pulumi.Output.from_input(private_key.private_key_openssh).apply(
-                lambda pk: f"echo -n '{pk}' > {path!s} && chmod 600 {path!s}"
+                # NOTE: The mask rather than a chmod afterwards, which would
+                # leave the key readable by anyone on the machine in between
+                lambda pk: f"(umask 077; echo -n '{pk}' > {path!s})"
             ),
         )
         pulumi_command.local.Command(
