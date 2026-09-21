@@ -17,6 +17,7 @@ import time
 
 import openstack
 import openstack.exceptions
+
 import stack
 import step_summary
 

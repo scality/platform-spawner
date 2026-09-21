@@ -19,6 +19,7 @@ import sys
 
 import openstack
 import openstack.exceptions
+
 import step_summary
 
 

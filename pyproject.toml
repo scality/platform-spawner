@@ -14,6 +14,9 @@ dependencies = [
 ]
 
 [tool.ruff]
+# Where our own modules live, so that they are told apart from the packages we
+# depend on and land in a block of their own
+src = [".", "tools"]
 fix = true
 show-fixes = true
 output-format = "full"

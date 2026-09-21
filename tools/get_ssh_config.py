@@ -15,9 +15,10 @@ import os
 import pathlib
 import sys
 
+from pulumi.automation import CommandError
+
 import ssh_config
 import stack
-from pulumi.automation import CommandError
 
 NO_SSH_INFO = "Stack {stack!r} reports no ssh_info, is it spawned?"
 KEY_MISSING = "Stack {stack!r} exports no key, was it spawned before they were?"
