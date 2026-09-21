@@ -11,6 +11,7 @@ import yaml
 CLOUD_CONFIG_HEADER = "#cloud-config"
 
 IMAGE_UPLOAD_UNSUPPORTED = "The {provider} provider cannot upload an image file."
+IMAGE_NOT_FOUND = "The {provider} provider has no image named {name}."
 
 
 def render_cloud_config(config: dict) -> str:

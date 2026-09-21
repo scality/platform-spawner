@@ -75,7 +75,7 @@ class AWSProvider(base.BaseProvider):
         return pulumi_aws.ec2.Instance(
             name,
             instance_type=_instance_flavor_matching.get(flavor, flavor),
-            ami=ami.id,
+            ami=ami,
             key_name=key_name,
             root_block_device=pulumi_aws.ec2.InstanceRootBlockDeviceArgs(
                 volume_size=root_disk_size,
@@ -312,19 +312,27 @@ class AWSProvider(base.BaseProvider):
             public_ip=public_ip,
         )
 
-    def _get_ami(self, image_name: str) -> pulumi_aws.ec2.GetAmiResult:
+    def _get_ami(self, image_name: str) -> str:
         """Retrieve the AMI ID for a given image name."""
         # Try to find the AMI in known one
-        if _known_images.get(self.region, {}).get(image_name):
-            ami_id = _known_images[self.region][image_name]
-            return pulumi_aws.ec2.GetAmiResult(id=ami_id)
+        known = _known_images.get(self.region, {}).get(image_name)
+        if known:
+            return known
 
-        return pulumi_aws.ec2.get_ami(
-            most_recent=True,
+        # NOTE: The ids rather than the AMI itself, so that finding none is
+        # ours to report. Asking for the AMI answers that no such thing was
+        # found, which never says what was looked for.
+        found = pulumi_aws.ec2.get_ami_ids(
             # NOTE: We may want to support other owners in the future
             owners=["self"],
             filters=[{"name": "name", "values": [image_name]}],
+            sort_ascending=False,
         )
+        if not found.ids:
+            message = base.IMAGE_NOT_FOUND.format(provider=self.provider_name, name=image_name)
+            raise ValueError(message)
+
+        return found.ids[0]
 
     def _get_availability_zone(self) -> str:
         if not self._availability_zone:

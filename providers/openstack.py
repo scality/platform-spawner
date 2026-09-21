@@ -517,10 +517,16 @@ class OpenStackProvider(base.BaseProvider):
         if uploaded is not None:
             return uploaded.id
 
-        return pulumi_openstack.images.get_image(
-            name=_known_images.get(image_name, image_name),
-            most_recent=True,
-        ).id
+        name = _known_images.get(image_name, image_name)
+        # NOTE: The ids rather than the image itself, so that finding none is
+        # ours to report. Asking for the image answers "your query returned no
+        # results", which never says what was looked for.
+        found = pulumi_openstack.images.get_image_ids(name=name, sort="created_at:desc")
+        if not found.ids:
+            message = base.IMAGE_NOT_FOUND.format(provider=self.provider_name, name=name)
+            raise ValueError(message)
+
+        return found.ids[0]
 
     def _transform_add_common_metadata(
         self,
