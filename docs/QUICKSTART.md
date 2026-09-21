@@ -3,7 +3,8 @@
 Spawn a platform from your machine, on OVH Public Cloud (OpenStack) or on
 AWS, connect to it, then take it down.
 
-Spawning from a workflow is [another story](GITHUB_ACTION.md).
+Spawning from a workflow is [another story](GITHUB_ACTION.md). When something
+goes wrong, [TROUBLESHOOTING.md](TROUBLESHOOTING.md) is the place to look.
 
 ## What you get
 

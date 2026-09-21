@@ -306,6 +306,13 @@ def _prepare_ssh_key(
             ),
         )
 
+        # NOTE: Exported so that the files can be written again from the
+        # stack alone. Everything else a spawn produces can be worked out
+        # again, the key cannot. It stays a secret output,
+        # so it is only ever handed over when asked for in clear.
+        pulumi.export("ssh_private_key", private_key.private_key_openssh)
+        pulumi.export("ssh_public_key", private_key.public_key_openssh)
+
         ssh_info["key"] = str(path)
         return provider.create_key_pair("key", private_key.public_key_openssh)
 

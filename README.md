@@ -27,6 +27,7 @@ The [quickstart](docs/QUICKSTART.md) takes it from the top, on either cloud.
 | [Platform](docs/PLATFORM.md) | The machines, the networks and the addresses a platform comes with |
 | [Snapshots](docs/SNAPSHOTS.md) | Capturing a platform as images, and spawning one back from them |
 | [GitHub Action](docs/GITHUB_ACTION.md) | Spawning and destroying from a workflow |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | Getting a platform back when something went wrong |
 
 ## Configuration
 
