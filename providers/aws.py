@@ -131,6 +131,7 @@ class AWSProvider(base.BaseProvider):
         routed: bool = False,  # noqa: ARG002
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi_aws.ec2.Subnet | None = None,
+        filtered: bool = True,  # noqa: ARG002
     ) -> pulumi_aws.ec2.Subnet:
         """
         Create and return a new subnet.

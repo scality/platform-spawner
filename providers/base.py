@@ -142,6 +142,7 @@ class BaseProvider(ABC):
         routed: bool = False,
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi.Resource | None = None,
+        filtered: bool = True,
     ) -> pulumi.Resource:
         """
         Create and return a new subnet.
@@ -150,6 +151,11 @@ class BaseProvider(ABC):
         the two gateway arguments tell whether that router has a way out. They
         are separate because a subnet can be routed and yet reach nothing,
         which is what an offline platform looks like.
+
+        `filtered` tells whether the cloud polices what the machines put on
+        the wire. A subnet that carries a bridge, a bond or a pod network
+        sees addresses the cloud was never told about, and dropping them is
+        the one thing it must not do.
 
         This method must be implemented by subclasses.
         """

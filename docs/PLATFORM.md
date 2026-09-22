@@ -51,6 +51,12 @@ by default.
 | Control plane | `172.30.100.0/24` | Private, routed nowhere. |
 | Workload plane | `172.30.200.0/24` | Private, with a way out to the internet unless `offline` is set. |
 
+The planes carry whatever the machines put on them. A pod network, a bond or a
+bridge all speak with addresses nobody declared to the cloud, and none of them
+would survive a cloud that checks. The public network keeps its guard: it is
+the way in, and the only place worth policing. The authorized ports and CIDRs
+still apply there.
+
 Every machine holds a fixed address on each network it sits on. The bastion
 also carries a public IP handed out by the cloud, which is the one address of
 a platform nobody can guess beforehand.

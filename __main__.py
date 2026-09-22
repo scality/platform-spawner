@@ -104,10 +104,15 @@ def __main__() -> None:
         routed=True,
         gateway_to_internet=True,
     )
+    # NOTE: The planes carry whatever the machines put on them. A pod network,
+    # a bond or a bridge all speak with addresses the cloud was never told
+    # about, so it is told not to look. The public subnet keeps its guard: it
+    # is the way in, and the only place worth policing.
     control_plane_subnet = provider.create_subnet(
         name="control-plane",
         network=main_network,
         cidr=CONTROL_PLANE_CIDR,
+        filtered=False,
     )
     workload_plane_subnet = provider.create_subnet(
         name="workload-plane",
@@ -117,6 +122,7 @@ def __main__() -> None:
         # Workload plane can reach the public subnet
         # if offline mode is disable
         gateway_to_net=public_subnet if not config.require_bool("offline") else None,
+        filtered=False,
     )
 
     # Create security groups
@@ -149,6 +155,7 @@ def __main__() -> None:
                 name=name,
                 network=main_network,
                 cidr=_extra_network_cidr(index),
+                filtered=False,
             ),
         )
         for index, (extra, name) in enumerate(

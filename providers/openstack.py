@@ -118,6 +118,7 @@ class OpenStackProvider(base.BaseProvider):
         self._uploaded_images: dict[str, pulumi_openstack.images.Image] = {}
         self._external_network_id: pulumi.Output[str] | None = None
         self._router_interfaces: list[pulumi_openstack.networking.RouterInterface] = []
+        self._unfiltered: set[pulumi_openstack.networking.Subnet] = set()
 
         pulumi.runtime.register_resource_transform(self._transform_add_common_metadata)
 
@@ -255,6 +256,7 @@ class OpenStackProvider(base.BaseProvider):
         routed: bool = False,
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi_openstack.networking.Subnet | None = None,
+        filtered: bool = True,
     ) -> pulumi_openstack.networking.Subnet:
         """
         Create and return a new subnet, along with the network holding it.
@@ -265,7 +267,15 @@ class OpenStackProvider(base.BaseProvider):
         each subnet gets a network of its own and the router is what joins
         them. This makes `network` useless here.
         """
-        subnet_network = pulumi_openstack.networking.Network(name)
+        # NOTE: Port security is what checks that a port only ever sends its
+        # own address, and it is also what allows a security group to be put on
+        # one at all: Neutron refuses the two together. A network carrying a
+        # bridge, a bond or a pod network sees addresses nobody declared, so
+        # there it is turned off and the ports on it go unguarded.
+        subnet_network = pulumi_openstack.networking.Network(
+            name,
+            port_security_enabled=filtered,
+        )
 
         # NOTE: Neutron reserves a gateway address on every subnet and its DHCP
         # agent advertises it as a default route, whether or not a router
@@ -300,6 +310,8 @@ class OpenStackProvider(base.BaseProvider):
             # with a resolver that answers nothing.
             dns_nameservers=self.dns_nameservers,
         )
+        if not filtered:
+            self._unfiltered.add(subnet)
 
         if gateway_to_internet or gateway_to_net is not None:
             # NOTE: Every subnet reaching out gets a router of its own rather
@@ -417,6 +429,16 @@ class OpenStackProvider(base.BaseProvider):
     ) -> base.Interface:
         """Create a new network interface."""
         name = f"{node_name}-{subnet_name}"
+        guarded = subnet not in self._unfiltered
+
+        # NOTE: Stands for disabling the AWS source/destination check on the
+        # private interfaces, so that a node can forward traffic it is not the
+        # endpoint of. Only the addresses though, never another machine's MAC.
+        pairs = (
+            [pulumi_openstack.networking.PortAllowedAddressPairArgs(ip_address=ANY_CIDR)]
+            if guarded and not public
+            else []
+        )
 
         port = pulumi_openstack.networking.Port(
             name,
@@ -427,19 +449,13 @@ class OpenStackProvider(base.BaseProvider):
                     ip_address=ip,
                 )
             ],
-            security_group_ids=[sec_group.id for sec_group in security_groups or []],
-            # NOTE: Stands for disabling the AWS source/destination check on
-            # the private interfaces, so that a node can forward traffic it
-            # is not the endpoint of.
-            allowed_address_pairs=(
-                []
-                if public
-                else [
-                    pulumi_openstack.networking.PortAllowedAddressPairArgs(
-                        ip_address=ANY_CIDR,
-                    )
-                ]
+            # NOTE: Both are refused by Neutron on a network whose port
+            # security is off, and both would be beside the point there: what
+            # they do is already what that network does for everything.
+            security_group_ids=(
+                [sec_group.id for sec_group in security_groups or []] if guarded else []
             ),
+            allowed_address_pairs=pairs,
         )
 
         public_ip = None
