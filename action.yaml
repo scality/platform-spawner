@@ -268,6 +268,7 @@ runs:
             exit 0
           fi
           echo "Spawn failed [$attempt/$MAX_ATTEMPTS]"
+          uv run --group snapshot tools/clean_orphan_ports.py || true
         done
         exit 1
 
@@ -430,6 +431,7 @@ runs:
             exit 0
           fi
           echo "Destroy failed [$attempt/$MAX_ATTEMPTS]"
+          uv run --group snapshot tools/clean_orphan_ports.py || true
         done
         exit 1
     - name: Remove the stack

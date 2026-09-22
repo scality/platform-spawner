@@ -73,6 +73,10 @@ you have destroyed the platform, or the resources are left to be taken away
 by hand. `pulumi login --local` keeps the state under `~/.pulumi` instead,
 where deleting the clone leaves it alone.
 
+This choice is global to your machine rather than to this clone. Reaching a
+stack kept somewhere else, the ones CI spawns for instance, is
+[its own paragraph](TROUBLESHOOTING.md#work-against-another-state-backend).
+
 The passphrase encrypts the secrets of the state, the generated SSH key among
 them. An empty one is fine for a platform nobody else will reach. Whatever
 you pick, export it in every shell that touches the stack.
