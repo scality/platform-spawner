@@ -24,11 +24,13 @@ jobs:
             configuration: |-
               provider: aws
               instance_image: rocky-9
+              authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
           - name: openstack
             checks: tests/check_platform.sh
             configuration: |-
               provider: openstack
               instance_image: rocky-9
+              authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
           # Everything a platform can be asked for at once, rather than a
           # spawn each
           - name: options
@@ -38,6 +40,7 @@ jobs:
               instance_image: rocky-9
               instance_count: 2
               offline: true
+              authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
               extra_networks:
                 - name: storage
                 - name: bonded

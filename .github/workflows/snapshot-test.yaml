@@ -64,6 +64,7 @@ jobs:
             provider: openstack
             instance_image: rocky-9
             instance_count: 1
+            authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
 
       - name: Leave something behind to recognise it by
         env:
@@ -94,6 +95,7 @@ jobs:
             provider: openstack
             instance_count: 1
             restore_snapshot: ${{ inputs.snapshot }}
+            authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
             # A snapshot names no image, so nothing can work out who to log in
             # as. It came from a rocky-9.
             instance_ssh_user: rocky

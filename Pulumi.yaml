@@ -48,11 +48,11 @@ config:
     items:
       type: string
     description: "List of authorized CIDRs for the instances"
+    # NOTE: Only the address of whoever spawns. Anywhere else worth reaching a
+    # platform from is a property of the place, not of this program, and a
+    # list of them here would be a map of a private network in a public
+    # repository.
     default:
-      - 141.94.181.72/32 # VPN
-      - 84.14.13.200/29 # office Paris colt
-      - 193.248.60.56/32 # office Paris orange
-      - 38.142.74.18/32 # office SF
       - __my_ip__ # placeholder replaced automatically with current IP
 
   # Node hosts configs

@@ -44,7 +44,7 @@ A platform is described by the configuration of its stack. Set a key with
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |
 | authorized_udp_ports | List of authorized UDP ports for ingress to the instances | array | `[]` | no |
 | authorized_icmp | Whether ICMP traffic is authorized for ingress to the instances | boolean | `True` | no |
-| authorized_cidrs | List of authorized CIDRs for the instances | array | `['141.94.181.72/32', '84.14.13.200/29', '193.248.60.56/32', '38.142.74.18/32', '__my_ip__']` | no |
+| authorized_cidrs | List of authorized CIDRs for the instances | array | `['__my_ip__']` | no |
 | instance_image | Image for the instances (AMI name on AWS, Glance image name on OpenStack) | string | `` | no |
 | restore_snapshot | Name of a snapshot to restore the instances from, instead of an image | string | `` | no |
 | instance_image_file | Image file to upload and boot the instances on, instead of instance_image | string | `` | no |
