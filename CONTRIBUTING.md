@@ -1,6 +1,6 @@
 # Contributing to Platform Spawner
 
-This document provides guidelines for contributing to the MetalK8s Core project.
+This document provides guidelines for contributing to Platform Spawner.
 
 ## Project Layout
 
