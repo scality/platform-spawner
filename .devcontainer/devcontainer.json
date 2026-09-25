@@ -35,6 +35,8 @@
         "timonwong.shellcheck",
         //Compare text selections
         "ryu1kn.partial-diff",
+        //Python support
+        "ms-python.python",
         //Ruff
         "charliermarsh.ruff"
       ],

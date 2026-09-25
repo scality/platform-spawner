@@ -3,15 +3,20 @@ name = "platform-spawner"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-  "pulumi>=3.0.0,<4.0.0",
+  "pulumi>=3.202.0,<4.0.0",
   "pulumi-aws>=7.0.0,<8.0.0",
-  "pulumi-command>=1.0.0,<2.0.0",
+  "pulumi-command>=1.1.3,<2.0.0",
+  "pulumi-openstack>=5.0.0,<6.0.0",
   "pulumi-tls>=5.0.0,<6.0.0",
+  "pyyaml~=6.0.2",
   "requests~=2.33.0",
   "ruff~=0.12.9",
 ]
 
 [tool.ruff]
+# Where our own modules live, so that they are told apart from the packages we
+# depend on and land in a block of their own
+src = [".", "tools"]
 fix = true
 show-fixes = true
 output-format = "full"
@@ -27,5 +32,15 @@ ignore = [
   "COM812",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Command line tools report what they are doing on stdout, and sit beside each
+# other rather than in a package
+"tools/*" = ["T201", "INP001"]
+
 [tool.ruff.lint.pylint]
 max-args = 10
+
+[dependency-groups]
+snapshot = [
+    "openstacksdk>=4.20.0",
+]

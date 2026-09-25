@@ -28,4 +28,6 @@ sdks/*
 .ruff_cache
 
 # Generated stuff
-ssh_*
+# The generated SSH files, written where a spawn runs. Anchored, or the rule
+# swallows any source file named after ssh too.
+/ssh_*

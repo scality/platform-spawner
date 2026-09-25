@@ -19,6 +19,7 @@ _known_images = {
     "us-west-2": {"rocky-9": "ami-03b6c12852a6ec38a"},
 }
 
+AMI_ID_PREFIX = "ami-"
 DEFAULT_DISK_TYPE = "gp3"
 
 
@@ -42,12 +43,13 @@ class AWSProvider(base.BaseProvider):
         self,
         name: str,
         image_name: str,
-        flavor: base.InstanceFlavor,
-        key_name: str,
+        flavor: base.InstanceFlavor | str,
+        key_name: pulumi.Input[str],
         root_disk_size: int,
-        interfaces: list[pulumi_aws.ec2.NetworkInterface],
+        interfaces: list[base.Interface],
         extra_volumes: list[dict] | None = None,
         disable_auto_stop: bool = False,
+        cloud_config: dict | None = None,
     ) -> pulumi_aws.ec2.Instance:
         """Create a new EC2 instance."""
         ami = self._get_ami(image_name)
@@ -73,8 +75,8 @@ class AWSProvider(base.BaseProvider):
 
         return pulumi_aws.ec2.Instance(
             name,
-            instance_type=_instance_flavor_matching[flavor],
-            ami=ami.id,
+            instance_type=_instance_flavor_matching.get(flavor, flavor),
+            ami=ami,
             key_name=key_name,
             root_block_device=pulumi_aws.ec2.InstanceRootBlockDeviceArgs(
                 volume_size=root_disk_size,
@@ -82,54 +84,69 @@ class AWSProvider(base.BaseProvider):
             ),
             network_interfaces=[
                 pulumi_aws.ec2.InstanceNetworkInterfaceArgs(
-                    network_interface_id=iface.id,
+                    network_interface_id=iface.resource.id,
                     device_index=index,
                 )
                 for index, iface in enumerate(interfaces)
             ],
             ebs_block_devices=volumes,
+            user_data=(
+                pulumi.Output.from_input(cloud_config).apply(base.render_cloud_config)
+                if cloud_config
+                else None
+            ),
             tags=tags,
         )
 
     def create_key_pair(
         self,
         name: str,
-        public_key: str,
-    ) -> pulumi_aws.ec2.KeyPair:
-        """Create and return a new key pair."""
+        public_key: pulumi.Input[str],
+    ) -> pulumi.Output[str]:
+        """Create a new key pair and return its name."""
         return pulumi_aws.ec2.KeyPair(
             name,
             public_key=public_key,
             key_name=self.compute_resource_name(name),
-        )
+        ).key_name
 
     def create_network(
         self,
         name: str,
         cidr: str,
-    ) -> pulumi_aws.ec2.Vpc:
+    ) -> base.Network:
         """Create and return a new VPC."""
-        return pulumi_aws.ec2.Vpc(
-            name,
-            cidr_block=cidr,
+        return base.Network(
+            cidr=cidr,
+            resource=pulumi_aws.ec2.Vpc(
+                name,
+                cidr_block=cidr,
+            ),
         )
 
     def create_subnet(
         self,
         name: str,
-        network: pulumi_aws.ec2.Vpc,
+        network: base.Network,
         cidr: str,
+        routed: bool = False,  # noqa: ARG002
         gateway_to_internet: bool = False,
         gateway_to_net: pulumi_aws.ec2.Subnet | None = None,
+        filtered: bool = True,  # noqa: ARG002
     ) -> pulumi_aws.ec2.Subnet:
-        """Create and return a new subnet."""
+        """
+        Create and return a new subnet.
+
+        NOTE: `routed` is unused, a VPC carries a local route reaching every
+        subnet it holds and there is no way to opt out of it.
+        """
         tags = {
             "network": name,
         }
 
         subnet = pulumi_aws.ec2.Subnet(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             cidr_block=cidr,
             availability_zone=self._get_availability_zone(),
             tags=tags,
@@ -137,7 +154,7 @@ class AWSProvider(base.BaseProvider):
 
         route_table = pulumi_aws.ec2.RouteTable(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             tags=tags,
         )
 
@@ -150,7 +167,7 @@ class AWSProvider(base.BaseProvider):
         if gateway_to_internet:
             internet_gateway = pulumi_aws.ec2.InternetGateway(
                 name,
-                vpc_id=network.id,
+                vpc_id=network.resource.id,
                 tags=tags,
             )
 
@@ -187,7 +204,7 @@ class AWSProvider(base.BaseProvider):
     def create_security_group(
         self,
         name: str,
-        network: pulumi_aws.ec2.Vpc,
+        network: base.Network,
         ingress_tcp_ports: list[int] | None = None,
         ingress_udp_ports: list[int] | None = None,
         ingress_icmp: bool = False,
@@ -197,11 +214,11 @@ class AWSProvider(base.BaseProvider):
     ) -> pulumi_aws.ec2.SecurityGroup:
         """Create a new security group."""
         if ingress_cidrs is None:
-            ingress_cidrs = ["0.0.0/0"]
+            ingress_cidrs = ["0.0.0.0/0"]
 
         sg = pulumi_aws.ec2.SecurityGroup(
             name,
-            vpc_id=network.id,
+            vpc_id=network.resource.id,
             tags={
                 "type": name,
             },
@@ -264,7 +281,7 @@ class AWSProvider(base.BaseProvider):
         ip: str,
         security_groups: list[pulumi_aws.ec2.SecurityGroup] | None = None,
         public: bool = False,
-    ) -> pulumi_aws.ec2.NetworkInterface:
+    ) -> base.Interface:
         """Create a new network interface."""
         name = f"{node_name}-{subnet_name}"
         tags = {
@@ -282,29 +299,48 @@ class AWSProvider(base.BaseProvider):
             tags=tags,
         )
 
+        public_ip = None
         if public:
-            pulumi_aws.ec2.Eip(
+            public_ip = pulumi_aws.ec2.Eip(
                 name,
                 domain="vpc",
                 network_interface=iface.id,
                 tags=tags,
-            )
+            ).public_ip
 
-        return iface
+        return base.Interface(
+            resource=iface,
+            ip=iface.private_ips[0],
+            public_ip=public_ip,
+        )
 
-    def _get_ami(self, image_name: str) -> pulumi_aws.ec2.GetAmiResult:
+    def _get_ami(self, image_name: str) -> str:
         """Retrieve the AMI ID for a given image name."""
         # Try to find the AMI in known one
-        if _known_images.get(self.region, {}).get(image_name):
-            ami_id = _known_images[self.region][image_name]
-            return pulumi_aws.ec2.GetAmiResult(id=ami_id)
+        known = _known_images.get(self.region, {}).get(image_name)
+        if known:
+            return known
 
-        return pulumi_aws.ec2.get_ami(
-            most_recent=True,
+        # NOTE: An id is handed over as it is, which is the only way to reach
+        # an image somebody else owns and shared with us. It answers to no
+        # name of ours, so no search below would ever turn it up.
+        if image_name.startswith(AMI_ID_PREFIX):
+            return image_name
+
+        # NOTE: The ids rather than the AMI itself, so that finding none is
+        # ours to report. Asking for the AMI answers that no such thing was
+        # found, which never says what was looked for.
+        found = pulumi_aws.ec2.get_ami_ids(
             # NOTE: We may want to support other owners in the future
             owners=["self"],
             filters=[{"name": "name", "values": [image_name]}],
+            sort_ascending=False,
         )
+        if not found.ids:
+            message = base.IMAGE_NOT_FOUND.format(provider=self.provider_name, name=image_name)
+            raise ValueError(message)
+
+        return found.ids[0]
 
     def _get_availability_zone(self) -> str:
         if not self._availability_zone:

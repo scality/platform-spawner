@@ -6,7 +6,16 @@ runtime:
     toolchain: uv
 
 config:
+  # OpenStack API calls are not retried at all by default, and OVH times a
+  # connection out often enough for a spawn to fall over on it. Ten rides out
+  # a Keystone that is down for a couple of minutes, which five did not.
+  openstack:maxRetries: 10
+
   # Global values
+  provider:
+    type: string
+    description: "Cloud provider to spawn the platform on"
+    default: "aws"
   product:
     type: string
     description: "Product name for the resources"
@@ -39,28 +48,45 @@ config:
     items:
       type: string
     description: "List of authorized CIDRs for the instances"
+    # NOTE: Only the address of whoever spawns. Anywhere else worth reaching a
+    # platform from is a property of the place, not of this program, and a
+    # list of them here would be a map of a private network in a public
+    # repository.
     default:
-      - 141.94.181.72/32 # VPN
-      - 84.14.13.200/29 # office Paris colt
-      - 193.248.60.56/32 # office Paris orange
-      - 38.142.74.18/32 # office SF
       - __my_ip__ # placeholder replaced automatically with current IP
 
   # Node hosts configs
   instance_image:
     type: string
-    description: "Image for the instances (e.g.: AMI name for AWS)"
+    description: "Image for the instances (AMI name on AWS, Glance image name on OpenStack)"
+    default: ""
+  restore_snapshot:
+    type: string
+    description: "Name of a snapshot to restore the instances from, instead of an image"
+    default: ""
+  instance_image_file:
+    type: string
+    description: "Image file to upload and boot the instances on, instead of instance_image"
+    default: ""
+  instance_image_file_format:
+    type: string
+    description: "Format of the uploaded image file"
+    default: "qcow2"
   instance_count:
     type: integer
     description: "Number of instances to create"
     default: 3
   instance_flavor:
     type: string
-    description: "Flavor of the instance"
+    description: "Flavor of the instance, a portable size or a name from the cloud catalog"
     default: "medium"
+  instance_ssh_user:
+    type: string
+    description: "SSH user for the instances (defaults to the one the image is known to use)"
+    default: ""
   instance_root_disk_size:
     type: integer
-    description: "Root disk size for the instance (in GiB)"
+    description: "Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack)"
     default: 50
 
   # Bastion host configuration
@@ -70,11 +96,15 @@ config:
     default: "rocky-9"
   bastion_flavor:
     type: string
-    description: "Flavor of the bastion host"
+    description: "Flavor of the bastion, a portable size or a name from the cloud catalog"
     default: "small"
+  bastion_ssh_user:
+    type: string
+    description: "SSH user for the bastion (defaults to the one the image is known to use)"
+    default: ""
   bastion_root_disk_size:
     type: integer
-    description: "Root disk size for the bastion host (in GiB)"
+    description: "Root disk size for the bastion in GiB (AWS only, set by the flavor on OpenStack)"
     default: 30
 
   # SSH information
@@ -93,7 +123,36 @@ config:
     description: "If true, the instance will not be automatically stopped"
     default: false
 
+  # OpenStack specific configuration
+  openstack_external_network:
+    type: string
+    description: "Name of the network providing internet access and floating IPs"
+    default: "Ext-Net"
+  openstack_dns_nameservers:
+    type: array
+    items:
+      type: string
+    description: "Resolvers handed to the instances (OpenStack has no managed resolver)"
+    default:
+      - 8.8.8.8
+      - 8.8.4.4
+
   # Extra stuff
+  extra_networks:
+    type: array
+    description: "Additional isolated networks, attached to every machine"
+    default: []
+    items:
+      # NOTE: Those types are not handled by pulumi typing yet so
+      # it's only here for explanation but pulumi does not validate it
+      type: object
+      properties:
+      - name:
+          type: string
+          description: "Name of the network, defaults to extra-network-<position>"
+      - redundant:
+          type: boolean
+          description: "Give the instances a second interface on it, for bonding"
   extra_volumes:
     type: array
     description: "Additional volumes to attach to the instances"
