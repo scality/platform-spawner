@@ -1,3 +1,4 @@
+[![GitHub release](https://img.shields.io/github/v/release/scality/platform-spawner)](https://github.com/scality/platform-spawner/releases/latest)
 [![License](https://img.shields.io/github/license/scality/platform-spawner)](LICENSE)
 [![Garbage Collection](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml/badge.svg)](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml)
 
