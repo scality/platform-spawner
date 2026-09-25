@@ -8,6 +8,7 @@ This document provides guidelines for contributing to the MetalK8s Core project.
 ├── __main__.py         # Entry point of the Pulumi program
 ├── providers           # Directory with all cloud providers specific logic
 ├── Pulumi.yaml         # Project metadata and template configuration
+├── docs                # Documentation, beyond what the README holds
 ├── tools               # Directory with various development tools
 ├── Pulumi.<stack>.yaml # Stack-specific configuration (e.g., Pulumi.dev.yaml)
 └── pyproject.toml      # Python project configuration

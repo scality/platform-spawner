@@ -1,0 +1,57 @@
+# The platform
+
+One bastion and three nodes by default, on three networks. Every address is
+fixed, and the same on every platform.
+
+```text
+                       internet
+                          |
+                   public IP (an elastic IP from AWS)
+                          |
+     +--------------------+-------------------+
+     | bastion                                |
+     |   public          172.30.0.99          |
+     |   control plane   172.30.100.99        |
+     |   workload plane  172.30.200.99        |
+     +--------------------+-------------------+
+                          |
+     +--------------------+-------------------+
+     | node-1   172.30.100.101  172.30.200.101|
+     | node-2   172.30.100.102  172.30.200.102|
+     | node-3   172.30.100.103  172.30.200.103|
+     +----------------------------------------+
+```
+
+## Machines
+
+### The bastion
+
+The bastion sits on the three networks, and it is the only machine reachable
+from the outside. Whatever needs to speak to the nodes from close by runs
+there.
+
+### The nodes
+
+The nodes run the workloads. `instance_count` says how many there are, three
+by default.
+
+## Networks
+
+| Network | CIDR | What it is |
+|---------|------|------------|
+| Public | `172.30.0.0/24` | The way in and the way out. Only the bastion sits on it. |
+| Control plane | `172.30.100.0/24` | Private, routed nowhere. |
+| Workload plane | `172.30.200.0/24` | Private, with a way out to the internet unless `offline` is set. |
+
+Every machine holds a fixed address on each network it sits on. The bastion
+also carries a public IP handed out by the cloud, which is the one address of
+a platform nobody can guess beforehand.
+
+| Machine | Public | Control plane | Workload plane |
+|---------|--------|---------------|----------------|
+| bastion | `172.30.0.99` | `172.30.100.99` | `172.30.200.99` |
+| node-X | | `172.30.100.10x` | `172.30.200.10x` |
+
+The nodes carry no public address. Reaching one goes through the bastion,
+which the `ssh_config` of a spawn does on its own. See
+[QUICKSTART.md](QUICKSTART.md#7-connect).

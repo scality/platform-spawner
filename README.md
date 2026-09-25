@@ -2,43 +2,31 @@
 
 # Platform Spawner
 
-A minimal Pulumi template for provisioning cloud resources using Pulumi.
-
-## Prerequisites
-
-- AWS credentials and region configured in your environment
-  (for example via AWS CLI or environment variables).
-- Python 3.13 or later installed.
-- [Pulumi CLI](https://www.pulumi.com/docs/iac/download-install/) installed.
-- [uv](https://docs.astral.sh/uv/) installed.
-
-## Getting Started
-
-### Login to pulumi
+A Pulumi program that spawns a platform to test on. One bastion, a handful of
+nodes, three networks, and addresses that are the same on every platform.
 
 ```bash
-pulumi login file://./
+pulumi stack init <stack>
+pulumi config set instance_image rocky-9
+pulumi config set ssh_private_key_create true
+pulumi up
+ssh -F ssh_config bastion
 ```
 
-> **Note**
-> To upload your stack state to S3, you can also login to S3 following the
-> Pulumi documentation.
+The [quickstart](docs/QUICKSTART.md) takes it from the top, on either cloud.
 
-### Create a new stack
+## Documentation
 
-Create a new stack:
+| Where | What it holds |
+|-------|---------------|
+| [Quickstart](docs/QUICKSTART.md) | Spawning a platform from your machine, from a clone to a shell on it |
+| [Platform](docs/PLATFORM.md) | The machines, the networks and the addresses a platform comes with |
+| [GitHub Action](docs/GITHUB_ACTION.md) | Spawning and destroying from a workflow |
 
-```bash
-pulumi stack init <stack-name>
-```
+## Configuration
 
-### Fill stack configuration
-
-Fill the required configuration values:
-
-```bash
-pulumi config set <key> <value>
-```
+A platform is described by the configuration of its stack. Set a key with
+`pulumi config set <key> <value>`, or write `Pulumi.<stack>.yaml` directly:
 
 <!-- This is generated with tools/generate_docs.py -->
 <!-- BEGIN_PULUMI_DOCS -->
@@ -62,129 +50,6 @@ pulumi config set <key> <value>
 | disable_auto_stop | If true, the instance will not be automatically stopped | boolean | `False` | no |
 | extra_volumes | Additional volumes to attach to the instances | array | `[]` | no |
 <!-- END_PULUMI_DOCS -->
-
-### Spawn the cluster
-
-To see the resources that will be created, run:
-
-```bash
-pulumi preview
-```
-
-Then to create the resources, run:
-
-```bash
-pulumi up
-```
-
-### Retrieve output
-
-To retrieve the output values after the resources have been created, run:
-
-```bash
-pulumi stack output
-```
-
-Or to get it in JSON format:
-
-```bash
-pulumi stack output --json
-```
-
-### Destroy the cluster
-
-To destroy the resources, run:
-
-```bash
-pulumi destroy
-```
-
-## Environment information
-
-### Machines
-
-This template deploys, by default, 1 bastion and 3 nodes.
-
-- Bastion has access to nodes networks, so it can be used to run
-  some tests when access to networks is required.
-- A various number of nodes depending on a configuration
-  (default is 3) that can be used to run workloads.
-
-### Network configuration
-
-Every machine has 2 different IPs that are fixed.
-
-We have 3 networks:
-
-- Public network: A private network (``172.30.0.0/24``) that
-  has direct access to internet (only available on bastion)
-- Control plane network: A private network (``172.30.100.0/24``)
-- Workload plane network: A private network (``172.30.200.0/24``)
-
-> **Note**
-> In the public network you have a fixed private IP available on
-> the host and, on top of it, an elastic IP that come from AWS
-> and can be used to access the machine
-
-| Node | Control plane IP | Workload plane IP | Public IP |
-|------|------------------|-------------------|-----------|
-| Bastion | `172.30.100.99` | `172.30.200.99`  | `172.30.0.99` |
-| Node-X    | `172.30.100.10x` | `172.30.200.10x` | |
-
-Which means that by default Node-X are not accessible you have to connect
-to the bastion first OR you can use `sshuttle` to access the nodes networks
-directly:
-
-```bash
-sshuttle -r rocky@<bastion_elastic_ip> 172.30.100.0/24 172.30.200.0/24
-```
-
-## Github Actions
-
-### Overview
-
-This repository provides a Github Action to easily spawn and destroy
-infrastructures.
-
-### Usage
-
-In order to work this actions needs:
-
-- An action (either `spawn` or `destroy` or 'list')
-- AWS credentials
-
-#### For spawning
-
-In addition to the above credentials, you have to provide:
-
-- A unique stack name
-- Artifacts credentials
-- A configuration to describe what need to be spawned
-  (refer to the [fill stack configuration section](#fill-stack-configuration)
-  for more information)
-
-#### For destroying
-
-In addition to the above credentials, you have to provide a unique stack name.
-
-#### For listing
-
-In addition to the above credentials, you have to provide an age (in hours).
-The action will return the list of stacks older than the given age.
-
-This is useful for garbage collection of old stacks.
-
-#### Details
-
-See [action.yaml](action.yaml) for details.
-
-#### Examples
-
-A full example of usage can be found in
-[.github/workflows/e2e-tests.yaml](.github/workflows/e2e-tests.yaml).
-
-For garbage collection of old stacks, you can refer to
-[.github/workflows/gc-cron.yaml](.github/workflows/gc-cron.yaml).
 
 ## Contributing
 
