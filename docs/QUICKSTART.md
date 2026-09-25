@@ -123,7 +123,7 @@ pulumi config set ssh_private_key_create true
 | `provider` | Which cloud to spawn on. `aws` is the default. |
 | `aws:region` | Where an AWS platform goes. `rocky-9` is only known there in `eu-north-1` and `us-west-2`. |
 | `product` | Prefixes the names of the resources. Two platforms sharing a product and a stack name collide. |
-| `instance_image` | What the nodes boot on, an AMI name on AWS and a Glance image name on OpenStack. It has no default. |
+| `instance_image` | What the nodes boot on, an AMI name on AWS and a Glance image name on OpenStack. It has no default. An AMI shared by another account answers to no name of ours, so name it by its id (`ami-...`). |
 | `instance_count` | One node is enough to see it work, three is the default. |
 | `ssh_private_key_create` | Generates a key for this platform. The other way is `ssh_key_name`, a key the cloud already holds, which then has to be in your `ssh-agent`. |
 

@@ -25,7 +25,9 @@ a stack configuration:
 - `instance_image` and `bastion_image` are resolved against the AMIs on AWS and
   against the Glance images on OpenStack. `rocky-9` is an alias on both, known
   on AWS in `eu-north-1` and `us-west-2` only. `rocky-8` is an alias on
-  OpenStack alone. Any other value is looked up as it is given.
+  OpenStack alone. Any other value is looked up as it is given. On AWS, a
+  value starting with `ami-` is taken as an id instead of a name, which is
+  the only handle an image another account shared with us has.
 - `instance_image_file` hands an image file over instead, uploaded on OpenStack
   only. AWS can do it, through an S3 bucket, a VM Import task and an account
   wide IAM role, and only from a VHD or a VMDK, which is enough work that the

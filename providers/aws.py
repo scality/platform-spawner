@@ -19,6 +19,7 @@ _known_images = {
     "us-west-2": {"rocky-9": "ami-03b6c12852a6ec38a"},
 }
 
+AMI_ID_PREFIX = "ami-"
 DEFAULT_DISK_TYPE = "gp3"
 
 
@@ -319,6 +320,12 @@ class AWSProvider(base.BaseProvider):
         known = _known_images.get(self.region, {}).get(image_name)
         if known:
             return known
+
+        # NOTE: An id is handed over as it is, which is the only way to reach
+        # an image somebody else owns and shared with us. It answers to no
+        # name of ours, so no search below would ever turn it up.
+        if image_name.startswith(AMI_ID_PREFIX):
+            return image_name
 
         # NOTE: The ids rather than the AMI itself, so that finding none is
         # ours to report. Asking for the AMI answers that no such thing was
