@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/github/license/scality/platform-spawner)](LICENSE)
 [![Garbage Collection](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml/badge.svg)](https://github.com/scality/platform-spawner/actions/workflows/gc-cron.yaml)
 
 # Platform Spawner
@@ -73,3 +74,7 @@ See [contributing](CONTRIBUTING.md) for details.
 ## Design
 
 See [design](DESIGN.md) for details.
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE) for details.
