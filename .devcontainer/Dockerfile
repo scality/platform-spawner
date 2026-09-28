@@ -46,7 +46,7 @@ RUN uv python install ${PYTHON_VERSION} --default
 
 # Install pre-commit
 # renovate: datasource=github-releases depName=pre-commit/pre-commit
-ARG PRE_COMMIT_VERSION=v4.3.0
+ARG PRE_COMMIT_VERSION=v4.6.2
 RUN uv tool install pre-commit@${PRE_COMMIT_VERSION} --with pre-commit-uv
 
 # Install ruff
