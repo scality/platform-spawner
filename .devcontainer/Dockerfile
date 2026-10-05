@@ -26,7 +26,7 @@ ENV LC_ALL=C.UTF-8
 
 # Install pulumi
 # renovate: datasource=github-releases depName=pulumi/pulumi
-ARG PULUMI_VERSION=v3.263.0
+ARG PULUMI_VERSION=v3.265.0
 RUN curl --fail -L -o /tmp/pulumi.tar.gz https://get.pulumi.com/releases/sdk/pulumi-${PULUMI_VERSION}-linux-x64.tar.gz&& \
     sudo tar -xzf /tmp/pulumi.tar.gz -C /usr/local/bin --strip-components=1 pulumi && \
     rm -rf /tmp/pulumi.tar.gz && \
