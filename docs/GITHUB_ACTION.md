@@ -80,8 +80,9 @@ to be given to both, or left out of both to take the name of the repository.
 |-------|----------|------------|
 | `age` | yes | An age in hours |
 
-It answers with `stacks_list`, the stacks older than that age. This is what a
-garbage collection runs on.
+It answers with `stacks_list`, the stacks older than that age, and writes the
+same names to the summary of the job. This is what a garbage collection runs
+on.
 
 ## Details
 

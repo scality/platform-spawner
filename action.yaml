@@ -205,6 +205,16 @@ runs:
         )
         echo "STACKS_LIST=$stack_list" >> "$GITHUB_OUTPUT"
 
+        # NOTE: Written here rather than left to whoever called us. A list is
+        # the whole answer of this action, and a job that only hands it on has
+        # nothing of its own to show for the run.
+        {
+          echo "### Stacks older than ${AGE}h"
+          echo
+          jq -r 'if length == 0 then "None." else .[] | "- `\(.)`" end' <<< "$stack_list"
+          echo
+        } >> "$GITHUB_STEP_SUMMARY"
+
 
     # Spawn {{{
     # Prepare stack config
