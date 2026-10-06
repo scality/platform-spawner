@@ -17,23 +17,32 @@ touched, so this works just as well on a platform someone else spawned.
 A platform running on a key of your own is reported as such. That key is yours
 to point at.
 
-## A failed spawn left ports behind
+## A failed spawn left something behind
 
-A cloud that goes down mid-spawn can answer the call that creates a port and
-then not the one that waits for it. The port exists and the stack never
-learned of it. Every address here is fixed, so that port holds the one the
-next attempt needs: spawning again answers `IpAddressAlreadyAllocated`, and
-destroying answers that the subnet still has an allocation, which leaves the
-platform running and unremovable.
+A cloud that goes down mid-spawn can answer the call that does the work and
+then not the one that waits for it. What was asked for exists, the stack never
+learned of it, and the next attempt walks straight into it.
 
 ```bash
-uv run --group snapshot tools/clean_orphan_ports.py
+uv run --group snapshot tools/clean_orphans.py
 ```
 
-Only a port of ours, on a network of ours, that nothing is using and that the
-stack does not know about. Whatever a router, the DHCP agent or an instance
-holds is left alone. The action runs it between two attempts, so a spawn or a
-destroy that trips over one recovers on its own.
+Two kinds of leftover get a platform stuck for good:
+
+- A port holds a fixed address, and every address here is fixed, so it holds
+  the one the next attempt needs. Spawning again answers
+  `IpAddressAlreadyAllocated`, and destroying answers that the subnet still
+  has an allocation.
+- A volume attachment holds its volume. Attaching again answers that the
+  volume is already attached, and destroying cannot delete a volume that is in
+  use. The volume is detached rather than taken into the stack, so the next
+  attempt makes the attachment itself.
+
+Only what the stack owns and does not know about is touched: a port on a
+network of ours, a volume of ours the stack holds no attachment for. Whatever
+the cloud itself holds, its routers and its DHCP agents, is left alone. The
+action runs it between two attempts, so a spawn or a destroy that trips over
+one recovers on its own.
 
 ## Work against another state backend
 
