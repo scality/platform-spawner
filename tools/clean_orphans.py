@@ -1,18 +1,15 @@
 #! /usr/bin/env python3
 """
-Take away the ports a failed spawn left behind.
+Take away what a failed spawn left behind on the cloud.
 
-A cloud that goes down mid-spawn can answer the call that creates a port and
-then not the one that waits for it. The port exists, the stack never learned
-of it, and since every address here is fixed, it holds the one the next try
-needs: spawning again answers `IpAddressAlreadyAllocated` for as long as it
-is there, and destroying answers that the subnet still has an allocation.
+A cloud that goes down mid-spawn can answer the call that does the work and
+then not the one that waits for it. What was asked for exists, the stack
+never learned of it, and the next attempt walks straight into it.
 
-Only a port of ours, on a network of ours, that nothing is using and that the
-stack does not know about. Anything a router, the DHCP agent or an instance
-holds is left alone.
+Only what belongs to the stack and what the stack does not know about is
+taken away. Whatever the cloud itself holds is left alone.
 
-NOTE: OpenStack only, being the only provider where we pin the addresses.
+NOTE: OpenStack only, the cloud this has been seen on.
 """
 
 import argparse
@@ -34,7 +31,7 @@ CLOUD_OWNED = "network:"
 
 
 def __main__() -> int:
-    """Delete the ports of a stack that the stack does not know about."""
+    """Take away what the stack owns on the cloud and does not know about."""
     args = _parse_args()
     workspace, stack_name = stack.open_stack(args.stack)
 
@@ -44,14 +41,31 @@ def __main__() -> int:
         return 0
 
     resources = workspace.export_stack(stack_name).deployment.get("resources", [])
+    cloud = openstack.connect()
+
+    return _clean_ports(cloud, resources, stack_name)
+
+
+def _clean_ports(
+    cloud: openstack.connection.Connection,
+    resources: list[dict],
+    stack_name: str,
+) -> int:
+    """
+    Delete the ports of a stack that the stack does not know about.
+
+    Every address here is fixed, so a port left behind holds the one the next
+    attempt needs: spawning again answers `IpAddressAlreadyAllocated` for as
+    long as it is there, and destroying answers that the subnet still has an
+    allocation.
+    """
     networks = {r["id"] for r in resources if r.get("type") == NETWORK_TYPE}
     known = {r["id"] for r in resources if r.get("type") == PORT_TYPE}
     if not networks:
-        print(f"Nothing to do, {stack_name} holds no network")
+        print(f"No port to look at, {stack_name} holds no network")
         return 0
 
-    cloud = openstack.connect()
-    seen, orphans = _survey(cloud, networks, known)
+    seen, orphans = _survey_ports(cloud, networks, known)
     print(f"{len(seen)} port(s) on the {len(networks)} network(s) of {stack_name}:")
     for line in seen:
         print(f"\t{line}")
@@ -78,7 +92,7 @@ def __main__() -> int:
     return 1 if failed else 0
 
 
-def _survey(
+def _survey_ports(
     cloud: openstack.connection.Connection,
     networks: set[str],
     known: set[str],

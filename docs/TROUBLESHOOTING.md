@@ -27,7 +27,7 @@ destroying answers that the subnet still has an allocation, which leaves the
 platform running and unremovable.
 
 ```bash
-uv run --group snapshot tools/clean_orphan_ports.py
+uv run --group snapshot tools/clean_orphans.py
 ```
 
 Only a port of ours, on a network of ours, that nothing is using and that the
