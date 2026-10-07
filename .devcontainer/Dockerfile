@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/base:noble
+FROM mcr.microsoft.com/devcontainers/base:noble@sha256:d7c468679f45a52ad3673d06656b5bf16e488990b17216a1fa295d9e1f89d724
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
