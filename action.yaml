@@ -149,7 +149,7 @@ runs:
       shell: bash
       env:
         # renovate: datasource=github-releases depName=astral-sh/uv
-        UV_VERSION: "0.12.19"
+        UV_VERSION: "0.12.22"
       run: |-
         curl --fail -L -o /tmp/uv.tar.gz "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-x86_64-unknown-linux-gnu.tar.gz"
         sudo tar -xzf /tmp/uv.tar.gz -C /usr/local/bin --strip-components=1 uv-x86_64-unknown-linux-gnu
