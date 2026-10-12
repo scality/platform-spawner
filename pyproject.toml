@@ -30,6 +30,9 @@ ignore = [
   "D203",
   "D212",
   "COM812",
+  # The LICENSE file at the root covers the whole repository, files do not
+  # carry a copyright header of their own
+  "CPY001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
