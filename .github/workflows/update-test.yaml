@@ -1,0 +1,129 @@
+name: "Update Test"
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: "What the platform is called, in the job names"
+        required: true
+        type: string
+      stack:
+        description: "Name of the stack to spawn and update"
+        required: true
+        type: string
+      provider:
+        description: "Cloud provider to spawn the platform on"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  actions: read
+  contents: read
+
+# NOTE: Read by the OpenStack provider straight from the environment, the way
+# the AWS one reads what the credentials step leaves behind. They are harmless
+# to a platform spawned on AWS, which never looks. The password cannot be set
+# here: a workflow level environment cannot read secrets.
+env:
+  OS_AUTH_URL: ${{ vars.OS_AUTH_URL }}
+  OS_USERNAME: ${{ vars.OS_USERNAME }}
+  OS_PROJECT_ID: ${{ vars.OS_PROJECT_ID }}
+  OS_PROJECT_NAME: ${{ vars.OS_PROJECT_NAME }}
+  # The variable holds the region, the tooling reads it under another name
+  OS_REGION_NAME: ${{ vars.OS_REGION }}
+  # Not configured anywhere, being the same for every OVH project
+  OS_USER_DOMAIN_NAME: "Default"
+  OS_PROJECT_DOMAIN_ID: "default"
+  OS_IDENTITY_API_VERSION: "3"
+
+jobs:
+  # Change a live platform rather than spawn one with the change already
+  # made. It updates the same platform several times in a row, which is why
+  # it is not a platform test like the others.
+  test:
+    name: "${{ inputs.name }} test"
+    runs-on: ubuntu-24.04
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # NOTE: Needed whatever the provider, the stacks living in an S3 bucket
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Spawn the platform
+        id: spawn
+        uses: ./
+        with:
+          action: spawn
+          artifacts_user: ${{ secrets.ARTIFACTS_USER }}
+          artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
+          stack_name: ${{ inputs.stack }}
+          configuration: |-
+            provider: ${{ inputs.provider }}
+            instance_image: rocky-9
+            instance_count: 2
+            authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
+
+      - name: Check the platform starts online
+        run: ssh -F ssh_config node-1 'timeout 15 curl -sS -o /dev/null https://1.1.1.1'
+
+      - name: Take the platform offline
+        id: offline
+        uses: ./
+        with:
+          action: update
+          stack_name: ${{ inputs.stack }}
+          configuration: |-
+            offline: true
+
+      - name: Check the platform is offline
+        run: ./tests/check_offline.sh
+
+      # NOTE: The whole point of switching a live platform, rather than
+      # spawning another one offline, is to keep what runs on it
+      - name: Check no machine was replaced
+        env:
+          BASTION_BEFORE: ${{ steps.spawn.outputs.bastion }}
+          BASTION_AFTER: ${{ steps.offline.outputs.bastion }}
+          NODES_BEFORE: ${{ steps.spawn.outputs.nodes }}
+          NODES_AFTER: ${{ steps.offline.outputs.nodes }}
+        run: |-
+          before=$(jq -cS '{bastion: .id}' <<< "$BASTION_BEFORE")
+          before+=$(jq -cS 'map_values(.id)' <<< "$NODES_BEFORE")
+          after=$(jq -cS '{bastion: .id}' <<< "$BASTION_AFTER")
+          after+=$(jq -cS 'map_values(.id)' <<< "$NODES_AFTER")
+          echo "before: $before"
+          echo "after:  $after"
+          [ "$before" == "$after" ]
+
+  destroy:
+    name: "${{ inputs.name }} destroy"
+    needs: test
+    if: always()
+    runs-on: ubuntu-24.04
+    env:
+      OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_MAIN_ACCOUNT_ID }}:role/scality-github-e2e-infrastructure
+          role-session-name: GitHubActions-${{ github.run_id }}
+          aws-region: eu-north-1
+
+      - name: Destroy platform
+        uses: ./
+        with:
+          action: destroy
+          stack_name: ${{ inputs.stack }}

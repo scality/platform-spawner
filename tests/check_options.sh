@@ -30,10 +30,4 @@ echo "  node-1 carries $disks disk(s)"
 # the one it boots on, plus the two asked for
 [ "$disks" -eq 3 ]
 
-echo "The platform is offline"
-if ssh -F ssh_config node-1 'timeout 15 curl -sS -o /dev/null https://1.1.1.1'; then
-    echo "node-1 reached the internet, the platform is not offline" >&2
-    exit 1
-fi
-# the very same reach, from the machine that is meant to have it
-ssh -F ssh_config bastion 'timeout 15 curl -sS -o /dev/null https://1.1.1.1'
+"$(dirname "$0")"/check_offline.sh
