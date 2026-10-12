@@ -27,6 +27,7 @@ UPLOADING_TASK = "image_uploading"
 UNFINISHED_IMAGE_STATUSES = frozenset({"", "queued", "saving"})
 STOPPED = "SHUTOFF"
 RUNNING = "ACTIVE"
+NODE_ABSENT = "{names} absent, a snapshot taken now could never be spawned back."
 
 
 def __main__() -> int:
@@ -40,6 +41,15 @@ def __main__() -> int:
     instances = {name: node["id"] for name, node in sorted(nodes.items())}
     if not instances:
         print("No instance to snapshot", file=sys.stderr)
+        return 1
+
+    # NOTE: Instance N is spawned back from the image taken of node N, from
+    # node-1 on. A hole in the numbering means a node is absent. Its image
+    # would be missing, and the snapshot could never be spawned back.
+    missing = {f"node-{index}" for index in range(1, len(instances) + 1)} - instances.keys()
+    if missing:
+        names = ", ".join(sorted(missing))
+        print(NODE_ABSENT.format(names=names), file=sys.stderr)
         return 1
 
     snapshots = {

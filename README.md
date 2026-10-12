@@ -52,6 +52,7 @@ A platform is described by the configuration of its stack. Set a key with
 | instance_image_file | Image file to upload and boot the instances on, instead of instance_image | string | `` | no |
 | instance_image_file_format | Format of the uploaded image file | string | `qcow2` | no |
 | instance_count | Number of instances to create | integer | `3` | no |
+| absent_nodes | Nodes to leave out, keeping their addresses for when they come back (e.g. node-2) | array | `[]` | no |
 | instance_flavor | Flavor of the instance, a portable size or a name from the cloud catalog | string | `medium` | no |
 | instance_ssh_user | SSH user for the instances (defaults to the one the image is known to use) | string | `` | no |
 | instance_root_disk_size | Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack) | integer | `50` | no |

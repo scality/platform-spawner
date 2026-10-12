@@ -18,6 +18,12 @@ Every instance is stopped, captured as `<product>-<name>-node-<n>`, then
 started back. The bastion is left out, and so are the extra volumes. Only the
 instances themselves are captured.
 
+A platform with a node [taken away](PLATFORM.md#taking-a-node-away) in the
+middle of its numbering is refused. Instance N is spawned back from the image
+of node N, so the missing image would leave the snapshot impossible to spawn
+back. Taking the last nodes away is fine: the snapshot is then spawned back
+with fewer instances.
+
 ## Spawn a platform back from it
 
 ```bash

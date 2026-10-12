@@ -36,7 +36,10 @@ def __main__() -> int:
         return 1
 
     ssh_info = outputs["ssh_info"].value if "ssh_info" in outputs else {}
-    if not ssh_info.get("nodes"):
+    # NOTE: Only a missing list of nodes is refused, an empty one is not.
+    # Every node of a platform can be absent at once, and its bastion is
+    # still worth reaching.
+    if "nodes" not in ssh_info:
         print(NO_SSH_INFO.format(stack=stack_name), file=sys.stderr)
         return 1
 

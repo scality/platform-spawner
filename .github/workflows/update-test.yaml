@@ -71,6 +71,15 @@ jobs:
             instance_image: rocky-9
             instance_count: 2
             authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
+            extra_volumes:
+              - size: 10
+
+      # NOTE: Run before node-2 goes away, not only once it is back. Reaching
+      # the nodes records their host keys, here and on the bastion. Without
+      # them, node-2 would come back with no old key to clash with, and the
+      # host key check further down would prove nothing.
+      - name: Check the platform
+        run: ./tests/check_platform.sh
 
       - name: Check the platform starts online
         run: ssh -F ssh_config node-1 'timeout 15 curl -sS -o /dev/null https://1.1.1.1'
@@ -103,6 +112,104 @@ jobs:
           echo "before: $before"
           echo "after:  $after"
           [ "$before" == "$after" ]
+
+      - name: Leave something behind on node-2
+        env:
+          MARKER: ${{ github.run_id }}
+        run: ssh -F ssh_config node-2 "echo '$MARKER' > ~/update-marker"
+
+      - name: Take node-2 away
+        id: away
+        uses: ./
+        with:
+          action: update
+          stack_name: ${{ inputs.stack }}
+          configuration: |-
+            absent_nodes: [node-2]
+
+      - name: Check node-2 is gone, and only node-2
+        env:
+          NODES_BEFORE: ${{ steps.offline.outputs.nodes }}
+          NODES_AFTER: ${{ steps.away.outputs.nodes }}
+        run: |-
+          expected=$(jq -cS 'del(."node-2") | map_values(.id)' <<< "$NODES_BEFORE")
+          found=$(jq -cS 'map_values(.id)' <<< "$NODES_AFTER")
+          echo "expected: $expected"
+          echo "found:    $found"
+          if [ "$found" != "$expected" ]; then
+              echo "The nodes are not those of the platform minus node-2" >&2
+              exit 1
+          fi
+          if grep -q '^Host node-2$' ssh_config; then
+              echo "node-2 is still in ssh_config" >&2
+              exit 1
+          fi
+
+      - name: Bring node-2 back
+        id: back
+        uses: ./
+        with:
+          action: update
+          stack_name: ${{ inputs.stack }}
+          configuration: |-
+            absent_nodes: []
+
+      - name: Check node-2 came back as a new machine, where it was
+        env:
+          NODES_BEFORE: ${{ steps.offline.outputs.nodes }}
+          NODES_AFTER: ${{ steps.back.outputs.nodes }}
+        run: |-
+          others_before=$(jq -cS 'del(."node-2") | map_values(.id)' <<< "$NODES_BEFORE")
+          others_after=$(jq -cS 'del(."node-2") | map_values(.id)' <<< "$NODES_AFTER")
+          if [ "$others_before" != "$others_after" ]; then
+              echo "Another node was replaced: $others_before became $others_after" >&2
+              exit 1
+          fi
+
+          id_before=$(jq -r '."node-2".id' <<< "$NODES_BEFORE")
+          id_after=$(jq -r '."node-2".id' <<< "$NODES_AFTER")
+          echo "node-2 was $id_before, is $id_after"
+          if [ "$id_before" == "$id_after" ]; then
+              echo "node-2 is the machine it was" >&2
+              exit 1
+          fi
+
+          ips_before=$(jq -cS '."node-2".private_ips' <<< "$NODES_BEFORE")
+          ips_after=$(jq -cS '."node-2".private_ips' <<< "$NODES_AFTER")
+          echo "node-2 sits at $ips_after"
+          if [ "$ips_before" != "$ips_after" ]; then
+              echo "node-2 moved from $ips_before" >&2
+              exit 1
+          fi
+
+          state=$(ssh -F ssh_config node-2 '[ -e ~/update-marker ] && echo kept || echo blank')
+          echo "node-2 came back $state"
+          if [ "$state" != "blank" ]; then
+              echo "node-2 kept what was left on it" >&2
+              exit 1
+          fi
+
+          disks=$(ssh -F ssh_config node-2 'lsblk --nodeps --noheadings --output TYPE | grep -c disk')
+          echo "node-2 carries $disks disk(s)"
+          # the one it boots on, plus the one asked for
+          [ "$disks" -eq 2 ]
+
+      # NOTE: StrictHostKeyChecking lets a changed host key through, but turns
+      # forwarding off for the connection. Reaching the node proves nothing,
+      # only the warning tells.
+      - name: Check the host key of node-2 is not taken for a changed one
+        run: |-
+          here=$(ssh -F ssh_config node-2 true 2>&1)
+          bastion=$(ssh -F ssh_config bastion 'ssh -F ssh_config node-2 true' 2>&1)
+          for out in "$here" "$bastion"; do
+              if grep -q "HOST IDENTIFICATION HAS CHANGED" <<< "$out"; then
+                  echo "$out" >&2
+                  exit 1
+              fi
+          done
+
+      - name: Check the platform again
+        run: ./tests/check_platform.sh
 
   destroy:
     name: "${{ inputs.name }} destroy"

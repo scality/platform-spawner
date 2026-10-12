@@ -46,6 +46,22 @@ def common_options(config_path: pathlib.Path) -> list[str]:
     ]
 
 
+def host_key_alias(host: str, info: dict) -> list[str]:
+    """
+    Return the option recording the host key of a machine under its id.
+
+    NOTE: Under its id rather than under its address. A node taken away and
+    brought back sits at the address it had, with a new host key. Recorded by
+    address, that key would clash with the one of the machine it replaces.
+    Recorded by id, it gets an entry of its own, and a key changing under the
+    same machine is still caught.
+    """
+    if not info.get("id"):
+        return []
+
+    return [f"  HostKeyAlias {host}-{info['id']}"]
+
+
 def generate_bastion(ssh_info: dict, path: pathlib.Path) -> None:
     """
     Write the config the bastion uses to reach the nodes.
@@ -63,6 +79,7 @@ def generate_bastion(ssh_info: dict, path: pathlib.Path) -> None:
         if info.get("user"):
             config_lines.append(f"  User {info['user']}")
         config_lines.append(f"  IdentityFile ~/{BASTION_KEY}")
+        config_lines.extend(host_key_alias(host, info))
         config_lines.append("  IdentitiesOnly yes")
         config_lines.append("  StrictHostKeyChecking no")
         config_lines.append("  ServerAliveInterval 15")
@@ -83,6 +100,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
             config_lines.append(f"  User {ssh_info['bastion']['user']}")
         if ssh_info.get("key"):
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.extend(host_key_alias("bastion", ssh_info["bastion"]))
         config_lines.extend(options)
         config_lines.append("")
 
@@ -96,6 +114,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
             config_lines.append(f"  User {info['user']}")
         if ssh_info.get("key"):
             config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.extend(host_key_alias(host, info))
         config_lines.extend(options)
         config_lines.append("")
 
