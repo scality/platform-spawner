@@ -17,6 +17,17 @@ The provider is picked by the `provider` configuration key, which keeps a stack
 configuration portable from one cloud to another as long as the values it uses
 exist on both.
 
+### A machine keeps its image
+
+The image a machine boots on is read once, when the machine is created. An
+image name is looked up again on every update, and it answers with the latest
+image of that name. Following it would replace every machine of a live
+platform as soon as the cloud publishes a newer one, whatever the update was
+about. Changing `instance_image`, `bastion_image`, `restore_snapshot` or
+`instance_image_file` on a live platform therefore leaves its machines alone.
+Only the machines created afterwards boot on the new image, and destroying the
+platform is the way to have all of them on it.
+
 ### Provider differences
 
 The interface hides most of the differences, a few of them remain visible from

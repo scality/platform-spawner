@@ -96,6 +96,11 @@ class AWSProvider(base.BaseProvider):
                 else None
             ),
             tags=tags,
+            # NOTE: An image name is looked up again on every update, and it
+            # answers with the latest AMI of that name. Once a newer one is
+            # published, any update would replace every machine, whatever the
+            # update was about.
+            opts=pulumi.ResourceOptions(ignore_changes=["ami"]),
         )
 
     def create_key_pair(

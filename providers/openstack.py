@@ -168,6 +168,11 @@ class OpenStackProvider(base.BaseProvider):
                     create=INSTANCE_TIMEOUT,
                     update=INSTANCE_TIMEOUT,
                 ),
+                # NOTE: An image name is looked up again on every update, and
+                # it answers with the latest image of that name. Once the cloud
+                # publishes a newer one, any update would replace every
+                # machine, whatever the update was about.
+                ignore_changes=["image_id"],
             ),
         )
 
