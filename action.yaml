@@ -318,7 +318,7 @@ runs:
         fi
     - name: Upload artifacts
       if: ${{ inputs.action == 'spawn' && always() }}
-      uses: scality/action-artifacts@b311c0a0d8017683148906bd3fbe0e681b115608 # v4
+      uses: scality/action-artifacts@b311c0a0d8017683148906bd3fbe0e681b115608 # 4.3.0
       with:
         method: upload
         url: https://artifacts.scality.net
