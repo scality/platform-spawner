@@ -58,7 +58,7 @@ def generate_bastion(ssh_info: dict, path: pathlib.Path) -> None:
     config_lines = []
     for host, info in ssh_info["nodes"].items():
         config_lines.append(f"Host {host}")
-        config_lines.append(f"  HostName {info['ip']}")
+        config_lines.append(f"  Hostname {info['ip']}")
         config_lines.append("  Port 22")
         if info.get("user"):
             config_lines.append(f"  User {info['user']}")
@@ -77,7 +77,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
     config_lines = []
     if "bastion" in ssh_info:
         config_lines.append("Host bastion")
-        config_lines.append(f"  HostName {ssh_info['bastion']['ip']}")
+        config_lines.append(f"  Hostname {ssh_info['bastion']['ip']}")
         config_lines.append("  Port 22")
         if ssh_info["bastion"].get("user"):
             config_lines.append(f"  User {ssh_info['bastion']['user']}")
@@ -90,7 +90,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
         config_lines.append(f"Host {host}")
         if "bastion" in ssh_info:
             config_lines.append("  ProxyJump bastion")
-        config_lines.append(f"  HostName {info['ip']}")
+        config_lines.append(f"  Hostname {info['ip']}")
         config_lines.append("  Port 22")
         if info.get("user"):
             config_lines.append(f"  User {info['user']}")
