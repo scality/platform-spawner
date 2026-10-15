@@ -43,6 +43,31 @@ offline and has no pool of its own to reach.
 The nodes run the workloads. `instance_count` says how many there are, three
 by default.
 
+### Taking a node away
+
+`absent_nodes` names the nodes to leave out of a live platform, the way a
+server dies under a cluster. Taking it out of the list brings the node back,
+as a new machine:
+
+```bash
+pulumi config set --path 'absent_nodes[0]' node-2
+pulumi up    # node-2 is gone, every other machine is left alone
+pulumi config rm absent_nodes
+pulumi up    # node-2 is back, blank, at the addresses it had
+```
+
+The node keeps its interfaces while it is away, and with them its addresses.
+That is what brings it back exactly where it was, with nothing else on the
+platform to tell. Everything else goes with it: its root disk and its extra
+volumes come back blank. An absent node is also left out of the SSH files and
+of what the platform reports of its nodes.
+
+The bastion cannot be taken away. It holds the way in and the clock of the
+platform, and is not what a platform is spawned to test.
+
+From a workflow, the same goes through the
+[`update` action](GITHUB_ACTION.md#updating).
+
 ## Networks
 
 | Network | CIDR | What it is |

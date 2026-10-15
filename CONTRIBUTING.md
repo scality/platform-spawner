@@ -33,7 +33,11 @@ destroys them. Two more platforms go up beside them on OpenStack: one asking
 for everything at once, offline with extra networks and extra volumes, and one
 that is snapshotted and spawned back from its images, carrying a file written
 before the snapshot to prove it came back whole. That one takes its images
-away afterwards, nothing else ever would.
+away afterwards, nothing else ever would. One last platform goes up on each
+provider and is changed while it runs, through the `update` action. It is
+switched offline, and none of its machines may be replaced on the way. Then
+one of its nodes is taken away and brought back, blank and at the addresses
+it had, while every other machine is left alone.
 
 Each of them is a workflow of its own carrying its spawn, its checks and its
 destroy, so a platform goes away as soon as its own test is done rather than

@@ -20,8 +20,8 @@ Whatever it is asked to do, it takes:
 
 | Input | Default | What it is |
 |-------|---------|------------|
-| `action` | `spawn` | What to do: `spawn`, `snapshot`, `delete-snapshot`, `destroy` or `list` |
-| `max_attempts` | `3` | How many times a spawn or a destroy is tried before giving up, since a cloud is not always reachable on the first go |
+| `action` | `spawn` | What to do: `spawn`, `update`, `snapshot`, `delete-snapshot`, `destroy` or `list` |
+| `max_attempts` | `3` | How many times a spawn, an update or a destroy is tried before giving up, since a cloud is not always reachable on the first go |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
 
 The credentials of the cloud are not inputs. They go in the environment of the
@@ -44,6 +44,37 @@ job, and they are the ones
 
 It answers with `bastion` and `nodes`, what the platform reports of its
 machines, as JSON.
+
+## Updating
+
+| Input | Required | What it is |
+|-------|----------|------------|
+| `stack_name` | yes | The stack holding the platform to change |
+| `configuration` | yes | The keys to change, as YAML. Every other key keeps the value the platform was last deployed with |
+
+```yaml
+- uses: scality/platform-spawner@main
+  with:
+    action: update
+    stack_name: ${{ github.run_id }}
+    configuration: |
+      offline: true
+```
+
+It answers with `bastion` and `nodes`, like a spawn does. A machine is only
+replaced when the change asks for it: switching `offline` leaves every one of
+them running. The image of a machine is never one of those changes, see
+[DESIGN.md](../DESIGN.md#a-machine-keeps-its-image).
+
+It works from any job, not only the one that spawned. The SSH files are
+written back from the stack, the way
+[troubleshooting](TROUBLESHOOTING.md#the-ssh-files-are-gone) does by hand.
+
+> **Note**
+> `__my_ip__` is worked out again on every update, as the address of the
+> runner doing it. An update run from another runner than the spawn moves the
+> access over to that runner, and the first one loses it. Listing the
+> addresses to keep in `authorized_cidrs` is what keeps them.
 
 ## Destroying
 

@@ -56,6 +56,23 @@ jobs:
       checks: ${{ matrix.checks }}
     secrets: inherit
 
+  update:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: update-aws
+            provider: aws
+          - name: update-openstack
+            provider: openstack
+    uses: ./.github/workflows/update-test.yaml
+    with:
+      name: ${{ matrix.name }}
+      stack: "${{ github.workflow }}-${{ github.run_number }}-${{ matrix.name }}"
+      provider: ${{ matrix.provider }}
+    secrets: inherit
+
   snapshot:
     uses: ./.github/workflows/snapshot-test.yaml
     with:

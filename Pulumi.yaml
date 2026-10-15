@@ -76,6 +76,12 @@ config:
     type: integer
     description: "Number of instances to create"
     default: 3
+  absent_nodes:
+    type: array
+    items:
+      type: string
+    description: "Nodes to leave out, keeping their addresses for when they come back (e.g. node-2)"
+    default: []
   instance_flavor:
     type: string
     description: "Flavor of the instance, a portable size or a name from the cloud catalog"

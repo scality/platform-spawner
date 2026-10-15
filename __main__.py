@@ -19,6 +19,7 @@ TOO_MANY_EXTRA_NETWORKS = "At most {limit} extra networks can be asked for."
 DUPLICATE_EXTRA_NETWORK = "Several extra networks are named {names}."
 INSTANCE_IMAGE_MISSING = "One of instance_image or instance_image_file must be set."
 SNAPSHOT_EXCLUDES_IMAGE_FILE = "restore_snapshot cannot be used with instance_image_file."
+UNKNOWN_ABSENT_NODES = "absent_nodes names nodes the platform does not have: {names}."
 # Fallback for the images we know, anything else has to be configured
 SSH_USERS = {
     "rocky-8": "rocky",
@@ -79,6 +80,7 @@ def __main__() -> None:
 
     instance_count = config.require_int("instance_count")
     instance_images = _instance_images(config, provider, instance_count)
+    absent_nodes = _absent_nodes(config, instance_count)
     instance_flavor = config.require("instance_flavor")
 
     ssh_info = {
@@ -222,12 +224,16 @@ def __main__() -> None:
     )
     instances.append(bastion)
     ssh_info["bastion"] = {
+        "id": bastion.id,
         "ip": bastion_public_iface.public_ip,
         "user": _ssh_user(config, "bastion"),
     }
     nodes_info = {}
 
     for node_index in range(1, instance_count + 1):
+        # NOTE: The interfaces of an absent node are kept. They hold its
+        # addresses, which is what brings it back exactly where it was rather
+        # than wherever the cloud would put a newcomer.
         cp_iface = provider.create_interface(
             subnet=control_plane_subnet,
             subnet_name="control-plane",
@@ -245,6 +251,8 @@ def __main__() -> None:
         extra_ifaces = _create_extra_interfaces(
             provider, extra_subnets, f"node-{node_index}", 100 + node_index, [internal_sg]
         )
+        if f"node-{node_index}" in absent_nodes:
+            continue
 
         node = provider.create_instance(
             name=f"node-{node_index}",
@@ -270,6 +278,7 @@ def __main__() -> None:
             },
         }
         ssh_info["nodes"][f"node-{node_index}"] = {
+            "id": node.id,
             "ip": cp_iface.ip,
             "user": _ssh_user(config, "instance"),
         }
@@ -284,7 +293,7 @@ def __main__() -> None:
     )
 
     booted = _wait_for_boot(ssh_config_ready, ["bastion", *nodes_info], instances)
-    _equip_bastion(ssh_config_ready, bastion_key, booted)
+    _equip_bastion(ssh_config_ready, bastion_key, booted, instances)
     _clean_up_ssh_files(ssh_config_file)
 
 
@@ -329,6 +338,25 @@ def _prepare_ssh_key(
     if not ssh_key_name:
         raise ValueError(SSH_ARG_MUTUALLY_EXCLUSIFE)
     return ssh_key_name
+
+
+def _absent_nodes(config: pulumi.Config, instance_count: int) -> set[str]:
+    """
+    Return the nodes to leave out of the platform.
+
+    NOTE: Named rather than counted. Lowering `instance_count` only ever
+    takes the last node away, and the node worth taking away is whichever
+    one a test needs gone. A name the platform does not have is refused: it
+    is far more likely a typo than a wish, and ignoring it would leave the
+    node it meant running.
+    """
+    absent = set(config.require_object("absent_nodes"))
+    unknown = absent - {f"node-{index}" for index in range(1, instance_count + 1)}
+    if unknown:
+        message = UNKNOWN_ABSENT_NODES.format(names=", ".join(sorted(unknown)))
+        raise ValueError(message)
+
+    return absent
 
 
 def _parse_cidrs(cidrs: list[str]) -> list[pulumi.Output[str]]:
@@ -573,6 +601,7 @@ def _equip_bastion(
     config_file: pulumi.Output[str],
     bastion_key: pulumi_tls.PrivateKey,
     booted: pulumi_command.local.Command,
+    instances: list[pulumi.CustomResource],
 ) -> None:
     """
     Hand the bastion its key and a config, so it reaches the nodes on its own.
@@ -592,6 +621,9 @@ def _equip_bastion(
             )
         ),
         environment={"BASTION_PRIVATE_KEY": bastion_key.private_key_openssh},
+        # Handed again whenever a machine changes. The config names the
+        # nodes, and a replaced bastion starts with neither key nor config.
+        triggers=[instance.id for instance in instances],
         opts=pulumi.ResourceOptions(depends_on=[booted]),
     )
 
