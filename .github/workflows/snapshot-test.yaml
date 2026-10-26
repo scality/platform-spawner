@@ -38,7 +38,7 @@ jobs:
   # others.
   test:
     name: "snapshot test"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
     steps:
@@ -122,7 +122,7 @@ jobs:
     name: "snapshot destroy the ${{ matrix.platform }} platform"
     needs: test
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         # The snapshotted one is taken away mid test, this is what catches it
