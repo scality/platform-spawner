@@ -32,6 +32,10 @@ inputs:
     description: "Whether to store the stack output in S3 (needed for garbage collection)"
     required: false
     default: "true"
+  state_namespace:
+    description: "Where the stacks go under the repository in the S3 bucket, to keep apart the stacks of several kinds of platform (only with store_to_s3)"
+    required: false
+    default: ""
   max_attempts:
     description: "How many times to try a spawn or a destroy before giving up"
     required: false
@@ -120,6 +124,18 @@ runs:
           echo "Max attempts must be a positive integer."
           exit 1
         fi
+    - name: "Check state namespace"
+      if: ${{ inputs.state_namespace != '' }}
+      shell: bash
+      env:
+        STATE_NAMESPACE: ${{ inputs.state_namespace }}
+      # NOTE: The namespace sits under the folder of the repository, and a
+      # `..` would climb out of it into the stacks of another one.
+      run: |
+        if ! [[ "$STATE_NAMESPACE" =~ ^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$ ]]; then
+          echo "State namespace must be a path of letters, digits, '.', '_' and '-', with no part starting with a '.'."
+          exit 1
+        fi
     - name: "Check argument for list"
       if: ${{ inputs.action == 'list' }}
       shell: bash
@@ -178,8 +194,9 @@ runs:
       working-directory: ${{ github.action_path }}
       env:
         REPOSITORY: ${{ github.event.repository.name }}
+        STATE_NAMESPACE: ${{ inputs.state_namespace }}
       run: |-
-        pulumi $PULUMI_DEFAULT_ARGS login "s3://platform-spawner-stacks/$REPOSITORY"
+        pulumi $PULUMI_DEFAULT_ARGS login "s3://platform-spawner-stacks/$REPOSITORY${STATE_NAMESPACE:+/$STATE_NAMESPACE}"
     - name: Login locally
       shell: bash
       if: ${{ ! fromJSON(inputs.store_to_s3) }}

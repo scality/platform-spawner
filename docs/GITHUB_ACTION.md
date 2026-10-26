@@ -23,6 +23,7 @@ Whatever it is asked to do, it takes:
 | `action` | `spawn` | What to do: `spawn`, `update`, `snapshot`, `delete-snapshot`, `destroy` or `list` |
 | `max_attempts` | `3` | How many times a spawn, an update or a destroy is tried before giving up, since a cloud is not always reachable on the first go |
 | `store_to_s3` | `true` | Whether the state of the stack goes to the S3 bucket a garbage collection reads |
+| `state_namespace` | none | A folder of the bucket, under the one of the repository, to keep the stacks in. See [Namespaces](#namespaces) |
 
 The credentials of the cloud are not inputs. They go in the environment of the
 job, and they are the ones
@@ -114,6 +115,31 @@ to be given to both, or left out of both to take the name of the repository.
 It answers with `stacks_list`, the stacks older than that age, and writes the
 same names to the summary of the job. This is what a garbage collection runs
 on.
+
+## Namespaces
+
+The stacks of a repository all live in one folder of the bucket, named after
+it. A repository spawning several kinds of platform can keep each kind in a
+folder of its own with `state_namespace`:
+
+```yaml
+- uses: scality/platform-spawner@main
+  with:
+    action: spawn
+    stack_name: ${{ github.run_id }}
+    state_namespace: multi-node
+    configuration: |
+      instance_count: 3
+```
+
+The stacks then live under `<repository>/multi-node` rather than
+`<repository>`. The same stack name can be used in two namespaces, and each
+namespace only ever sees its own stacks.
+
+Every action on a stack has to name the namespace it was spawned in: an
+update, a snapshot or a destroy given another one finds no stack. A `list`
+only answers with the stacks of its own namespace too, so a garbage collection
+has to run once per namespace to reach all of them.
 
 ## Details
 
