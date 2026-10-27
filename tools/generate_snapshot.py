@@ -12,6 +12,7 @@ NOTE: OpenStack only for the moment. Another cloud would bring its own
 """
 
 import argparse
+import collections.abc
 import sys
 import time
 
@@ -27,6 +28,8 @@ UPLOADING_TASK = "image_uploading"
 UNFINISHED_IMAGE_STATUSES = frozenset({"", "queued", "saving"})
 STOPPED = "SHUTOFF"
 RUNNING = "ACTIVE"
+# From here on the cloud failed to answer, rather than refused what was asked
+SERVER_ERROR = 500
 NODE_ABSENT = "{names} absent, a snapshot taken now could never be spawned back."
 
 
@@ -85,7 +88,7 @@ def _snapshot_instances(snapshots: dict[str, str], args: argparse.Namespace) -> 
 
     result = 0
     try:
-        stopped.extend(instance_id for instance_id in snapshots if _stop(cloud, instance_id))
+        stopped.extend(instance_id for instance_id in snapshots if _stop(cloud, instance_id, args))
         for instance_id in snapshots:
             _wait_until_stopped(cloud, instance_id, args)
 
@@ -113,20 +116,40 @@ def _start_back(
     ready to be used again rather than one still on its way up, and an
     instance that never returns is worth hearing about here rather than at
     whatever next tries to reach it.
-    """
-    for instance_id in instance_ids:
-        print(f"Starting {instance_id} back")
-        cloud.compute.start_server(instance_id)
 
+    Every failure is reported rather than raised, one instance at a time.
+    This runs in the `finally` of whatever went before, where raising would
+    hide it, and would leave the instances after it down.
+    """
     back = True
+    started = []
     for instance_id in instance_ids:
-        server = cloud.compute.get_server(instance_id)
         try:
-            cloud.compute.wait_for_server(server, status=RUNNING, wait=args.timeout)
+            # NOTE: Settled first. This can run while a stop is still under
+            # way, and Nova refuses to start an instance it has not finished
+            # stopping.
+            server = _wait_until_settled(cloud, instance_id, args)
+            if server.status == RUNNING:
+                print(f"{instance_id} is already up")
+                continue
+
+            print(f"Starting {instance_id} back")
+            cloud.compute.start_server(instance_id)
+            started.append(instance_id)
         except openstack.exceptions.SDKException as err:
-            # NOTE: Reported rather than raised. This runs in the `finally`
-            # of whatever went before, where raising would hide it.
+            print(f"{instance_id} could not be started back: {err}", file=sys.stderr)
+            back = False
+
+    for instance_id in started:
+        try:
+            server = _wait_until_settled(cloud, instance_id, args)
+        except openstack.exceptions.SDKException as err:
             print(f"{instance_id} did not come back up: {err}", file=sys.stderr)
+            back = False
+            continue
+
+        if server.status != RUNNING:
+            print(f"{instance_id} did not come back up: {server.status}", file=sys.stderr)
             back = False
         else:
             print(f"{instance_id} is back up")
@@ -134,9 +157,13 @@ def _start_back(
     return back
 
 
-def _stop(cloud: openstack.connection.Connection, instance_id: str) -> bool:
+def _stop(
+    cloud: openstack.connection.Connection,
+    instance_id: str,
+    args: argparse.Namespace,
+) -> bool:
     """Ask an instance to stop, telling whether it had to be asked at all."""
-    server = cloud.compute.get_server(instance_id)
+    server = _ask(lambda: cloud.compute.get_server(instance_id), args)
     if server.status == STOPPED:
         return False
 
@@ -152,9 +179,58 @@ def _wait_until_stopped(
     args: argparse.Namespace,
 ) -> None:
     """Hold until an instance is down, so that its disk stops moving."""
-    server = cloud.compute.get_server(instance_id)
-    cloud.compute.wait_for_server(server, status=STOPPED, wait=args.timeout)
+    server = _wait_until_settled(cloud, instance_id, args)
+    if server.status != STOPPED:
+        message = f"{instance_id} did not stop, it is {server.status}"
+        raise openstack.exceptions.ResourceFailure(message)
+
     print(f"{instance_id} stopped")
+
+
+def _wait_until_settled(
+    cloud: openstack.connection.Connection,
+    instance_id: str,
+    args: argparse.Namespace,
+) -> openstack.compute.v2.server.Server:
+    """
+    Hold until Nova is done with whatever it was doing to an instance.
+
+    NOTE: Settled rather than in a given status. Nova marks an instance busy
+    before it answers a stop or a start, and clears the mark once it is done,
+    whether it went through or not. Waiting on a status instead holds until
+    the timeout when the action fails, and tells nothing of why.
+    """
+    deadline = time.monotonic() + args.timeout
+    while True:
+        server = _ask(lambda: cloud.compute.get_server(instance_id), args)
+        if server.task_state is None:
+            return server
+        if time.monotonic() >= deadline:
+            message = f"{instance_id} is still {server.task_state} after {args.timeout}s"
+            raise openstack.exceptions.ResourceTimeout(message)
+
+        time.sleep(args.poll)
+
+
+def _ask[T](call: collections.abc.Callable[[], T], args: argparse.Namespace) -> T:
+    """
+    Read something from the cloud, asking again while it fails to answer.
+
+    NOTE: Only for reads, which can be asked again without consequence. A
+    server error says nothing of the instance itself: Nova answers one at
+    times when one of the services behind it does not answer it in time.
+    """
+    deadline = time.monotonic() + args.timeout
+    while True:
+        try:
+            return call()
+        except openstack.exceptions.HttpException as err:
+            answered = err.status_code is None or err.status_code < SERVER_ERROR
+            if answered or time.monotonic() >= deadline:
+                raise
+            print(f"  the cloud failed to answer ({err.status_code}), asking again")
+
+        time.sleep(args.poll)
 
 
 def _take_snapshot(
@@ -205,9 +281,9 @@ def _wait_until_active(
     """
     deadline = time.monotonic() + args.timeout
     while time.monotonic() < deadline:
-        image = cloud.image.find_image(image_id)
+        image = _ask(lambda: cloud.image.find_image(image_id), args)
         status = "" if image is None else image.status
-        task = cloud.compute.get_server(instance_id).task_state
+        task = _ask(lambda: cloud.compute.get_server(instance_id), args).task_state
 
         if status not in UNFINISHED_IMAGE_STATUSES and task != UPLOADING_TASK:
             return status == "active"
