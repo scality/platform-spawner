@@ -42,8 +42,11 @@ for host in {hosts}; do
     # NOTE: Bounded like the wait above. `cloud-init status --wait` holds for
     # as long as it takes, and a boot that never ends would otherwise hold the
     # update with it. 124 is what the timeout itself exits with.
+    # NOTE: Asked as root. Rocky keeps /run/cloud-init to root once anything
+    # runs its tmpfiles rules again, as installing a package does, and
+    # cloud-init then fails to read its own state for anybody else.
     booted=0
-    timeout {timeout} ssh -F {config} "$host" cloud-init status --wait || booted=$?
+    timeout {timeout} ssh -F {config} "$host" sudo -n cloud-init status --wait || booted=$?
     if [ "$booted" -eq 124 ]; then
         echo "$host was still booting after {timeout}s" >&2
         exit 1
