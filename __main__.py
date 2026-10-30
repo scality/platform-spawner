@@ -60,6 +60,22 @@ install="install -d -m 700 ~/.ssh && cat > ~/{key} && chmod 600 ~/{key}"
 printf '%s' "$BASTION_PRIVATE_KEY" | ssh -F {config} bastion "$install"
 scp -F {config} {bastion_config} bastion:{remote_config}
 """
+# Where the user-data of the nodes lands, and the unit it runs as.
+# NOTE: The script goes where local programs do. Under SELinux, systemd runs
+# what it finds there unconfined, while a script left among the configuration
+# runs in the domain of init, which may not even touch /etc/shadow.
+USER_DATA_ENV = pathlib.PurePosixPath("/etc/platform-spawner/node.env")
+USER_DATA_SCRIPT = pathlib.PurePosixPath("/usr/local/libexec/platform-spawner/user-data")
+USER_DATA_UNIT = "platform-spawner-user-data"
+# Relative to the home of the SSH user, which needs no privilege to write to
+NODES_KEY = ".ssh/platform-spawner-nodes"
+# What the nodes are handed when they run user-data, so they reach each other
+NODES_SETUP_SCRIPT = """set -eu
+install="install -d -m 700 ~/.ssh && cat > ~/{key} && chmod 600 ~/{key}"
+for host in {hosts}; do
+    printf '%s' "$NODES_PRIVATE_KEY" | ssh -F {config} "$host" "$install"
+done
+"""
 # Address space of the routed planes, needed both to carve the subnets out
 # and to tell the bastion whose clock it is allowed to serve
 CONTROL_PLANE_CIDR = "172.30.100.0/24"
@@ -229,6 +245,10 @@ def __main__() -> None:
         "user": _ssh_user(config, "bastion"),
     }
     nodes_info = {}
+    user_data = config.require("instance_user_data")
+    present_nodes = [
+        index for index in range(1, instance_count + 1) if f"node-{index}" not in absent_nodes
+    ]
 
     for node_index in range(1, instance_count + 1):
         # NOTE: The interfaces of an absent node are kept. They hold its
@@ -266,6 +286,13 @@ def __main__() -> None:
             cloud_config={
                 "ssh_authorized_keys": [bastion_key.public_key_openssh],
                 **_ntp_config(servers=[bastion_cp_iface.ip, bastion_wp_iface.ip]),
+                **(
+                    _user_data_config(
+                        user_data, node_index, present_nodes, _ssh_user(config, "instance")
+                    )
+                    if user_data
+                    else {}
+                ),
             },
         )
         instances.append(node)
@@ -294,6 +321,8 @@ def __main__() -> None:
 
     booted = _wait_for_boot(ssh_config_ready, ["bastion", *nodes_info], instances)
     _equip_bastion(ssh_config_ready, bastion_key, booted, instances)
+    if user_data:
+        _equip_nodes(ssh_config_ready, list(nodes_info), bastion_key, booted, instances)
     _clean_up_ssh_files(ssh_config_file)
 
 
@@ -400,6 +429,56 @@ def _ntp_config(**settings: object) -> dict:
     `servers`, which keeps a pool they cannot reach out of their config.
     """
     return {"ntp": {"enabled": True, "ntp_client": NTP_CLIENT, **settings}}
+
+
+def _user_data_config(
+    script_path: str,
+    node_index: int,
+    present_nodes: list[int],
+    ssh_user: str,
+) -> dict:
+    """
+    Render the cloud-init configuration running a node's user-data.
+
+    NOTE: Run as a unit of its own rather than by cloud-init. The update waits
+    for cloud-init to be done with every machine, and what a script is handed
+    to do, installing a product for instance, easily outlasts that wait.
+
+    The script is told where the node stands through an environment file. Its
+    addresses are fixed, so they are known before any machine exists.
+    """
+    env = {
+        "NODE_NAME": f"node-{node_index}",
+        "NODE_INDEX": node_index,
+        "NODE_COUNT": len(present_nodes),
+        "NODES_CONTROL_PLANE_IPS": " ".join(f"172.30.100.{100 + i}" for i in present_nodes),
+        "NODES_WORKLOAD_PLANE_IPS": " ".join(f"172.30.200.{100 + i}" for i in present_nodes),
+        "CONTROL_PLANE_CIDR": CONTROL_PLANE_CIDR,
+        "WORKLOAD_PLANE_CIDR": WORKLOAD_PLANE_CIDR,
+        "SSH_USER": ssh_user,
+        "NODES_KEY": NODES_KEY,
+    }
+    return {
+        "write_files": [
+            {
+                "path": str(USER_DATA_ENV),
+                "content": "".join(f'{name}="{value}"\n' for name, value in env.items()),
+            },
+            {
+                "path": str(USER_DATA_SCRIPT),
+                "content": pathlib.Path(script_path).read_text(),
+                "permissions": "0755",
+            },
+        ],
+        "runcmd": [
+            [
+                "systemd-run",
+                f"--unit={USER_DATA_UNIT}",
+                f"--property=EnvironmentFile={USER_DATA_ENV}",
+                str(USER_DATA_SCRIPT),
+            ],
+        ],
+    }
 
 
 def _extra_network_cidr(index: int) -> str:
@@ -623,6 +702,36 @@ def _equip_bastion(
         environment={"BASTION_PRIVATE_KEY": bastion_key.private_key_openssh},
         # Handed again whenever a machine changes. The config names the
         # nodes, and a replaced bastion starts with neither key nor config.
+        triggers=[instance.id for instance in instances],
+        opts=pulumi.ResourceOptions(depends_on=[booted]),
+    )
+
+
+def _equip_nodes(
+    config_file: pulumi.Output[str],
+    nodes: list[str],
+    bastion_key: pulumi_tls.PrivateKey,
+    booted: pulumi_command.local.Command,
+    instances: list[pulumi.CustomResource],
+) -> None:
+    """
+    Hand the nodes running user-data a key, so they reach each other.
+
+    NOTE: The key of the bastion rather than one more. Every node trusts it
+    already, and it opens nothing but the nodes, which is all a node driving
+    the others needs. It lands in the home of the SSH user: a node whose
+    product has taken sudo away still takes it on the next update.
+    """
+    pulumi_command.local.Command(
+        "nodes-ssh-key",
+        create=config_file.apply(
+            lambda config: NODES_SETUP_SCRIPT.format(
+                config=config,
+                key=NODES_KEY,
+                hosts=" ".join(nodes),
+            )
+        ),
+        environment={"NODES_PRIVATE_KEY": bastion_key.private_key_openssh},
         triggers=[instance.id for instance in instances],
         opts=pulumi.ResourceOptions(depends_on=[booted]),
     )

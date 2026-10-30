@@ -142,7 +142,7 @@ The ones worth knowing early:
 
 | Key | Default | What it does |
 |-----|---------|--------------|
-| `instance_flavor` | `medium` | `small`, `medium`, `large` or `xlarge`. |
+| `instance_flavor` | `medium` | `small`, `medium`, `large` or `xlarge`, or any name of the cloud catalog (`c5.4xlarge`). |
 | `instance_root_disk_size` | `50` | Root disk of a node, in GiB. AWS only, since the flavor decides it on OpenStack. |
 | `bastion_flavor` | `small` | Same sizes as `instance_flavor`. |
 | `authorized_cidrs` | `['__my_ip__']` | Who may reach the bastion. `__my_ip__` stands for the public address of the machine spawning. |
@@ -236,6 +236,80 @@ for someone to decide, so remove it once you are sure:
 
 ```bash
 rm -f ssh_<product>_<stack> ssh_<product>_<stack>.pub
+```
+
+## Example: ARTESCA from its AMI
+
+One platform per architecture, both from the same AMI, here
+`artesca-4.4.0-preview.32` in `eu-north-1`. The AMI is shared with us, so it is
+named by its id. Every command names its stack with `-s`, which lets both
+live side by side without `pulumi stack select`:
+
+```bash
+for stack in <you>-1node:1 <you>-3node:3; do
+    name=${stack%%:*} count=${stack##*:}
+    pulumi stack init "$name"
+    pulumi -s "$name" config set provider aws
+    pulumi -s "$name" config set aws:region eu-north-1
+    pulumi -s "$name" config set product artesca
+    pulumi -s "$name" config set instance_image ami-0cc90c0853c34e7c4
+    pulumi -s "$name" config set instance_count "$count"
+    pulumi -s "$name" config set instance_flavor c5.4xlarge
+    pulumi -s "$name" config set instance_root_disk_size 300
+    pulumi -s "$name" config set instance_ssh_user artesca-os
+    pulumi -s "$name" config set ssh_private_key_create true
+    pulumi -s "$name" config set instance_user_data examples/user-data/artesca-install.sh
+done
+```
+
+| Key | Why |
+|-----|-----|
+| `instance_flavor` | `medium` is far too small for ARTESCA. `c5.4xlarge` is what the CI demo uses. |
+| `instance_root_disk_size` | The `demo` profile keeps its volumes on the root disk. |
+| `instance_ssh_user` | The AMI is none of the `rocky-*` images, so nothing else names its user. |
+| `instance_user_data` | Installs ARTESCA once the nodes are up, see below. Leave it out for bare nodes. |
+
+Both spawn at once, from two shells or in the background:
+
+```bash
+pulumi -s <you>-1node up --yes &
+pulumi -s <you>-3node up --yes &
+wait
+```
+
+> **Warning**
+> The AMI expires the password of `artesca-os`, and an expired password turns
+> SSH away without a terminal to change it, keys included. The update then
+> fails with `node-1 never answered ssh`.
+> [`artesca-install.sh`](../examples/user-data/artesca-install.sh) lifts the
+> expiry, so a stack without `instance_user_data` needs a script that does at
+> least that much. A node already spawned without one takes an interactive
+> `ssh -tt`, and the initial password of the AMI, to change it by hand.
+
+`pulumi up` returns once the nodes have booted, and the install carries on on
+its own on node-1, which drives the other nodes on three. It takes a while.
+Follow it, then reach the UI once it is done:
+
+```bash
+ssh -F ssh_config-<you>-3node node-1 sudo journalctl -fu platform-spawner-user-data
+ssh -F ssh_config-<you>-3node -L 8443:172.30.100.101:8443 node-1   # then https://localhost:8443
+```
+
+Installer logs are in `/var/log/artesca/` on node-1, and the configuration it
+was given in `~/config.yaml`. The other nodes are one hop away, through the
+bastion like any other:
+
+```bash
+ssh -F ssh_config-<you>-1node node-1
+ssh -F ssh_config-<you>-3node node-3
+```
+
+Destroy both the same way as any other:
+
+```bash
+for name in <you>-1node <you>-3node; do
+    pulumi -s "$name" destroy --yes && pulumi stack rm -s "$name" --yes
+done
 ```
 
 ## Cheat sheet

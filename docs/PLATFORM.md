@@ -68,6 +68,34 @@ platform, and is not what a platform is spawned to test.
 From a workflow, the same goes through the
 [`update` action](GITHUB_ACTION.md#updating).
 
+### Running a script on the nodes
+
+`instance_user_data` names a script every node runs once it has booted,
+installing a product for instance. It runs as root, in a unit of its own,
+`platform-spawner-user-data`, rather than inside cloud-init: the update only
+waits for the machines to boot, and the script outlasts it as long as it
+needs. Follow it with:
+
+```bash
+ssh -F ssh_config node-1 sudo journalctl -fu platform-spawner-user-data
+```
+
+The script learns where it stands from its environment:
+
+| Variable | What it holds |
+|----------|---------------|
+| `NODE_NAME`, `NODE_INDEX` | Which node runs it, `node-1` and `1` for instance |
+| `NODE_COUNT` | How many nodes are there, absent ones left out |
+| `NODES_CONTROL_PLANE_IPS`, `NODES_WORKLOAD_PLANE_IPS` | The addresses of every node, itself included |
+| `CONTROL_PLANE_CIDR`, `WORKLOAD_PLANE_CIDR` | The address spaces of the planes |
+| `SSH_USER` | The user the nodes are reached with |
+| `NODES_KEY` | Where a key opening the other nodes lands, under the home of `SSH_USER` |
+
+The key arrives once every machine has booted, so a script needing the other
+nodes waits for it. It is the key of the bastion, which opens the nodes and
+nothing else. [`examples/user-data/artesca-install.sh`](../examples/user-data/artesca-install.sh)
+installs ARTESCA that way, on one node or three.
+
 ## Networks
 
 | Network | CIDR | What it is |

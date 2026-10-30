@@ -56,6 +56,7 @@ A platform is described by the configuration of its stack. Set a key with
 | instance_flavor | Flavor of the instance, a portable size or a name from the cloud catalog | string | `medium` | no |
 | instance_ssh_user | SSH user for the instances (defaults to the one the image is known to use) | string | `` | no |
 | instance_root_disk_size | Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack) | integer | `50` | no |
+| instance_user_data | Script every node runs in the background once booted (see docs/PLATFORM.md) | string | `` | no |
 | bastion_image | Image for the bastion host | string | `rocky-9` | no |
 | bastion_flavor | Flavor of the bastion, a portable size or a name from the cloud catalog | string | `small` | no |
 | bastion_ssh_user | SSH user for the bastion (defaults to the one the image is known to use) | string | `` | no |

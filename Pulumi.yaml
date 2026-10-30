@@ -94,6 +94,10 @@ config:
     type: integer
     description: "Root disk size for the instance in GiB (AWS only, set by the flavor on OpenStack)"
     default: 50
+  instance_user_data:
+    type: string
+    description: "Script every node runs in the background once booted (see docs/PLATFORM.md)"
+    default: ""
 
   # Bastion host configuration
   bastion_image:
