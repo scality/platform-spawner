@@ -39,19 +39,23 @@ until ssh -F {config} -o ConnectTimeout=10 "$host" true 2>/dev/null; do
     sleep 5
 done
 
-# NOTE: We ask cloud-init through sudo first. On Rocky, installing a package
-# locks /run/cloud-init down to root, and `cloud-init status` then fails for
-# the SSH user. `sudo -l` only checks that sudo would allow the command, so
-# that a refusal is not mistaken for a bad boot.
-# NOTE: Without sudo, we fall back to asking as the SSH user. This is for
-# ARTESCA machines installed before artesca-os was allowed to run this
-# command through sudo (scality/artesca#5818). Since we only wait on new
-# machines, they are freshly booted and the SSH user can still read the
-# status. Remove this fallback once those versions are no longer spawned.
-# NOTE: The ARTESCA sudoers rule matches this exact command line, so any
-# change to its arguments has to be made there too.
-status='cloud-init status --wait'
-ask="if sudo -n -l $status >/dev/null 2>&1; then exec sudo -n $status; else exec $status; fi"
+# NOTE: We ask cloud-init as the SSH user first. We only wait on new
+# machines, and on a freshly booted machine the SSH user can read the status.
+# This is also the only way on ARTESCA machines installed before artesca-os
+# was allowed to run cloud-init through sudo (scality/artesca#5818).
+# NOTE: If that fails, we ask again through sudo. On Rocky, installing a
+# package locks /run/cloud-init down to root, and `cloud-init status` then
+# fails for the SSH user. `sudo -l` only checks that sudo would allow the
+# command. If it would not, we report the first answer, so a refusal is not
+# mistaken for a bad boot.
+# NOTE: Once the ARTESCA versions without scality/artesca#5818 are no longer
+# spawned, drop the first attempt and only ask through sudo.
+# NOTE: The ARTESCA sudoers rule only allows `cloud-init status`, so the
+# command asked through sudo has to keep starting with it.
+ask='cloud-init status --wait && exit
+first=$?
+sudo -n -l cloud-init status --wait >/dev/null 2>&1 || exit "$first"
+exec sudo -n cloud-init status --wait'
 
 # NOTE: `cloud-init status --wait` can wait forever if a boot gets stuck,
 # so we cap it with a timeout, just like the SSH wait above. When time runs
