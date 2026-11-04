@@ -25,37 +25,51 @@ SSH_USERS = {
     "rocky-8": "rocky",
     "rocky-9": "rocky",
 }
-# Held until every machine answers SSH and cloud-init is done with it, so that
-# a finished update means a platform that can actually be used.
+# Held until a machine answers SSH and cloud-init is done with it, so that a
+# finished update means a platform that can actually be used.
 BOOT_WAIT_TIMEOUT = 600
 BOOT_WAIT_SCRIPT = """set -eu
-for host in {hosts}; do
-    give_up=$(( $(date +%s) + {timeout} ))
-    until ssh -F {config} -o ConnectTimeout=10 "$host" true 2>/dev/null; do
-        if [ "$(date +%s)" -ge "$give_up" ]; then
-            echo "$host never answered ssh" >&2
-            exit 1
-        fi
-        sleep 5
-    done
-
-    # NOTE: `cloud-init status --wait` can wait forever if a boot gets stuck,
-    # so we cap it with a timeout, just like the SSH wait above. When time
-    # runs out, `timeout` exits with 124.
-    # NOTE: We need sudo here. On Rocky, installing a package locks
-    # /run/cloud-init down to root, and `cloud-init status` then fails for
-    # the SSH user.
-    booted=0
-    timeout {timeout} ssh -F {config} "$host" sudo -n cloud-init status --wait || booted=$?
-    if [ "$booted" -eq 124 ]; then
-        echo "$host was still booting after {timeout}s" >&2
+host={host}
+give_up=$(( $(date +%s) + {timeout} ))
+until ssh -F {config} -o ConnectTimeout=10 "$host" true 2>/dev/null; do
+    if [ "$(date +%s)" -ge "$give_up" ]; then
+        echo "$host never answered ssh" >&2
         exit 1
     fi
-    if [ "$booted" -ne 0 ]; then
-        echo "$host booted badly, cloud-init exited $booted" >&2
-        exit 1
-    fi
+    sleep 5
 done
+
+# NOTE: We ask cloud-init as the SSH user first. We only wait on new
+# machines, and on a freshly booted machine the SSH user can read the status.
+# This is also the only way on ARTESCA machines installed before artesca-os
+# was allowed to run cloud-init through sudo (scality/artesca#5818).
+# NOTE: If that fails, we ask again through sudo. On Rocky, installing a
+# package locks /run/cloud-init down to root, and `cloud-init status` then
+# fails for the SSH user. `sudo -l` only checks that sudo would allow the
+# command. If it would not, we report the first answer, so a refusal is not
+# mistaken for a bad boot.
+# NOTE: Once the ARTESCA versions without scality/artesca#5818 are no longer
+# spawned, drop the first attempt and only ask through sudo.
+# NOTE: The ARTESCA sudoers rule only allows `cloud-init status`, so the
+# command asked through sudo has to keep starting with it.
+ask='cloud-init status --wait && exit
+first=$?
+sudo -n -l cloud-init status --wait >/dev/null 2>&1 || exit "$first"
+exec sudo -n cloud-init status --wait'
+
+# NOTE: `cloud-init status --wait` can wait forever if a boot gets stuck,
+# so we cap it with a timeout, just like the SSH wait above. When time runs
+# out, `timeout` exits with 124.
+booted=0
+timeout {timeout} ssh -F {config} "$host" "$ask" || booted=$?
+if [ "$booted" -eq 124 ]; then
+    echo "$host was still booting after {timeout}s" >&2
+    exit 1
+fi
+if [ "$booted" -ne 0 ]; then
+    echo "$host booted badly, cloud-init exited $booted" >&2
+    exit 1
+fi
 """
 # What the bastion is handed, so that it reaches the nodes on its own
 BASTION_SETUP_SCRIPT = """set -eu
@@ -583,27 +597,39 @@ def _wait_for_boot(
     config_file: pulumi.Output[str],
     hosts: list[str],
     instances: list[pulumi.CustomResource],
-) -> pulumi_command.local.Command:
-    """Hold the update until every machine is done booting."""
-    return pulumi_command.local.Command(
-        "wait-for-boot",
-        create=config_file.apply(
-            lambda config: BOOT_WAIT_SCRIPT.format(
-                hosts=" ".join(hosts),
-                config=config,
-                timeout=BOOT_WAIT_TIMEOUT,
-            )
-        ),
-        # Wait again whenever a machine is replaced under us
-        triggers=[instance.id for instance in instances],
-        opts=pulumi.ResourceOptions(depends_on=instances),
-    )
+) -> list[pulumi_command.local.Command]:
+    """
+    Hold the update until every new machine is done booting.
+
+    NOTE: One wait per machine, so that an update only waits on the machines
+    it replaced. The ones left alone have been in use since, and asking
+    cloud-init about them again can only go wrong: once something has run the
+    tmpfiles rules again, as installing a package does, Rocky keeps
+    /run/cloud-init to root and `cloud-init status` fails for the SSH user,
+    which may well not be allowed to run it as root.
+    """
+    return [
+        pulumi_command.local.Command(
+            f"wait-for-boot-{host}",
+            create=config_file.apply(
+                lambda config, host=host: BOOT_WAIT_SCRIPT.format(
+                    host=host,
+                    config=config,
+                    timeout=BOOT_WAIT_TIMEOUT,
+                )
+            ),
+            # Wait again whenever this machine is replaced under us
+            triggers=[instance.id],
+            opts=pulumi.ResourceOptions(depends_on=[instance]),
+        )
+        for host, instance in zip(hosts, instances, strict=True)
+    ]
 
 
 def _equip_bastion(
     config_file: pulumi.Output[str],
     bastion_key: pulumi_tls.PrivateKey,
-    booted: pulumi_command.local.Command,
+    booted: list[pulumi_command.local.Command],
     instances: list[pulumi.CustomResource],
 ) -> None:
     """
@@ -627,7 +653,7 @@ def _equip_bastion(
         # Handed again whenever a machine changes. The config names the
         # nodes, and a replaced bastion starts with neither key nor config.
         triggers=[instance.id for instance in instances],
-        opts=pulumi.ResourceOptions(depends_on=[booted]),
+        opts=pulumi.ResourceOptions(depends_on=booted),
     )
 
 
