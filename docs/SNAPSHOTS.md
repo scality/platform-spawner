@@ -18,6 +18,11 @@ Every instance is stopped, captured as `<product>-<name>-node-<n>`, then
 started back. The bastion is left out, and so are the extra volumes. Only the
 instances themselves are captured.
 
+A snapshot whose images all exist already is left as it is. One with only some
+of them, left behind by a run that fell over, is taken away and taken again
+whole: its images may come from another platform, and images of two platforms
+never spawn back as one.
+
 A platform with a node [taken away](PLATFORM.md#taking-a-node-away) in the
 middle of its numbering is refused. Instance N is spawned back from the image
 of node N, so the missing image would leave the snapshot impossible to spawn

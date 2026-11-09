@@ -84,6 +84,9 @@ def _parse_args() -> argparse.Namespace:
 def _snapshot_instances(snapshots: dict[str, str], args: argparse.Namespace) -> int:
     """Stop every instance, snapshot it, and start them all back."""
     cloud = openstack.connect()
+    if _keep_or_clear(cloud, list(snapshots.values()), args):
+        return 0
+
     stopped: list[str] = []
 
     result = 0
@@ -233,6 +236,37 @@ def _ask[T](call: collections.abc.Callable[[], T], args: argparse.Namespace) -> 
         time.sleep(args.poll)
 
 
+def _keep_or_clear(
+    cloud: openstack.connection.Connection,
+    image_names: list[str],
+    args: argparse.Namespace,
+) -> bool:
+    """
+    Tell whether the snapshot is already there whole, clearing any part of it otherwise.
+
+    NOTE: The images of a snapshot are kept or taken all together. Every
+    instance comes back from its own image, and they only form a working
+    platform when they were all taken of the same one. Completing a partial
+    snapshot from another platform, such as a rerun spawns, would mix two of
+    them. The images are only known by their names here, so a partial
+    snapshot is taken again whole rather than completed.
+    """
+    existing = {
+        name: _ask(lambda name=name: list(cloud.image.images(name=name)), args)
+        for name in image_names
+    }
+    if all(len(images) == 1 and images[0].status == "active" for images in existing.values()):
+        print("Every image of this snapshot already exists and is active")
+        return True
+
+    for images in existing.values():
+        for image in images:
+            print(f"Taking away {image.name} ({image.id}, {image.status}), the snapshot is partial")
+            cloud.image.delete_image(image, ignore_missing=True)
+
+    return False
+
+
 def _take_snapshot(
     cloud: openstack.connection.Connection,
     instance_id: str,
@@ -240,11 +274,6 @@ def _take_snapshot(
     args: argparse.Namespace,
 ) -> bool:
     """Snapshot one instance, retrying as long as it does not come out active."""
-    existing = cloud.image.find_image(image_name)
-    if existing is not None and existing.status == "active":
-        print(f"{image_name} already exists and is active")
-        return True
-
     for attempt in range(1, args.retries + 1):
         print(f"Taking {image_name} [{attempt}/{args.retries}]")
         image = cloud.compute.create_server_image(instance_id, image_name)
