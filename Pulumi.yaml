@@ -26,6 +26,10 @@ config:
     type: boolean
     description: "If true, the platform will not be connected to the internet"
     default: false
+  bastion_dns:
+    type: boolean
+    description: "If true, the nodes resolve names through a DNS server on the bastion"
+    default: false
   authorized_tcp_ports:
     type: array
     items:

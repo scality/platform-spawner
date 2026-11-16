@@ -70,6 +70,7 @@ jobs:
             provider: ${{ inputs.provider }}
             instance_image: rocky-9
             instance_count: 2
+            bastion_dns: true
             authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
             extra_volumes:
               - size: 10
@@ -95,6 +96,9 @@ jobs:
 
       - name: Check the platform is offline
         run: ./tests/check_offline.sh
+
+      - name: Check the bastion serves the nodes
+        run: ./tests/check_bastion_services.sh
 
       # NOTE: The whole point of switching a live platform, rather than
       # spawning another one offline, is to keep what runs on it
@@ -210,6 +214,11 @@ jobs:
 
       - name: Check the platform again
         run: ./tests/check_platform.sh
+
+      # NOTE: node-2 included, a new machine by now, which gets what the
+      # bastion serves from the configuration of the platform
+      - name: Check the bastion serves the nodes again
+        run: ./tests/check_bastion_services.sh
 
   destroy:
     name: "${{ inputs.name }} destroy"

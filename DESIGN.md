@@ -31,9 +31,34 @@ platform is the way to have all of them on it.
 What a machine is handed through cloud-init is read once too, at its first
 boot. Changing it would replace the machine on OpenStack, and stop and start
 it for nothing on AWS. Changing a key that only reaches cloud-init, such as
-`openstack_dns_nameservers`, on a live platform therefore leaves its machines
-alone as well. A node brought back through `absent_nodes` is created
-afterwards, so it gets the new value.
+`openstack_dns_nameservers` or `bastion_dns`, on a live platform therefore
+leaves its machines alone as well. A node brought back through `absent_nodes`
+is created afterwards, so it gets the new value.
+
+### The bastion serves the nodes
+
+The bastion is the one machine of an offline platform that still reaches the
+outside, so whatever the nodes need from there goes through it. It always
+serves them their time, and their DNS when asked to with `bastion_dns`.
+Asking is what keeps every other platform exactly as it was.
+
+It runs dnsmasq, listening on its two plane addresses only and forwarding to
+its own resolvers. The nodes are handed both addresses through cloud-init,
+the way they are handed their time servers. They are written to
+`/etc/resolv.conf` as a whole and late in the boot, the way the OpenStack
+provider writes the resolvers of the cloud, which it then leaves out. On top
+of that, NetworkManager is told to leave the file alone, or the next DHCP
+lease would put the resolvers of the cloud back.
+
+On AWS, the resolver of the VPC keeps answering an offline platform. On
+OpenStack, the resolvers are public ones that an offline node cannot reach,
+which is where `bastion_dns` matters. Neither cloud needs a rule for it: the
+planes are open between the machines of a platform.
+
+Both halves are cloud-init, read once, so `bastion_dns` is set when the
+platform is spawned. Switching it on a live platform only reaches the nodes
+created afterwards, and the bastion, being there already, does not serve
+them.
 
 ### Provider differences
 

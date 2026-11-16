@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       checks:
-        description: "Script to run against the spawned platform"
+        description: "Scripts to run against the spawned platform, space separated"
         required: true
         type: string
 
@@ -71,7 +71,11 @@ jobs:
       - name: Check the platform
         env:
           CHECKS: ${{ inputs.checks }}
-        run: ./"$CHECKS"
+        run: |-
+          read -ra checks <<< "$CHECKS"
+          for check in "${checks[@]}"; do
+            ./"$check"
+          done
 
   destroy:
     name: "${{ inputs.name }} destroy"

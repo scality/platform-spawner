@@ -86,6 +86,19 @@ EXTRA_NETWORK_CIDR = "172.30.{index}.0/24"
 EXTRA_NETWORK_MAX = 99
 EXTRA_NETWORK_NAME = "extra-network-{index}"
 NTP_CLIENT = "chrony"
+# What the bastion answers DNS queries from the nodes with, forwarding them to
+# its own resolvers. Bound as the addresses show up rather than all at start:
+# dnsmasq is only ordered after `network.target`, so after a reboot it can
+# start before the planes have their addresses, and would then stay down.
+DNS_SERVER_CONFIG = """listen-address={addresses}
+bind-dynamic
+no-hosts
+"""
+# Keeps NetworkManager from writing the resolvers of the cloud back over the
+# ones the nodes are given
+NM_DNS_CONFIG_PATH = "/etc/NetworkManager/conf.d/90-platform-spawner-dns.conf"
+NM_DNS_CONFIG = "[main]\ndns=none\n"
+NM_RELOAD = "if systemctl -q is-active NetworkManager; then systemctl reload NetworkManager; fi"
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 
 
@@ -98,6 +111,7 @@ def __main__() -> None:
     instance_images = _instance_images(config, provider, instance_count)
     absent_nodes = _absent_nodes(config, instance_count)
     instance_flavor = config.require("instance_flavor")
+    bastion_dns = config.require_bool("bastion_dns")
 
     ssh_info = {
         "bastion": {},
@@ -223,7 +237,10 @@ def __main__() -> None:
             *(iface for _, iface in bastion_extra_ifaces),
         ],
         disable_auto_stop=config.require_bool("disable_auto_stop"),
-        cloud_config=_ntp_config(allow=[CONTROL_PLANE_CIDR, WORKLOAD_PLANE_CIDR]),
+        cloud_config=_merge_cloud_configs(
+            _ntp_config(allow=[CONTROL_PLANE_CIDR, WORKLOAD_PLANE_CIDR]),
+            _dns_server_config([bastion_cp_iface.ip, bastion_wp_iface.ip]) if bastion_dns else {},
+        ),
     )
     pulumi.export(
         "bastion",
@@ -279,10 +296,13 @@ def __main__() -> None:
             interfaces=[wp_iface, cp_iface, *(iface for _, iface in extra_ifaces)],
             extra_volumes=config.require_object("extra_volumes"),
             disable_auto_stop=config.require_bool("disable_auto_stop"),
-            cloud_config={
-                "ssh_authorized_keys": [bastion_key.public_key_openssh],
-                **_ntp_config(servers=[bastion_cp_iface.ip, bastion_wp_iface.ip]),
-            },
+            cloud_config=_merge_cloud_configs(
+                {"ssh_authorized_keys": [bastion_key.public_key_openssh]},
+                _ntp_config(servers=[bastion_cp_iface.ip, bastion_wp_iface.ip]),
+                _dns_client_config([bastion_cp_iface.ip, bastion_wp_iface.ip])
+                if bastion_dns
+                else {},
+            ),
         )
         instances.append(node)
         nodes_info[f"node-{node_index}"] = {
@@ -416,6 +436,72 @@ def _ntp_config(**settings: object) -> dict:
     `servers`, which keeps a pool they cannot reach out of their config.
     """
     return {"ntp": {"enabled": True, "ntp_client": NTP_CLIENT, **settings}}
+
+
+def _dns_server_config(addresses: list[pulumi.Output[str]]) -> dict:
+    """
+    Render the cloud-init configuration of the DNS server on the bastion.
+
+    NOTE: The bastion forwards the queries of the nodes to its own resolvers,
+    which only it still reaches once the platform is offline. It listens on
+    the planes alone, where the nodes are.
+
+    The file is written once the package is installed, so that it replaces
+    the one the package ships rather than being set aside as a leftover.
+    """
+    return {
+        "packages": ["dnsmasq"],
+        "write_files": [
+            {
+                "path": "/etc/dnsmasq.conf",
+                "defer": True,
+                "content": pulumi.Output.all(*addresses).apply(
+                    lambda ips: DNS_SERVER_CONFIG.format(addresses=",".join(ips))
+                ),
+            },
+        ],
+        "runcmd": [["systemctl", "enable", "--now", "dnsmasq"]],
+    }
+
+
+def _dns_client_config(nameservers: list[pulumi.Output[str]]) -> dict:
+    """
+    Render the cloud-init configuration making a node resolve through the bastion.
+
+    NOTE: Written as a whole and late, the way the OpenStack provider writes
+    the resolvers of the cloud, which it then leaves out. NetworkManager is
+    told to keep its hands off the file, and reloaded once it is written, or
+    it would put the resolvers of the cloud back on the next DHCP lease. An
+    image without NetworkManager has nothing to reload.
+    """
+    header = f"# Written by {pulumi.get_project()} through cloud-init\n"
+    return {
+        "write_files": [
+            {"path": NM_DNS_CONFIG_PATH, "content": NM_DNS_CONFIG},
+            {
+                "path": base.RESOLV_CONF,
+                "defer": True,
+                "content": pulumi.Output.all(*nameservers).apply(
+                    lambda ips: header + "".join(f"nameserver {ip}\n" for ip in ips)
+                ),
+            },
+        ],
+        "runcmd": [["sh", "-c", NM_RELOAD]],
+    }
+
+
+def _merge_cloud_configs(*configs: dict) -> dict:
+    """
+    Merge several cloud-init configurations into one.
+
+    NOTE: Lists add up, so that two configurations each writing a file or
+    running a command both get theirs. Nothing else is set by more than one.
+    """
+    merged = {}
+    for config in configs:
+        for key, value in config.items():
+            merged[key] = [*merged.get(key, []), *value] if isinstance(value, list) else value
+    return merged
 
 
 def _extra_network_cidr(index: int) -> str:
