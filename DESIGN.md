@@ -17,7 +17,7 @@ The provider is picked by the `provider` configuration key, which keeps a stack
 configuration portable from one cloud to another as long as the values it uses
 exist on both.
 
-### A machine keeps its image
+### A machine keeps its image and its cloud-init
 
 The image a machine boots on is read once, when the machine is created. An
 image name is looked up again on every update, and it answers with the latest
@@ -27,6 +27,13 @@ about. Changing `instance_image`, `bastion_image`, `restore_snapshot` or
 `instance_image_file` on a live platform therefore leaves its machines alone.
 Only the machines created afterwards boot on the new image, and destroying the
 platform is the way to have all of them on it.
+
+What a machine is handed through cloud-init is read once too, at its first
+boot. Changing it would replace the machine on OpenStack, and stop and start
+it for nothing on AWS. Changing a key that only reaches cloud-init, such as
+`openstack_dns_nameservers`, on a live platform therefore leaves its machines
+alone as well. A node brought back through `absent_nodes` is created
+afterwards, so it gets the new value.
 
 ### Provider differences
 

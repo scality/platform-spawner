@@ -172,7 +172,11 @@ class OpenStackProvider(base.BaseProvider):
                 # it answers with the latest image of that name. Once the cloud
                 # publishes a newer one, any update would replace every
                 # machine, whatever the update was about.
-                ignore_changes=["image_id"],
+                #
+                # The user data is only read at the first boot, and changing
+                # it replaces the machine. A key that only reaches cloud-init
+                # is for the machines created afterwards.
+                ignore_changes=["image_id", "user_data"],
             ),
         )
 

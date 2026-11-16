@@ -64,8 +64,9 @@ machines, as JSON.
 
 It answers with `bastion` and `nodes`, like a spawn does. A machine is only
 replaced when the change asks for it: switching `offline` leaves every one of
-them running. The image of a machine is never one of those changes, see
-[DESIGN.md](../DESIGN.md#a-machine-keeps-its-image).
+them running. Neither the image of a machine nor what it is handed through
+cloud-init is ever one of those changes, see
+[DESIGN.md](../DESIGN.md#a-machine-keeps-its-image-and-its-cloud-init).
 
 It works from any job, not only the one that spawned. The SSH files are
 written back from the stack, the way
