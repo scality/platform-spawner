@@ -41,6 +41,7 @@ jobs:
               instance_count: 2
               offline: true
               bastion_dns: true
+              bastion_dnf_proxy: true
               authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
               extra_networks:
                 - name: storage
@@ -58,6 +59,7 @@ jobs:
               instance_count: 1
               offline: true
               bastion_dns: true
+              bastion_dnf_proxy: true
               authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
     uses: ./.github/workflows/platform-test.yaml
     with:

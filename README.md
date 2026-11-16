@@ -44,6 +44,7 @@ A platform is described by the configuration of its stack. Set a key with
 | product | Product name for the resources | string | `unknown` | no |
 | offline | If true, the platform will not be connected to the internet | boolean | `False` | no |
 | bastion_dns | If true, the nodes resolve names through a DNS server on the bastion | boolean | `False` | no |
+| bastion_dnf_proxy | If true, dnf on the nodes goes through an HTTP proxy on the bastion | boolean | `False` | no |
 | authorized_tcp_ports | List of authorized TCP ports for ingress to the instances | array | `[22]` | no |
 | authorized_udp_ports | List of authorized UDP ports for ingress to the instances | array | `[]` | no |
 | authorized_icmp | Whether ICMP traffic is authorized for ingress to the instances | boolean | `True` | no |

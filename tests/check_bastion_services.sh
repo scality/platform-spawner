@@ -1,7 +1,8 @@
 #! /usr/bin/env bash
 #
 # Check that the bastion serves the nodes what they were spawned to get from
-# it: names resolved through it (`bastion_dns`).
+# it: names resolved through it (`bastion_dns`) and dnf going through its
+# proxy (`bastion_dnf_proxy`).
 #
 # Run from wherever the generated ssh_config is, which is where the platform
 # was spawned from.
@@ -20,5 +21,12 @@ for node in "${nodes[@]}"; do
         set -eu
         grep -qx "nameserver 172.30.100.99" /etc/resolv.conf
         getent hosts github.com
+    '
+
+    echo "dnf on $node goes through the bastion"
+    ssh -F ssh_config "$node" '
+        set -eu
+        grep -qx "proxy=http://172.30.100.99:3128" /etc/dnf/dnf.conf
+        sudo dnf -q makecache --refresh
     '
 done

@@ -31,16 +31,17 @@ platform is the way to have all of them on it.
 What a machine is handed through cloud-init is read once too, at its first
 boot. Changing it would replace the machine on OpenStack, and stop and start
 it for nothing on AWS. Changing a key that only reaches cloud-init, such as
-`openstack_dns_nameservers` or `bastion_dns`, on a live platform therefore
-leaves its machines alone as well. A node brought back through `absent_nodes`
-is created afterwards, so it gets the new value.
+`openstack_dns_nameservers`, `bastion_dns` or `bastion_dnf_proxy`, on a live
+platform therefore leaves its machines alone as well. A node brought back
+through `absent_nodes` is created afterwards, so it gets the new value.
 
 ### The bastion serves the nodes
 
 The bastion is the one machine of an offline platform that still reaches the
 outside, so whatever the nodes need from there goes through it. It always
-serves them their time, and their DNS when asked to with `bastion_dns`.
-Asking is what keeps every other platform exactly as it was.
+serves them their time, their DNS when asked to with `bastion_dns`, and a
+proxy for dnf when asked to with `bastion_dnf_proxy`. Asking is what keeps
+every other platform exactly as it was.
 
 It runs dnsmasq, listening on its two plane addresses only and forwarding to
 its own resolvers. The nodes are handed both addresses through cloud-init,
@@ -52,13 +53,25 @@ lease would put the resolvers of the cloud back.
 
 On AWS, the resolver of the VPC keeps answering an offline platform. On
 OpenStack, the resolvers are public ones that an offline node cannot reach,
-which is where `bastion_dns` matters. Neither cloud needs a rule for it: the
-planes are open between the machines of a platform.
+which is where `bastion_dns` matters.
 
-Both halves are cloud-init, read once, so `bastion_dns` is set when the
-platform is spawned. Switching it on a live platform only reaches the nodes
-created afterwards, and the bastion, being there already, does not serve
-them.
+The proxy is squid, letting only the planes in and caching nothing, so that
+repository metadata is never served stale. It listens on every address of
+the bastion: it cannot bind one that is not there yet, and nothing orders it
+after the planes get theirs when the bastion reboots. dnf is
+pointed at it as a whole, in `/etc/dnf/dnf.conf`, rather than repository by
+repository: whatever repositories the image comes with go through it, and one
+that must not, such as one served from within the platform, says so with
+`proxy=_none_`. Nothing else on the nodes is pointed at it, an offline
+platform stays offline for everything but its packages. For whatever points
+at it anyway, it only carries what repositories are served over: plain HTTP
+on port 80, and HTTPS tunnels to port 443, never a tunnel to anything else.
+
+Neither cloud needs a rule for any of it: the planes are open between the
+machines of a platform. Both halves of each are cloud-init, read once, so
+`bastion_dns` and `bastion_dnf_proxy` are set when the platform is spawned.
+Switching one on a live platform only reaches the nodes created afterwards,
+and the bastion, being there already, does not serve them.
 
 ### Provider differences
 

@@ -99,6 +99,21 @@ no-hosts
 NM_DNS_CONFIG_PATH = "/etc/NetworkManager/conf.d/90-platform-spawner-dns.conf"
 NM_DNS_CONFIG = "[main]\ndns=none\n"
 NM_RELOAD = "if systemctl -q is-active NetworkManager; then systemctl reload NetworkManager; fi"
+# What the bastion proxies dnf on the nodes with. Only what a repository is
+# served over gets through, plain HTTP and HTTPS tunnels, or anything on a node
+# pointed at the proxy could reach anywhere through it. Nothing is cached, so
+# that no repository metadata is ever served stale.
+DNF_PROXY_PORT = 3128
+DNF_PROXY_SERVER_CONFIG = """http_port {port}
+acl planes src {cidrs}
+acl Safe_ports port 80 443
+acl SSL_ports port 443
+http_access deny !Safe_ports
+http_access deny CONNECT !SSL_ports
+http_access allow planes
+http_access deny all
+cache deny all
+"""
 SSH_CONFIG_DIR = pathlib.Path.cwd()
 
 
@@ -112,6 +127,7 @@ def __main__() -> None:
     absent_nodes = _absent_nodes(config, instance_count)
     instance_flavor = config.require("instance_flavor")
     bastion_dns = config.require_bool("bastion_dns")
+    bastion_dnf_proxy = config.require_bool("bastion_dnf_proxy")
 
     ssh_info = {
         "bastion": {},
@@ -240,6 +256,7 @@ def __main__() -> None:
         cloud_config=_merge_cloud_configs(
             _ntp_config(allow=[CONTROL_PLANE_CIDR, WORKLOAD_PLANE_CIDR]),
             _dns_server_config([bastion_cp_iface.ip, bastion_wp_iface.ip]) if bastion_dns else {},
+            _dnf_proxy_server_config() if bastion_dnf_proxy else {},
         ),
     )
     pulumi.export(
@@ -302,6 +319,7 @@ def __main__() -> None:
                 _dns_client_config([bastion_cp_iface.ip, bastion_wp_iface.ip])
                 if bastion_dns
                 else {},
+                _dnf_proxy_client_config(bastion_cp_iface.ip) if bastion_dnf_proxy else {},
             ),
         )
         instances.append(node)
@@ -487,6 +505,61 @@ def _dns_client_config(nameservers: list[pulumi.Output[str]]) -> dict:
             },
         ],
         "runcmd": [["sh", "-c", NM_RELOAD]],
+    }
+
+
+def _dnf_proxy_server_config() -> dict:
+    """
+    Render the cloud-init configuration of the dnf proxy on the bastion.
+
+    NOTE: The bastion fetches the packages the nodes ask for, which only it
+    still can once the platform is offline. It only lets the planes in.
+
+    It listens on every address rather than on its plane ones. squid cannot
+    bind an address that is not there yet, and nothing orders it after the
+    planes have theirs once the bastion reboots. Its public side is closed
+    by the security group of the public interface regardless.
+
+    The file is written once the package is installed, so that it replaces
+    the one the package ships rather than being set aside as a leftover.
+    """
+    return {
+        "packages": ["squid"],
+        "write_files": [
+            {
+                "path": "/etc/squid/squid.conf",
+                "defer": True,
+                "content": DNF_PROXY_SERVER_CONFIG.format(
+                    port=DNF_PROXY_PORT,
+                    cidrs=f"{CONTROL_PLANE_CIDR} {WORKLOAD_PLANE_CIDR}",
+                ),
+            },
+        ],
+        "runcmd": [["systemctl", "enable", "--now", "squid"]],
+    }
+
+
+def _dnf_proxy_client_config(address: pulumi.Output[str]) -> dict:
+    """
+    Render the cloud-init configuration making dnf on a node go through the bastion.
+
+    NOTE: Set for dnf as a whole, so that every repository of the image goes
+    through it. A repository that must not, such as one served from within
+    the platform, opts out with `proxy=_none_`. Nothing else on the node is
+    pointed at the proxy.
+
+    `[main]` is the one section of `/etc/dnf/dnf.conf` on the images we know,
+    so a line appended to the file lands in it. It is written early in the
+    boot, before anything cloud-init does installs a package.
+    """
+    return {
+        "write_files": [
+            {
+                "path": "/etc/dnf/dnf.conf",
+                "append": True,
+                "content": pulumi.Output.concat("proxy=http://", address, f":{DNF_PROXY_PORT}\n"),
+            },
+        ],
     }
 
 
