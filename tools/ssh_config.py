@@ -35,7 +35,6 @@ def bastion_path(config_path: pathlib.Path) -> pathlib.Path:
 def common_options(config_path: pathlib.Path) -> list[str]:
     """Return the options every host block of the config repeats."""
     return [
-        "  IdentitiesOnly yes",
         "  StrictHostKeyChecking no",
         # NOTE: A file of its own for each platform. The machines always sit at
         # the same addresses, so a shared one would hold the keys of the
@@ -60,6 +59,21 @@ def host_key_alias(host: str, info: dict) -> list[str]:
         return []
 
     return [f"  HostKeyAlias {host}-{info['id']}"]
+
+
+def identity(ssh_info: dict) -> list[str]:
+    """
+    Return the options pointing at the key a spawn generated, if it did.
+
+    NOTE: `IdentitiesOnly` goes with the key file and never without it.
+    Alone, it holds ssh to the default files under ~/.ssh. A key the cloud
+    already holds would then never be offered from the agent, unless it
+    happens to be one of those files.
+    """
+    if not ssh_info.get("key"):
+        return []
+
+    return [f"  IdentityFile {ssh_info['key']}", "  IdentitiesOnly yes"]
 
 
 def generate_bastion(ssh_info: dict, path: pathlib.Path) -> None:
@@ -98,8 +112,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
         config_lines.append("  Port 22")
         if ssh_info["bastion"].get("user"):
             config_lines.append(f"  User {ssh_info['bastion']['user']}")
-        if ssh_info.get("key"):
-            config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.extend(identity(ssh_info))
         config_lines.extend(host_key_alias("bastion", ssh_info["bastion"]))
         config_lines.extend(options)
         config_lines.append("")
@@ -112,8 +125,7 @@ def generate(ssh_info: dict, path: pathlib.Path) -> str:
         config_lines.append("  Port 22")
         if info.get("user"):
             config_lines.append(f"  User {info['user']}")
-        if ssh_info.get("key"):
-            config_lines.append(f"  IdentityFile {ssh_info['key']}")
+        config_lines.extend(identity(ssh_info))
         config_lines.extend(host_key_alias(host, info))
         config_lines.extend(options)
         config_lines.append("")
