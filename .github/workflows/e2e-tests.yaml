@@ -38,12 +38,14 @@ jobs:
           # Everything a platform can be asked for at once, rather than a
           # spawn each
           - name: options
-            checks: tests/check_options.sh
+            checks: tests/check_options.sh tests/check_bastion_services.sh
             configuration: |-
               provider: openstack
               instance_image: rocky-9
               instance_count: 2
               offline: true
+              bastion_dns: true
+              bastion_dnf_proxy: true
               authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
               extra_networks:
                 - name: storage
@@ -52,6 +54,17 @@ jobs:
               extra_volumes:
                 - size: 10
                   count: 2
+          # What the bastion serves an offline platform, on the other cloud
+          - name: offline-aws
+            checks: tests/check_offline.sh tests/check_bastion_services.sh
+            configuration: |-
+              provider: aws
+              instance_image: rocky-9
+              instance_count: 1
+              offline: true
+              bastion_dns: true
+              bastion_dnf_proxy: true
+              authorized_cidrs: ${{ format('[{0},"__my_ip__"]', join(fromJSON(vars.AUTHORIZED_CIDRS), ',')) }}
     uses: ./.github/workflows/platform-test.yaml
     with:
       name: ${{ matrix.name }}

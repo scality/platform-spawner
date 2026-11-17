@@ -38,6 +38,19 @@ It is also the clock of the platform. It takes its time from a public pool and
 serves it to the nodes, which is what keeps them in step once the platform is
 offline and has no pool of its own to reach.
 
+Asked with `bastion_dns`, it is their DNS server as well. It answers on the
+planes, at `172.30.100.99` and `172.30.200.99`, and forwards the queries to
+its own resolvers. Names keep resolving on the nodes of an offline platform,
+while nothing else of theirs gets out.
+
+Asked with `bastion_dnf_proxy`, it is the proxy dnf on the nodes goes through,
+at port `3128` of the same addresses, so that OS packages still install on an
+offline platform. Only dnf is pointed at it, and a repository opts out with
+`proxy=_none_`. Nothing is cached on the way.
+
+Both are set when the platform is spawned: a machine only reads them when it
+is created, see [DESIGN.md](../DESIGN.md#the-bastion-serves-the-nodes).
+
 ### The nodes
 
 The nodes run the workloads. `instance_count` says how many there are, three

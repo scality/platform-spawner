@@ -41,6 +41,10 @@ taken with, since each instance comes back from the image taken of it.
 `instance_ssh_user` has to be given as well: a snapshot names no image, so
 nothing is left to work out who to log in as.
 
+`bastion_dns` and `bastion_dnf_proxy` should match too. A node keeps on its
+disk what it was handed for them, and the bastion of the new platform is a new
+one that only serves what its own configuration asks for.
+
 ## Take the images away
 
 ```bash

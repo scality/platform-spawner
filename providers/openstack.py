@@ -172,7 +172,11 @@ class OpenStackProvider(base.BaseProvider):
                 # it answers with the latest image of that name. Once the cloud
                 # publishes a newer one, any update would replace every
                 # machine, whatever the update was about.
-                ignore_changes=["image_id"],
+                #
+                # The user data is only read at the first boot, and changing
+                # it replaces the machine. A key that only reaches cloud-init
+                # is for the machines created afterwards.
+                ignore_changes=["image_id", "user_data"],
             ),
         )
 
@@ -504,7 +508,13 @@ class OpenStackProvider(base.BaseProvider):
         `write_files`, deferred to the end of the boot so that whatever
         NetworkManager writes comes first. This is not a transitional
         workaround, we do not build those images.
+
+        An instance handed resolvers of its own, such as a node resolving
+        through the bastion, keeps them: written last, ours would win.
         """
+        if any(file["path"] == base.RESOLV_CONF for file in given.get("write_files", [])):
+            return base.render_cloud_config(given)
+
         resolv_conf = "\n".join(
             [
                 f"# Written by {self.project} through cloud-init",
@@ -517,7 +527,7 @@ class OpenStackProvider(base.BaseProvider):
         config["write_files"] = [
             *given.get("write_files", []),
             {
-                "path": "/etc/resolv.conf",
+                "path": base.RESOLV_CONF,
                 "defer": True,
                 "content": resolv_conf,
             },

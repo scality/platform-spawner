@@ -9,6 +9,8 @@ import yaml
 
 # cloud-init only reads the payload as cloud-config when it opens with this
 CLOUD_CONFIG_HEADER = "#cloud-config"
+# Where an instance is told which resolvers to use
+RESOLV_CONF = "/etc/resolv.conf"
 
 IMAGE_UPLOAD_UNSUPPORTED = "The {provider} provider cannot upload an image file."
 IMAGE_NOT_FOUND = "The {provider} provider has no image named {name}."

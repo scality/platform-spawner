@@ -100,7 +100,12 @@ class AWSProvider(base.BaseProvider):
             # answers with the latest AMI of that name. Once a newer one is
             # published, any update would replace every machine, whatever the
             # update was about.
-            opts=pulumi.ResourceOptions(ignore_changes=["ami"]),
+            #
+            # The user data is only read at the first boot. Changing it stops
+            # and starts the machine for nothing, since cloud-init does not run
+            # its per-instance modules again. A key that only reaches
+            # cloud-init is for the machines created afterwards.
+            opts=pulumi.ResourceOptions(ignore_changes=["ami", "user_data"]),
         )
 
     def create_key_pair(
