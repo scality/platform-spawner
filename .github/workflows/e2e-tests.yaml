@@ -19,7 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # On a key the cloud already holds, which only an ssh-agent has. The
+          # spawn treats it the same way on both clouds, and AWS has its CLI
+          # on the runner already.
           - name: aws
+            existing_key: true
             checks: tests/check_platform.sh
             configuration: |-
               provider: aws
@@ -54,6 +58,7 @@ jobs:
       stack: "${{ github.workflow }}-${{ github.run_number }}-${{ matrix.name }}"
       configuration: ${{ matrix.configuration }}
       checks: ${{ matrix.checks }}
+      existing_key: ${{ matrix.existing_key || false }}
     secrets: inherit
 
   update:

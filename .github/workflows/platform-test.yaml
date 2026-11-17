@@ -19,6 +19,11 @@ on:
         description: "Script to run against the spawned platform"
         required: true
         type: string
+      existing_key:
+        description: "Spawn on a key the cloud already holds and only an ssh-agent has (AWS only)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -40,6 +45,8 @@ env:
   OS_USER_DOMAIN_NAME: "Default"
   OS_PROJECT_DOMAIN_ID: "default"
   OS_IDENTITY_API_VERSION: "3"
+  # Unique to the run, so that both jobs name the same key
+  EXISTING_KEY_NAME: "e2e-${{ github.run_id }}-${{ inputs.name }}"
 
 jobs:
   test:
@@ -59,6 +66,20 @@ jobs:
           role-session-name: GitHubActions-${{ github.run_id }}
           aws-region: eu-north-1
 
+      # NOTE: The private half only ever lives in the agent, the way a key on
+      # a token or in a password manager does. Left in a file under ~/.ssh,
+      # ssh would find it on its own and the agent would go untested.
+      - name: Hand the cloud a key held by an ssh-agent
+        if: inputs.existing_key
+        run: |-
+          ssh-keygen -q -t ed25519 -N '' -f "$RUNNER_TEMP/existing-key"
+          eval "$(ssh-agent -s)"
+          ssh-add "$RUNNER_TEMP/existing-key"
+          rm "$RUNNER_TEMP/existing-key"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          aws ec2 import-key-pair --key-name "$EXISTING_KEY_NAME" \
+            --public-key-material "fileb://$RUNNER_TEMP/existing-key.pub"
+
       - name: Spawn platform
         uses: ./
         with:
@@ -66,7 +87,9 @@ jobs:
           artifacts_user: ${{ secrets.ARTIFACTS_USER }}
           artifacts_password: ${{ secrets.ARTIFACTS_PASSWORD }}
           stack_name: ${{ inputs.stack }}
-          configuration: ${{ inputs.configuration }}
+          configuration: |-
+            ${{ inputs.configuration }}
+            ${{ inputs.existing_key && format('ssh_key_name: {0}', env.EXISTING_KEY_NAME) || '' }}
 
       - name: Check the platform
         env:
@@ -96,3 +119,9 @@ jobs:
         with:
           action: destroy
           stack_name: ${{ inputs.stack }}
+
+      # NOTE: Even when the destroy fails. Nothing else ever collects a key
+      # left behind.
+      - name: Delete the key held by the ssh-agent
+        if: always() && inputs.existing_key
+        run: aws ec2 delete-key-pair --key-name "$EXISTING_KEY_NAME"
